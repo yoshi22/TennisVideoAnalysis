@@ -31,6 +31,8 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
 
 # typescript
@@ -39,3 +41,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# IDE / agent tools
+.serena/
