@@ -21,7 +21,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "試合や練習の動画を撮影するために使用します",
         "NSMicrophoneUsageDescription": "動画録画時に音声を収録するために使用します",
-        "NSPhotoLibraryUsageDescription": "撮影済みの動画をライブラリから選択するために使用します"
+        "NSPhotoLibraryUsageDescription": "撮影済みの動画をライブラリから選択するために使用します",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
