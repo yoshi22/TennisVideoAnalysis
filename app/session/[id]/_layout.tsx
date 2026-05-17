@@ -1,20 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs, useLocalSearchParams, useRouter } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
-import { useSessionStore } from '@/stores/sessionStore';
+import { useSession } from '@/hooks';
 import { useTheme } from '@/theme';
-
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
 
 export default function SessionLayout() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session } = useSession();
 
   return (
     <Tabs

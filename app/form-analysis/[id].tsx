@@ -7,10 +7,7 @@ import { Button, EmptyState, Tag } from '@/components/common';
 import { FormScoreRing, getShotTypeLabel, SwingMetricCard } from '@/components/pose';
 import { useFormAnalysisStore } from '@/stores';
 import { useTheme } from '@/theme';
-
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
+import { getParamId } from '@/utils/sessionParams';
 
 export default function FormAnalysisResultScreen() {
   const { colors } = useTheme();

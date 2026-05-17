@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,11 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Chip, EmptyState, SecondSlider, SectionHeader } from '@/components/common';
 import { BallTraceOverlay } from '@/components/court';
+import { useSession } from '@/hooks';
 import { analyzeRally, detectRallyWindows, type RallyWindow } from '@/services/ball';
 import { extractStillFrame, type StillFrame } from '@/services/pose/frameSampler';
-import { useSessionStore } from '@/stores';
 import { useTheme } from '@/theme';
 import { type BallTrajectory, type Bounce } from '@/types';
+import { formatSeconds } from '@/utils/formatTime';
 
 interface RallyResult {
   trajectory: BallTrajectory;
@@ -33,16 +34,6 @@ const SLIDER_STEP = 0.5;
 const CANVAS_WIDTH = Dimensions.get('window').width - 40;
 const CANVAS_HEIGHT = CANVAS_WIDTH * 0.75;
 
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
-
-function formatSeconds(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
 function formatWindowLabel(window: RallyWindow): string {
   const confidence =
     window.confidence >= 0.7 ? '高信頼' : window.confidence >= 0.4 ? '中信頼' : '低信頼';
@@ -52,9 +43,7 @@ function formatWindowLabel(window: RallyWindow): string {
 export default function BallTraceScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session } = useSession();
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(10);
   const [isAnalyzing, setIsAnalyzing] = useState(false);

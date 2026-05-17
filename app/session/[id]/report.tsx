@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs, useLocalSearchParams, useRouter } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,9 +17,9 @@ import {
 import { CourtHeatmap } from '@/components/court';
 import { FormAnalysisEntryCard } from '@/components/pose';
 import { SHOT_TYPE_META, SHOT_TYPES } from '@/constants/shotTypes';
+import { useSession } from '@/hooks';
 import { getAnalyzer } from '@/services/analysis';
 import { computeMatchScore } from '@/services/scoring';
-import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import {
   type ShotLocation,
@@ -51,10 +51,6 @@ const PRIORITY_TONE = { high: 'danger', medium: 'warning', low: 'muted' } as con
 
 const CHART_COLORS = ['#1F6F4A', '#3FB37B', '#7AC4A0', '#F29F3E', '#E86060', '#94A3B8'] as const;
 
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
-
 function hasLocation(location: ShotLocation | undefined): location is ShotLocation {
   return location !== undefined;
 }
@@ -82,9 +78,7 @@ function formatDate(isoString: string): string {
 export default function ReportScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session } = useSession();
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const analysis = useMemo(() => (session ? getAnalyzer().analyze(session) : null), [session]);
   const matchScore = useMemo(

@@ -1,4 +1,4 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -13,10 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/common';
 import { VideoPlayer, type VideoPlayerRef } from '@/components/video';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { useSession } from '@/hooks';
 import { consumePendingSeek } from '@/services/video';
-import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type PointRecord } from '@/types';
+import { formatSeconds } from '@/utils/formatTime';
 
 type TimestampedPoint = PointRecord & { videoTimestamp: number };
 
@@ -25,29 +26,13 @@ const OUTCOME_LABELS: Record<PointRecord['outcome'], string> = {
   lost: '失点',
 };
 
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
-
 function hasVideoTimestamp(point: PointRecord): point is TimestampedPoint {
   return point.videoTimestamp !== undefined;
 }
 
-function formatVideoTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) {
-    return '0:00';
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
 export default function SessionVideoScreen() {
   const { colors } = useTheme();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session, sessionId } = useSession();
   const playerRef = useRef<VideoPlayerRef>(null);
   const requestedSeekRef = useRef<number | null>(null);
   const [durationSec, setDurationSec] = useState(0);
@@ -97,7 +82,7 @@ export default function SessionVideoScreen() {
     const isWon = item.outcome === 'won';
     return (
       <TouchableOpacity
-        accessibilityLabel={`${formatVideoTime(item.videoTimestamp)}のポイントを動画で確認`}
+        accessibilityLabel={`${formatSeconds(item.videoTimestamp)}のポイントを動画で確認`}
         accessibilityRole="button"
         activeOpacity={0.82}
         onPress={() => seekTo(item.videoTimestamp)}
@@ -115,7 +100,7 @@ export default function SessionVideoScreen() {
           style={[styles.pointDot, { backgroundColor: isWon ? colors.primary : colors.danger }]}
         />
         <Text style={[styles.pointTime, { color: colors.text }]}>
-          {formatVideoTime(item.videoTimestamp)}
+          {formatSeconds(item.videoTimestamp)}
         </Text>
         <View style={styles.pointBody}>
           <Text style={[styles.pointTitle, { color: colors.text }]} numberOfLines={1}>
@@ -174,7 +159,7 @@ export default function SessionVideoScreen() {
               const isWon = point.outcome === 'won';
               return (
                 <TouchableOpacity
-                  accessibilityLabel={`${formatVideoTime(point.videoTimestamp)}へ移動`}
+                  accessibilityLabel={`${formatSeconds(point.videoTimestamp)}へ移動`}
                   accessibilityRole="button"
                   activeOpacity={0.82}
                   key={point.id}

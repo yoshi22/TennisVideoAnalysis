@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,6 +20,7 @@ import {
   SegmentedControl,
 } from '@/components/common';
 import { AutoPointCard } from '@/components/scoring';
+import { useSession } from '@/hooks';
 import { analyzeRally, analyzeRallyBatch, detectRallyWindows } from '@/services/ball';
 import { proposeCandidates } from '@/services/scoring';
 import { useSessionStore } from '@/stores';
@@ -49,10 +50,6 @@ const SERVE_ATTEMPT_OPTIONS: { label: string; value: ServeAttemptValue }[] = [
   { label: '2nd', value: '2' },
 ];
 
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
-
 function isPointRecord(point: Partial<PointRecord>): point is PointRecord {
   return (
     typeof point.id === 'string' &&
@@ -68,9 +65,7 @@ function isPointRecord(point: Partial<PointRecord>): point is PointRecord {
 export default function AutoScoreScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(10);

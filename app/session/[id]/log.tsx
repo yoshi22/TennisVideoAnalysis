@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { PointLogSheet, PointScoreboard } from '@/components/point';
 import { MatchScoreboard } from '@/components/scoring';
 import { SERVE_RESULT_META } from '@/constants/serveResults';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { useSession } from '@/hooks';
 import { computeMatchScore } from '@/services/scoring';
 import { setPendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -23,10 +24,6 @@ const RESULT_REASON_LABELS: Record<string, string> = {
   out: 'アウト',
 };
 
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
-
 function formatDateTime(isoString: string): string {
   return new Date(isoString).toLocaleString('ja-JP', {
     month: 'numeric',
@@ -39,9 +36,7 @@ function formatDateTime(isoString: string): string {
 export default function SessionLogScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
   const deletePoint = useSessionStore((state) => state.deletePoint);
 

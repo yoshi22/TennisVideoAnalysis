@@ -1,11 +1,10 @@
-import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip, EmptyState } from '@/components/common';
 import { CourtChart } from '@/components/court';
-import { useSessionStore } from '@/stores/sessionStore';
+import { useSession } from '@/hooks';
 import { useTheme } from '@/theme';
 import { type ShotLocation } from '@/types';
 
@@ -17,19 +16,13 @@ const FILTERS: { key: OutcomeFilter; label: string }[] = [
   { key: 'lost', label: '失点 ○' },
 ];
 
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
-
 function hasLocation(location: ShotLocation | undefined): location is ShotLocation {
   return location !== undefined;
 }
 
 export default function CourtScreen() {
   const { colors } = useTheme();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session } = useSession();
   const [filter, setFilter] = useState<OutcomeFilter>('all');
 
   const shotLocations = useMemo(() => {

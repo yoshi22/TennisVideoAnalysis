@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, SectionHeader } from '@/components/common';
 import { CalibrationCanvas } from '@/components/court';
+import { useSession } from '@/hooks';
 import { buildCalibration, validateCalibration } from '@/services/court';
 import { extractStillFrame, type StillFrame } from '@/services/pose/frameSampler';
 import { useSessionStore } from '@/stores';
@@ -25,10 +26,6 @@ type CalibrationCorners = [ImagePoint, ImagePoint, ImagePoint, ImagePoint];
 
 const CANVAS_WIDTH = Dimensions.get('window').width;
 const CANVAS_HEIGHT = CANVAS_WIDTH * 0.75;
-
-function getParamId(id: string | string[] | undefined): string {
-  return Array.isArray(id) ? (id[0] ?? '') : (id ?? '');
-}
 
 function makeInitialCorners(): CalibrationCorners {
   return [
@@ -47,9 +44,7 @@ function getVideoDurationSec(session: TennisSession | undefined): number {
 export default function CourtCalibrationScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const sessionId = getParamId(id);
-  const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const { session, sessionId } = useSession();
   const setCourtCalibration = useSessionStore((state) => state.setCourtCalibration);
   const [corners, setCorners] = useState<CalibrationCorners>(() => makeInitialCorners());
   const [referenceFrame, setReferenceFrame] = useState<StillFrame | null>(null);
