@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
   Alert,
@@ -152,6 +153,7 @@ function SettingsRow({
   if (onPress) {
     return (
       <TouchableOpacity
+        accessibilityLabel={label}
         accessibilityRole="button"
         activeOpacity={0.82}
         onPress={onPress}
@@ -166,6 +168,7 @@ function SettingsRow({
 }
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { colors, mode } = useTheme();
   const profile = usePlayerStore((state) => state.profile);
   const setProfile = usePlayerStore((state) => state.setProfile);
@@ -354,10 +357,67 @@ export default function SettingsScreen() {
             />
             <SettingsRow
               colors={colors}
+              label="使い方を見る"
+              onPress={() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                router.push('/onboarding?replay=1' as any);
+              }}
+              showChevron
+            />
+            <SettingsRow
+              colors={colors}
               isLast
               label="バージョン"
               showChevron={false}
               value="1.0.0"
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionLabel colors={colors}>ヘルプ</SectionLabel>
+          <View
+            style={[
+              styles.groupCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <SettingsRow
+              colors={colors}
+              label="使い方ガイド"
+              onPress={() => {
+                router.push('/help' as Parameters<typeof router.push>[0]);
+              }}
+              showChevron
+            />
+            <SettingsRow
+              colors={colors}
+              isLast
+              label="撮影のコツ"
+              onPress={() => {
+                router.push('/recording-guide' as Parameters<typeof router.push>[0]);
+              }}
+              showChevron
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionLabel colors={colors}>データ</SectionLabel>
+          <View
+            style={[
+              styles.groupCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <SettingsRow
+              colors={colors}
+              isLast
+              label="エクスポート"
+              onPress={() => {
+                router.push('/help' as Parameters<typeof router.push>[0]);
+              }}
+              showChevron
             />
           </View>
         </View>

@@ -2,4 +2,8 @@ export * from './player';
 export * from './point';
 export * from './session';
 export * from './court';
+export * from './ball';
+export * from './scoring';
+export * from './matchScore';
 export * from './analysis';
+export * from './pose';

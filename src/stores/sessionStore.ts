@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { defaultStorage } from '@/services/storage';
-import { type PointRecord, type TennisSession } from '@/types';
+import { type CourtCalibration, type PointRecord, type TennisSession } from '@/types';
 
 interface SessionStoreState {
   sessions: TennisSession[];
@@ -11,6 +11,7 @@ interface SessionStoreState {
   deleteSession: (id: string) => void;
   addPoint: (sessionId: string, point: PointRecord) => void;
   deletePoint: (sessionId: string, pointId: string) => void;
+  setCourtCalibration: (sessionId: string, calibration: CourtCalibration | undefined) => void;
   clearAll: () => void;
 }
 
@@ -63,6 +64,14 @@ export const useSessionStore = create<SessionStoreState>()(
                   points: session.points.filter((point) => point.id !== pointId),
                   updatedAt: nowISO(),
                 }
+              : session
+          ),
+        })),
+      setCourtCalibration: (sessionId, calibration) =>
+        set((state) => ({
+          sessions: state.sessions.map((session) =>
+            session.id === sessionId
+              ? { ...session, courtCalibration: calibration, updatedAt: nowISO() }
               : session
           ),
         })),

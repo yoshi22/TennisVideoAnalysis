@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,7 +11,9 @@ import {
   SectionHeader,
   SessionCard,
   StatCard,
+  ToolEntryCard,
 } from '@/components/common';
+import { FormAnalysisEntryCard } from '@/components/pose';
 import { getAnalyzer } from '@/services/analysis';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -85,6 +87,11 @@ export default function HomeScreen() {
   const sessions = useSessionStore((s) => s.sessions);
   const sorted = useMemo(() => sortByDate(sessions), [sessions]);
   const latest = sorted[0] ?? null;
+  const videoSessions = useMemo(() => sorted.filter((session) => session.videoUri), [sorted]);
+  const calibratedVideoSessions = useMemo(
+    () => videoSessions.filter((session) => session.courtCalibration),
+    [videoSessions]
+  );
 
   const latestAnalysis = useMemo(() => (latest ? getAnalyzer().analyze(latest) : null), [latest]);
 
@@ -101,6 +108,67 @@ export default function HomeScreen() {
   // expo-router push() is typed strictly; cast once here rather than per-callsite
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const push = (path: string) => router.push(path as any);
+
+  const openSessionPicker = (
+    title: string,
+    pickerSessions: TennisSession[],
+    buildPath: (session: TennisSession) => string
+  ) => {
+    if (pickerSessions.length === 1) {
+      push(buildPath(pickerSessions[0]));
+      return;
+    }
+
+    Alert.alert(
+      title,
+      'セッションを選択してください。',
+      [
+        ...pickerSessions.map((session) => ({
+          text: session.title,
+          onPress: () => push(buildPath(session)),
+        })),
+        { text: 'キャンセル', style: 'cancel' as const },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const openCourtCalibration = () => {
+    if (videoSessions.length === 0) {
+      Alert.alert('セッションに動画がありません');
+      return;
+    }
+
+    openSessionPicker(
+      'コート較正',
+      videoSessions,
+      (session) => `/session/${session.id}/calibration`
+    );
+  };
+
+  const openAutoScore = () => {
+    if (videoSessions.length === 0) {
+      Alert.alert('セッションに動画がありません');
+      return;
+    }
+
+    if (calibratedVideoSessions.length === 0) {
+      Alert.alert('コート較正が必要です', '自動採点にはコート較正が必要です。', [
+        {
+          text: 'コート較正を開く',
+          onPress: () => push(`/session/${videoSessions[0].id}/calibration`),
+        },
+        { text: 'キャンセル', style: 'cancel' },
+      ]);
+      return;
+    }
+
+    openSessionPicker(
+      '自動採点（実験的）',
+      calibratedVideoSessions,
+      (session) => `/session/${session.id}/auto-score`
+    );
+  };
 
   const topStats = [
     {
@@ -172,6 +240,9 @@ export default function HomeScreen() {
               onPress: () => push('/session/new'),
             }}
           />
+          <View style={styles.emptyToolCard}>
+            <FormAnalysisEntryCard onPress={() => push('/form-analysis/new')} />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -246,6 +317,28 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Tools */}
+        <View style={styles.toolsSection}>
+          <SectionHeader title="ツール" />
+          <View style={styles.toolCardPad}>
+            <FormAnalysisEntryCard onPress={() => push('/form-analysis/new')} />
+            <ToolEntryCard
+              accessibilityLabel="コート較正を開く"
+              iconName="analytics-outline"
+              onPress={openCourtCalibration}
+              subtitle="動画からコートの座標を設定"
+              title="コート較正"
+            />
+            <ToolEntryCard
+              accessibilityLabel="自動採点を開く"
+              iconName="trophy-outline"
+              onPress={openAutoScore}
+              subtitle="動画からポイントを自動検出"
+              title="自動採点（実験的）"
+            />
+          </View>
+        </View>
+
         {/* Recent sessions */}
         <SectionHeader
           title="最近のセッション"
@@ -273,6 +366,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyToolCard: {
+    alignSelf: 'stretch',
+    paddingHorizontal: 20,
   },
   heroPad: {
     padding: 20,
@@ -362,6 +459,13 @@ const styles = StyleSheet.create({
   bannerTitle: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  toolsSection: {
+    paddingTop: 12,
+  },
+  toolCardPad: {
+    gap: 10,
+    paddingHorizontal: 20,
   },
   sessionList: {
     paddingHorizontal: 20,

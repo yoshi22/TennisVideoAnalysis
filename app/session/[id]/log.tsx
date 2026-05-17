@@ -1,12 +1,15 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/common';
 import { PointLogSheet, PointScoreboard } from '@/components/point';
+import { MatchScoreboard } from '@/components/scoring';
 import { SERVE_RESULT_META } from '@/constants/serveResults';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { computeMatchScore } from '@/services/scoring';
+import { setPendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
@@ -35,6 +38,7 @@ function formatDateTime(isoString: string): string {
 
 export default function SessionLogScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const { id } = useLocalSearchParams();
   const sessionId = getParamId(id);
   const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
@@ -44,32 +48,39 @@ export default function SessionLogScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pendingOutcome, setPendingOutcome] = useState<PointOutcome>('won');
 
-  const points = useMemo(
+  const chronologicalPoints = useMemo(
     () =>
       session
         ? [...session.points].sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
           )
         : [],
     [session]
   );
+  const points = useMemo(() => [...chronologicalPoints].reverse(), [chronologicalPoints]);
 
   const ourScore = useMemo(() => points.filter((p) => p.outcome === 'won').length, [points]);
   const oppScore = useMemo(() => points.filter((p) => p.outcome === 'lost').length, [points]);
+  const matchScore = useMemo(() => {
+    if (!session || session.sessionType !== 'match') {
+      return null;
+    }
+
+    return computeMatchScore(chronologicalPoints, session.sport);
+  }, [chronologicalPoints, session]);
 
   // Cumulative score per point (chronological)
   const cumulativeScores = useMemo(() => {
-    const chrono = [...points].reverse();
     let w = 0;
     let l = 0;
     return new Map(
-      chrono.map((p) => {
+      chronologicalPoints.map((p) => {
         if (p.outcome === 'won') w++;
         else l++;
         return [p.id, { w, l }];
       })
     );
-  }, [points]);
+  }, [chronologicalPoints]);
 
   const openSheet = (outcome: PointOutcome) => {
     setPendingOutcome(outcome);
@@ -108,6 +119,7 @@ export default function SessionLogScreen() {
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Scoreboard */}
+        {matchScore ? <MatchScoreboard matchScore={matchScore} /> : null}
         <PointScoreboard ourScore={ourScore} oppScore={oppScore} />
 
         {/* Win / Loss buttons */}
@@ -190,6 +202,23 @@ export default function SessionLogScreen() {
                             : ''}
                           {point.rallyCount} 球 ・ {formatDateTime(point.timestamp)}
                         </Text>
+                        {point.videoTimestamp !== undefined ? (
+                          <TouchableOpacity
+                            accessibilityLabel="動画で確認"
+                            accessibilityRole="button"
+                            onPress={() => {
+                              setPendingSeek(sessionId, point.videoTimestamp!);
+                              router.push(
+                                `/session/${sessionId}/video` as Parameters<typeof router.push>[0]
+                              );
+                            }}
+                            style={styles.videoJumpButton}
+                          >
+                            <Text style={[styles.videoJumpText, { color: colors.primary }]}>
+                              ▶ 動画で確認
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
                       </View>
                       <Text style={[styles.itemIndex, { color: colors.textMuted }]}>
                         #{points.length - idx}
@@ -313,6 +342,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
     fontVariant: ['tabular-nums'],
+  },
+  videoJumpButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    minHeight: 28,
+    justifyContent: 'center',
+  },
+  videoJumpText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   itemIndex: {
     fontSize: 11,

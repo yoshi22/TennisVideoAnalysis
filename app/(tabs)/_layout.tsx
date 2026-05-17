@@ -1,8 +1,16 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 
 import { CustomTabBar } from '@/components/common/CustomTabBar';
+import { useOnboardingStore } from '@/stores';
 
 export default function TabLayout() {
+  const hasCompletedOnboarding = useOnboardingStore((s) => s.hasCompletedOnboarding);
+
+  if (!hasCompletedOnboarding) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <Redirect href={'/onboarding' as any} />;
+  }
+
   return (
     <Tabs tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: 'ホーム' }} />

@@ -30,10 +30,43 @@ describe('ManualAnalyzer', () => {
 
   it('calculates win rate correctly', () => {
     const points: PointRecord[] = [
-      { id: '1', sessionId: 'test-session', timestamp: '2026-05-14T00:00:00.000Z', outcome: 'won', shotType: 'forehand', resultReason: 'winner', rallyCount: 3 },
-      { id: '2', sessionId: 'test-session', timestamp: '2026-05-14T00:00:01.000Z', outcome: 'won', shotType: 'serve', resultReason: 'winner', rallyCount: 1, serveResult: 'ace' },
-      { id: '3', sessionId: 'test-session', timestamp: '2026-05-14T00:00:02.000Z', outcome: 'lost', shotType: 'backhand', resultReason: 'unforcedError', rallyCount: 5 },
-      { id: '4', sessionId: 'test-session', timestamp: '2026-05-14T00:00:03.000Z', outcome: 'lost', shotType: 'forehand', resultReason: 'net', rallyCount: 2 },
+      {
+        id: '1',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:00.000Z',
+        outcome: 'won',
+        shotType: 'forehand',
+        resultReason: 'winner',
+        rallyCount: 3,
+      },
+      {
+        id: '2',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:01.000Z',
+        outcome: 'won',
+        shotType: 'serve',
+        resultReason: 'winner',
+        rallyCount: 1,
+        serveResult: 'ace',
+      },
+      {
+        id: '3',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:02.000Z',
+        outcome: 'lost',
+        shotType: 'backhand',
+        resultReason: 'unforcedError',
+        rallyCount: 5,
+      },
+      {
+        id: '4',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:03.000Z',
+        outcome: 'lost',
+        shotType: 'forehand',
+        resultReason: 'net',
+        rallyCount: 2,
+      },
     ];
     const session = makeSession(points);
     const result = analyzer.analyze(session);
@@ -43,9 +76,35 @@ describe('ManualAnalyzer', () => {
 
   it('calculates serve stats and average rally count', () => {
     const points: PointRecord[] = [
-      { id: '1', sessionId: 'test-session', timestamp: '2026-05-14T00:00:00.000Z', outcome: 'won', shotType: 'serve', resultReason: 'winner', rallyCount: 1, serveResult: 'firstIn' },
-      { id: '2', sessionId: 'test-session', timestamp: '2026-05-14T00:00:01.000Z', outcome: 'lost', shotType: 'serve', resultReason: 'unforcedError', rallyCount: 4, serveResult: 'secondIn' },
-      { id: '3', sessionId: 'test-session', timestamp: '2026-05-14T00:00:02.000Z', outcome: 'won', shotType: 'forehand', resultReason: 'winner', rallyCount: 7 },
+      {
+        id: '1',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:00.000Z',
+        outcome: 'won',
+        shotType: 'serve',
+        resultReason: 'winner',
+        rallyCount: 1,
+        serveResult: 'firstIn',
+      },
+      {
+        id: '2',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:01.000Z',
+        outcome: 'lost',
+        shotType: 'serve',
+        resultReason: 'unforcedError',
+        rallyCount: 4,
+        serveResult: 'secondIn',
+      },
+      {
+        id: '3',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:02.000Z',
+        outcome: 'won',
+        shotType: 'forehand',
+        resultReason: 'winner',
+        rallyCount: 7,
+      },
     ];
     const session = makeSession(points);
     const result = analyzer.analyze(session);

@@ -3,7 +3,7 @@
     "name": "CourtLens",
     "slug": "courtlens",
     "scheme": "courtlens",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -51,7 +51,14 @@
           "cameraPermission": "試合や練習の動画を撮影するために使用します"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-file-system",
+      [
+        "react-native-fast-tflite",
+        {
+          "enableCoreMLDelegate": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -51,6 +51,15 @@ export default function SessionLayout() {
         }}
       />
       <Tabs.Screen
+        name="video"
+        options={{
+          title: 'Video',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons color={color} name="videocam-outline" size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="court"
         options={{
           title: 'Court',
@@ -66,6 +75,33 @@ export default function SessionLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons color={color} name="bar-chart-outline" size={size} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="calibration"
+        options={{
+          href: null,
+          headerShown: true,
+          tabBarStyle: { display: 'none' },
+          title: 'コート較正',
+        }}
+      />
+      <Tabs.Screen
+        name="ball-trace"
+        options={{
+          href: null,
+          headerShown: true,
+          tabBarStyle: { display: 'none' },
+          title: 'ボール軌跡解析',
+        }}
+      />
+      <Tabs.Screen
+        name="auto-score"
+        options={{
+          href: null,
+          headerShown: true,
+          tabBarStyle: { display: 'none' },
+          title: '自動採点（実験的）',
         }}
       />
     </Tabs>

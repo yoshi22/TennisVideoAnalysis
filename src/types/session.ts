@@ -1,3 +1,4 @@
+import { type CourtCalibration } from './court';
 import { type MatchFormat, type SoftTennisPosition } from './player';
 import { type PointRecord } from './point';
 
@@ -16,6 +17,7 @@ interface BaseSession {
   opponentName?: string;
   // local URI
   videoUri?: string;
+  courtCalibration?: CourtCalibration;
   points: PointRecord[];
   note?: string;
   // ISO 8601

@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, SectionHeader, SegmentedControl } from '@/components/common';
@@ -79,6 +80,24 @@ export default function NewSessionScreen() {
           headerTintColor: colors.surface,
           headerTitleStyle: { fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
+          headerBackVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              accessibilityLabel="戻る"
+              accessibilityRole="button"
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  router.replace('/' as any);
+                }
+              }}
+              style={styles.backButton}
+            >
+              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -111,6 +130,21 @@ export default function NewSessionScreen() {
                 variant="secondary"
                 size="s"
               />
+              <TouchableOpacity
+                accessibilityLabel="撮影のコツを見る"
+                accessibilityRole="button"
+                onPress={() => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  router.push('/recording-guide' as any);
+                }}
+                style={styles.recordingGuideLink}
+              >
+                <Ionicons color={colors.textMuted} name="camera-outline" size={12} />
+                <Text style={[styles.recordingGuideLinkText, { color: colors.textMuted }]}>
+                  撮影のコツ
+                </Text>
+                <Ionicons color={colors.textMuted} name="chevron-forward" size={12} />
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -280,5 +314,21 @@ const styles = StyleSheet.create({
   },
   sessionTypeControl: {
     width: 720,
+  },
+  backButton: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  recordingGuideLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  recordingGuideLinkText: {
+    fontSize: 11,
   },
 });

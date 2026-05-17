@@ -11,6 +11,7 @@ import { useTheme } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 type Size = 's' | 'm' | 'l';
+type Tone = 'default' | 'danger';
 
 interface ButtonProps {
   label?: string;
@@ -23,6 +24,7 @@ interface ButtonProps {
   full?: boolean;
   style?: ViewStyle;
   accessibilityLabel?: string;
+  tone?: Tone;
 }
 
 export function Button({
@@ -36,13 +38,16 @@ export function Button({
   full,
   style,
   accessibilityLabel,
+  tone = 'default',
 }: ButtonProps) {
   const { colors } = useTheme();
   const isDisabled = disabled === true || loading === true;
 
   const bgColor =
     variant === 'primary'
-      ? colors.primary
+      ? tone === 'danger'
+        ? colors.danger
+        : colors.primary
       : variant === 'danger'
         ? colors.danger
         : variant === 'ghost'
@@ -53,10 +58,17 @@ export function Button({
     variant === 'primary' || variant === 'danger'
       ? colors.surface
       : variant === 'ghost'
-        ? colors.primary
+        ? tone === 'danger'
+          ? colors.danger
+          : colors.primary
         : colors.text;
 
-  const borderColor = variant === 'ghost' ? colors.border : bgColor;
+  const borderColor =
+    variant === 'ghost' && tone === 'danger'
+      ? colors.danger
+      : variant === 'ghost'
+        ? colors.border
+        : bgColor;
   const fontSize = size === 's' ? 13 : size === 'l' ? 16 : 14;
   const paddingV = size === 's' ? 8 : size === 'l' ? 14 : 10;
   const paddingH = size === 's' ? 12 : size === 'l' ? 20 : 16;

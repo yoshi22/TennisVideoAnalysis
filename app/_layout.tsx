@@ -13,10 +13,11 @@ import {
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useOnboardingStore } from '@/stores';
 import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -44,14 +45,27 @@ export default function RootLayout() {
     NotoSansJP_600SemiBold,
     NotoSansJP_700Bold,
   });
+  const [onboardingHydrated, setOnboardingHydrated] = useState(
+    useOnboardingStore.persist.hasHydrated()
+  );
 
   useEffect(() => {
-    if (fontsLoaded) {
+    const unsub = useOnboardingStore.persist.onFinishHydration(() => setOnboardingHydrated(true));
+
+    if (useOnboardingStore.persist.hasHydrated()) {
+      setOnboardingHydrated(true);
+    }
+
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && onboardingHydrated) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, onboardingHydrated]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !onboardingHydrated) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

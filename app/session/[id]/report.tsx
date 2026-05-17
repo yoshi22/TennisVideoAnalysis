@@ -1,12 +1,24 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs, useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, CourtLines, Donut, EmptyState, SectionHeader, Tag } from '@/components/common';
+import {
+  Card,
+  CourtLines,
+  Donut,
+  EmptyState,
+  ExportMenu,
+  SectionHeader,
+  Tag,
+  ToolEntryCard,
+} from '@/components/common';
 import { CourtHeatmap } from '@/components/court';
+import { FormAnalysisEntryCard } from '@/components/pose';
 import { SHOT_TYPE_META, SHOT_TYPES } from '@/constants/shotTypes';
 import { getAnalyzer } from '@/services/analysis';
+import { computeMatchScore } from '@/services/scoring';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import {
@@ -69,10 +81,24 @@ function formatDate(isoString: string): string {
 
 export default function ReportScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const { id } = useLocalSearchParams();
   const sessionId = getParamId(id);
   const session = useSessionStore((state) => state.sessions.find((item) => item.id === sessionId));
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const analysis = useMemo(() => (session ? getAnalyzer().analyze(session) : null), [session]);
+  const matchScore = useMemo(
+    () =>
+      session && session.sessionType === 'match'
+        ? computeMatchScore(
+            [...session.points].sort(
+              (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            ),
+            session.sport
+          )
+        : undefined,
+    [session]
+  );
   const shotBreakdown = useMemo(() => (session ? calculateShotBreakdown(session) : []), [session]);
   const locations = useMemo(
     () => (session ? session.points.map((p) => p.shotLocation).filter(hasLocation) : []),
@@ -92,6 +118,7 @@ export default function ReportScreen() {
   const wonCount = session.points.filter((p) => p.outcome === 'won').length;
   const lostCount = session.points.filter((p) => p.outcome === 'lost').length;
   const totalPoints = session.points.length;
+  const sessionVideoUri = session.videoUri;
 
   const donutItems = shotBreakdown
     .filter((s) => s.total > 0)
@@ -102,6 +129,20 @@ export default function ReportScreen() {
 
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Tabs.Screen
+        options={{
+          headerRight: () => (
+            <TouchableOpacity
+              accessibilityLabel="エクスポート"
+              accessibilityRole="button"
+              onPress={() => setExportMenuOpen(true)}
+              style={styles.headerButton}
+            >
+              <Ionicons color={colors.surface} name="share-outline" size={23} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero card */}
         <View style={[styles.hero, { backgroundColor: colors.primary }]}>
@@ -358,6 +399,55 @@ export default function ReportScreen() {
           )}
         </View>
 
+        {sessionVideoUri ? (
+          <View>
+            <SectionHeader title="フォーム分析" />
+            <FormAnalysisEntryCard
+              onPress={() => {
+                const href = {
+                  pathname: '/form-analysis/select',
+                  params: { videoUri: sessionVideoUri, shotType: 'forehand' },
+                };
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                router.push(href as any);
+              }}
+            />
+          </View>
+        ) : null}
+
+        {sessionVideoUri ? (
+          <View>
+            <SectionHeader title="コート較正" />
+            <ToolEntryCard
+              accessibilityLabel="コート較正を開く"
+              badgeLabel={session.courtCalibration ? '設定済み' : undefined}
+              iconName="analytics-outline"
+              onPress={() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                router.push(`/session/${session.id}/calibration` as any);
+              }}
+              subtitle="動画からコートの座標を設定"
+              title="コート較正"
+            />
+          </View>
+        ) : null}
+
+        {sessionVideoUri && session.courtCalibration ? (
+          <View>
+            <SectionHeader title="自動採点" />
+            <ToolEntryCard
+              accessibilityLabel="自動採点を開く"
+              iconName="trophy-outline"
+              onPress={() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                router.push(`/session/${session.id}/auto-score` as any);
+              }}
+              subtitle="動画からポイントを自動検出"
+              title="自動採点（実験的）"
+            />
+          </View>
+        ) : null}
+
         {session.sport === 'softTennis' && session.matchFormat === 'doubles' ? (
           <View>
             <SectionHeader title="前衛コーチング" />
@@ -369,6 +459,14 @@ export default function ReportScreen() {
           </View>
         ) : null}
       </ScrollView>
+      {exportMenuOpen ? (
+        <ExportMenu
+          analysis={analysis}
+          matchScore={matchScore}
+          onClose={() => setExportMenuOpen(false)}
+          session={session}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -380,6 +478,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+  },
+  headerButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    minHeight: 44,
+    minWidth: 44,
   },
   content: {
     padding: 20,
