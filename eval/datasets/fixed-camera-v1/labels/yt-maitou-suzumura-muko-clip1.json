@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "videoId": "yt-maitou-suzumura-muko-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=OUVjrjDr0Ww",
+  "sourceSha256": "",
+  "fps": 30,
+  "clipOffsetSec": 0,
+  "note": "杉村太蔵 vs 向和彦 at 大正セントラルテニスクラブ目白 2023.10.25. Fixed-camera singles, hard court. Clip 0-600s. Camera: behind near baseline (向 side in game 1, 杉村 side in game 2+). Score overlay visible top-left. Labeled via 3fps frame sampling; boundary accuracy ±5s. Game 1 服: 杉村 (far end). Game 2: 向 (after end change). Game 3: 杉村.",
+  "rallies": [
+    {
+      "startSec": 11.0,
+      "endSec": 27.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 52.0,
+      "endSec": 64.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 87.0,
+      "endSec": 97.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 109.0,
+      "endSec": 136.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 144.0,
+      "endSec": 155.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 163.0,
+      "endSec": 177.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 215.0,
+      "endSec": 241.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 258.0,
+      "endSec": 270.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 280.0,
+      "endSec": 293.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 315.0,
+      "endSec": 328.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 368.0,
+      "endSec": 378.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 383.0,
+      "endSec": 395.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 406.0,
+      "endSec": 418.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 422.0,
+      "endSec": 445.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 463.0,
+      "endSec": 490.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 503.0,
+      "endSec": 516.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 527.0,
+      "endSec": 543.0,
+      "server": "near",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 555.0,
+      "endSec": 572.0,
+      "server": "near",
+      "winner": null,
+      "endReason": null
+    }
+  ]
+}

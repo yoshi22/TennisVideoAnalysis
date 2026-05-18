@@ -44,3 +44,9 @@ yarn-error.*
 
 # IDE / agent tools
 .serena/
+
+# Eval harness — raw videos and frames (large, may be copyrighted)
+eval/datasets/**/videos/
+eval/datasets/**/clips/
+eval/datasets/**/frames/
+eval/results/

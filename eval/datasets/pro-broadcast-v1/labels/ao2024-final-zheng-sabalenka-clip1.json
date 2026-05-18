@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "videoId": "ao2024-final-zheng-sabalenka-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=8EShbWpBm_0",
+  "sourceSha256": "7a750f9ba942e2e2602c96038fcc244dd0cfeab2f0a86543600a6b46ddb59605",
+  "fps": 25,
+  "clipOffsetSec": 1680,
+  "note": "AO 2024 Final — Zheng Qinwen vs Aryna Sabalenka. Set 2 progress. Labeled via 5s-interval frame scan; boundary accuracy ±5s.",
+  "rallies": [
+    {
+      "startSec": 23.0,
+      "endSec": 43.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 62.0,
+      "endSec": 68.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "unforcedError"
+    },
+    {
+      "startSec": 123.0,
+      "endSec": 148.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 162.0,
+      "endSec": 168.0,
+      "server": "near",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 173.0,
+      "endSec": 183.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 212.0,
+      "endSec": 218.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "ace"
+    },
+    {
+      "startSec": 233.0,
+      "endSec": 258.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 285.0,
+      "endSec": 312.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 338.0,
+      "endSec": 363.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 413.0,
+      "endSec": 438.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 488.0,
+      "endSec": 538.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": "forcedError"
+    },
+    {
+      "startSec": 587.0,
+      "endSec": 600.0,
+      "server": "near",
+      "winner": null,
+      "endReason": null
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "videoId": "wimb2024-final-alcaraz-djokovic-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=X2sc2ThEHy0",
+  "sourceSha256": "7fbf4f5b6a59b3d6c35d45758a8ed5c33ff679a9180a0ceb1679623eaa1ce1b7",
+  "fps": 25,
+  "clipOffsetSec": 0,
+  "note": "Wimbledon 2024 Final — Carlos Alcaraz vs Novak Djokovic. Marathon opening game (Djokovic serving, 7+ deuces, Alcaraz breaks). Labeled via 5-10s-interval frame scan; boundary accuracy ±8s. GAME DURATION: 7:41 visible at clip 90s confirms clip starts mid-game. Final scoreboard (Alcaraz 1-0) visible at clip 460s.",
+  "rallies": [
+    {
+      "startSec": 13.0,
+      "endSec": 22.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 28.0,
+      "endSec": 42.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": null
+    },
+    {
+      "startSec": 52.0,
+      "endSec": 63.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 68.0,
+      "endSec": 83.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 95.0,
+      "endSec": 107.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 113.0,
+      "endSec": 130.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": null
+    },
+    {
+      "startSec": 168.0,
+      "endSec": 183.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": null
+    },
+    {
+      "startSec": 200.0,
+      "endSec": 225.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": null
+    },
+    {
+      "startSec": 253.0,
+      "endSec": 267.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 290.0,
+      "endSec": 313.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": null
+    },
+    {
+      "startSec": 330.0,
+      "endSec": 347.0,
+      "server": "far",
+      "winner": "far",
+      "endReason": null
+    },
+    {
+      "startSec": 358.0,
+      "endSec": 372.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 377.0,
+      "endSec": 393.0,
+      "server": "far",
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 430.0,
+      "endSec": 453.0,
+      "server": "far",
+      "winner": "near",
+      "endReason": "winner"
+    },
+    {
+      "startSec": 518.0,
+      "endSec": 530.0,
+      "server": "near",
+      "winner": "far",
+      "endReason": null
+    },
+    {
+      "startSec": 554.0,
+      "endSec": 578.0,
+      "server": "near",
+      "winner": "near",
+      "endReason": null
+    }
+  ]
+}
