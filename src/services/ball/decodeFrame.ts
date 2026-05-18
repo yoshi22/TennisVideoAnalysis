@@ -1,17 +1,16 @@
 import { File } from 'expo-file-system';
 import jpeg from 'jpeg-js';
 
-const TARGET_WIDTH = 320;
+import { type DecodedFrame } from './core/types';
 
-export interface DecodedFrame {
-  gray: Uint8Array;
-  width: number;
-  height: number;
-}
+export type { DecodedFrame } from './core/types';
+
+const TARGET_WIDTH = 320;
 
 /**
  * Reads a JPEG file URI, decodes it, and returns a grayscale pixel buffer
  * resized to TARGET_WIDTH (nearest-neighbor). Keeps aspect ratio.
+ * React Native only — use decodeFrame.node.ts for Node environments.
  */
 export async function decodeFrameGray(uri: string): Promise<DecodedFrame> {
   const file = new File(uri);
@@ -28,7 +27,6 @@ export async function decodeFrameGray(uri: string): Promise<DecodedFrame> {
       const srcX = Math.min(Math.floor(x / scale), srcW - 1);
       const srcY = Math.min(Math.floor(y / scale), srcH - 1);
       const idx = (srcY * srcW + srcX) * 4;
-      // Luminance approximation
       gray[y * dstW + x] = Math.round(
         0.299 * rgba[idx] + 0.587 * rgba[idx + 1] + 0.114 * rgba[idx + 2]
       );

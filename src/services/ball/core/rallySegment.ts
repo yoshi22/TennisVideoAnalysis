@@ -18,7 +18,7 @@ const DEFAULT_GAP_TOLERANCE_SEC = 3;
 // On fixed-camera footage, rally frames contain simultaneous motion from both players
 // AND the ball, producing a higher blob count than inter-point frames where players
 // are stationary. Empirically tuned on muko-clip1 (1798 frames, 18 GT rallies):
-// blob ≥ 11 separates rally activity from inter-point noise (iter-fc2, F1≈0.585).
+// blob ≥ 11 separates rally activity from inter-point noise (iter-fc2, F1=0.632).
 // This is the INVERSE of the broadcast heuristic (which used blob ≤ 20 to exclude closeups).
 const MIN_FIXED_CAM_RALLY_BLOBS = 11;
 

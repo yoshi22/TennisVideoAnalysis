@@ -183,10 +183,136 @@ blob 数が少ない = ボール有り、という仮定が成立していた。
 
 ## 次のステップ
 
-1. clip2 (muko-clip2) と fukui-clip1 のラベリング（dev set 拡充）
-2. iter 1 codex 実行（上記ブリーフで）
-3. iter 1 結果スコア → F1 改善を確認
-4. dev set 5+ 本になったら iter ループ本格化
+1. ~~iter 1 アルゴリズム改修~~ → **完了（F1=0.512）** (commit c05669c)
+2. iter 2: 精度改善（FP 削減）
+3. clip2 (muko-clip2) と fukui-clip1 のラベリング（dev set 拡充）
+4. dev set 3 本揃った時点で iter ループ本格化
+
+---
+
+## Phase C: iter ループ
+
+### iter-fc1 結果（2026-05-19）
+
+**変更点**:
+- `playerMask.ts` 追加: `removeLargeRegions()` — 選手シルエット由来の大 CC を除去（効果は限定的だったが将来チューニング基盤として有用）
+- `rallySegment.ts`: `isActiveRallyFrame(n ≥ 13)` — 固定カメラでは rally 中に player+ball 双方が動くため blob 数が多い（≥13）という逆相関を利用
+- `DEFAULT_MAX_DURATION_SEC` 90 → 25、`DEFAULT_GAP_TOLERANCE_SEC` 5 → 3
+- `mergeOverlappingWindows` に hard cap 追加（cascade merge 防止）
+- `run-stage1.ts`: clips 削除後でも `framePaths.length/fps` で正確な duration を計算（582s ではなく 600s）
+
+| 指標 | fixed-baseline | iter-fc1 |
+|---|---|---|
+| Event F1 | 0.000 | **0.512** |
+| Precision | 0.000 | 0.440 |
+| Recall | 0.000 | 0.611 |
+| IoU mean | 0.000 | 0.711 |
+| FP sec/min | 9.0 | 19.97 |
+| GT rallies | 18 | 18 |
+| Detected | 1 | 25 |
+| TP | 0 | 11 |
+
+**根本的な発見**: 固定カメラでは `blob >= 13` が rally/inter-point を分離する。Broadcast 版（`blob 1-20 = ball present`）と逆の仮説が成立。タイムスタンプの正確な計算も重要（-17s ドリフト修正で F1 0.350 → 0.512 に向上）。
+
+**主な課題（iter 2 への課題）**:
+- TP=11/18 (Recall=0.611): 残る FN = GT[109-136], [280-293], [383-395], [406-418], [422-445], [463-490], [555-572]
+- FP=14/25 (Precision=0.440): 偽陽性が多い
+- IoU near-miss: [306,326] IoU=0.47 with GT[315,328] — あと 3s ずれれば TP
+
+---
+
+### iter-fc2 結果（2026-05-19）
+
+**変更点**:
+- `MIN_FIXED_CAM_RALLY_BLOBS` 13 → 11（dev set 分析で最適閾値を再調整）
+- `DEFAULT_MAX_DURATION_SEC` 25 → 30（最長 GT ラリー 27s に余裕を持たせる）
+- `DEFAULT_GAP_TOLERANCE_SEC` 変更なし（3s 維持）
+- `mergeDetectionsIntoWindows` に `maxDurationSec` 引数を追加し `mergeOverlappingWindows` へ正しく渡す
+
+| 指標 | iter-fc1 | iter-fc2 |
+|---|---|---|
+| Event F1 | 0.512 | **0.632** |
+| Precision | 0.440 | 0.600 |
+| Recall | 0.611 | 0.667 |
+| IoU mean | 0.711 | 0.610 |
+| FP sec/min | 19.97 | 16.17 |
+| GT rallies | 18 | 18 |
+| Detected | 25 | 20 |
+| TP | 11 | 12 |
+
+**FP/FN の詳細分析（iter-fc2 実装後）**:
+
+| 分類 | ラリー | best IoU | 原因 |
+|---|---|---|---|
+| FN | GT[109,136] | 0.407 | 検出窓が 109-120 で終了。116-125s に 4s の空白があり gap_tol=3s で分割 |
+| FN | GT[368,378] | 0.104 | 活動が 373s から始まり GT 開始 368s に 5s 遅れる |
+| FN | GT[383,395] | 0.443 | 検出 [374.5,401.6] が GT[368,378]+GT[383,395] を 1 つにまとめ IoU が低下 |
+| FN | GT[422,445] | 0.004 | 活動が 1.7s+2s の 2 バーストのみ（gap 3.3s）。いずれも min_dur=4s 未満 |
+| FN | GT[463,490] | 0.479 | 検出 [461.6,476.6] は正確だが GT は 474-490s の無動作期間を含む（ラベル精度問題の疑い） |
+| FN | GT[503,516] | 0.459 | 検出が 492s（サーブ前準備）から開始、GT は 503s から。11s の先行起動 |
+
+**天井の確認**:
+- Python シミュレーション（grid search: min_blobs=[10,11], gap_tol=[3,4], max_dur=[30,35,40]）で F1>0.640 となる組み合わせはゼロ
+- パラメータ変更は必ずゼロサムトレードオフ（一つの FN を解消すると別の TP が FN 化）
+- **blob カウント単独では clip1 での F1=0.632 が実質的な天井**
+
+---
+
+### iter-fc3 試験（2026-05-19）— min_blobs=10 試験（却下）
+
+**仮説**: `MIN_FIXED_CAM_RALLY_BLOBS` を 11→10 に下げることで GT[422,445] の疎な活動バーストを捕捉できるか。
+
+**結果（clip1 のみ）**:
+| 指標 | iter-fc2 | iter-fc3(試験) |
+|---|---|---|
+| Event F1 | **0.632** | 0.550 |
+| Precision | 0.600 | 0.500 |
+| Recall | 0.667 | 0.611 |
+| TP | 12 | 11 |
+| FP | 8 | 11 |
+| Detected | 20 | 22 |
+
+**判定**: 却下。閾値 10 は FP を増やしつつ TP も減少（strict worse）。min_blobs=11 に戻す。
+
+---
+
+### dev set 拡充（2026-05-19）— muko-clip2 自動ラベリング
+
+clip1（18 ラリー）のみでは iter が収束。muko-clip2（600-1200s）の密度プロファイルを生成し、blob 密度から自動 GT ラベルを作成（**循環ラベル: 現行アルゴリズムの検出窓を基に作成のため iter 評価には clip1 のみ使用**）。
+
+- `scripts/eval/debug-density.ts` を新規作成: 現行パイプラインで per-frame blob/motion プロファイルを出力
+- `eval/datasets/fixed-camera-v1/labels/yt-maitou-suzumura-muko-clip2.json` を作成（17 ラリー、±7s 精度）
+
+2 動画 aggregate 参考値（iter-fc2 アルゴリズム）:
+| 指標 | clip1（独立ラベル） | clip2（循環ラベル） | aggregate |
+|---|---|---|---|
+| Event F1 | **0.632** | 1.000 | 0.816 |
+
+**注意**: clip2 の F1=1.000 は循環ラベルによるもの。aggregate 0.816 は過大評価。Stage 1 の信頼できる指標は clip1 F1=0.632。
+
+---
+
+## 現状とアルゴリズムの限界
+
+### blob カウント手法の天井（clip1, 2026-05-19 時点）
+
+| 手法 | clip1 F1 |
+|---|---|
+| fixed-baseline | 0.000 |
+| iter-fc1 (blob ≥ 13) | 0.512 |
+| iter-fc2 (blob ≥ 11) | **0.632** |
+| iter-fc3 試験 (blob ≥ 10) | 0.550 (却下) |
+
+**根本的な制約**: 選手の「ポイント後移動」「サーブ準備」がラリー中の動きと blob カウント上で区別できない。以下の 3 つのシナリオはいずれも blob ≥ 11 を生成する:
+1. ラリー中（選手 + ボールが同時に動く）
+2. ポイント後の選手移動（相手コートへ移動、ボール拾い）
+3. サーブ前準備（サーバーがベースラインに移動、バウンド）
+
+### Stage 1 目標（F1 ≥ 0.85）到達のための次ステップ候補
+
+1. **独立ラベルの追加**（muko-clip2 目視検証 + fukui-clip1 ラベリング）: 3 動画 dev set で iter の信頼性向上
+2. **新シグナル導入**: blob カウント以外のシグナル（例: 選手静止検出、サーブ検出+タイマー、ボール軌跡推定）
+3. **ML アプローチ**: blob カウント時系列への 1D CNN/LSTM 適用
 
 ---
 
@@ -196,4 +322,10 @@ blob 数が少ない = ボール有り、という仮定が成立していた。
 |---|---|
 | `scripts/eval/lib/frameSampler.node.ts` | `-q:v 5`, `scale=1280:-1` 追加でディスク使用量 44% 削減 |
 | `eval/datasets/fixed-camera-v1/labels/yt-maitou-suzumura-muko-clip1.json` | 新規作成（18 ラリー、±5s 精度） |
-| `eval/results/fixed-baseline/` | Phase B ベースライン結果（F1=0.000） |
+| `eval/datasets/fixed-camera-v1/labels/yt-maitou-suzumura-muko-clip2.json` | 新規作成（17 ラリー、±7s 精度、自動生成・循環ラベル） |
+| `src/services/ball/core/playerMask.ts` | 新規作成: `removeLargeRegions()` |
+| `src/services/ball/core/rallySegment.ts` | 固定カメラ向けアルゴリズム全面書き直し。`MIN_FIXED_CAM_RALLY_BLOBS=11` が最適値 |
+| `scripts/eval/run-stage1.ts` | clip 削除後の duration 計算修正 |
+| `scripts/eval/debug-density.ts` | 新規: 現行パイプラインで per-frame blob/motion プロファイルを TSV 出力 |
+| `scripts/eval/detect-clip2.ts` | 新規: clip2 に検出器を実行するワンショットスクリプト（デバッグ用） |
+| `__tests__/services/ball/core/playerMask.test.ts` | 新規ユニットテスト |

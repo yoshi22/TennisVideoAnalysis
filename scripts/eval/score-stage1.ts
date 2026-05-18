@@ -13,17 +13,26 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { computePerVideoMetrics, aggregateMetrics } from './lib/metrics';
 import type {
-  EvalMetrics, VideoRunResult, GroundTruth, PerVideoMetrics, RegressionGuard,
+  EvalMetrics,
+  VideoRunResult,
+  GroundTruth,
+  PerVideoMetrics,
+  RegressionGuard,
 } from './lib/types';
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const get = (flag: string) => { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; };
+  const get = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i >= 0 ? args[i + 1] : null;
+  };
   const runId = get('--run-id');
   const dataset = get('--dataset');
   const baselineRunId = get('--baseline-run-id');
   if (!runId || !dataset) {
-    console.error('Usage: npm run eval:score -- --run-id <id> --dataset <name> [--baseline-run-id <id>]');
+    console.error(
+      'Usage: npm run eval:score -- --run-id <id> --dataset <name> [--baseline-run-id <id>]'
+    );
     process.exit(1);
   }
   return { runId, dataset, baselineRunId };
@@ -111,4 +120,7 @@ async function main() {
   console.log(`\nMetrics written to ${metricsPath}`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -9,8 +9,8 @@ import { computePeakSpeedKmh } from './serveSpeed';
 import { trackBall } from './tracker';
 import { sampleFrames } from '../pose/frameSampler';
 
-export type { RallyWindow, DetectRallyWindowsOptions } from './autoSegment';
-export { detectRallyWindows, analyzeRallyBatch } from './autoSegment';
+export type { RallyWindow, DetectRallyWindowsOptions, FrameWithTimestamp } from './autoSegment';
+export { detectRallyWindows, analyzeRallyBatch, detectRallyWindowsFromFrames } from './autoSegment';
 export { computeSpeedSamples, computePeakSpeedKmh } from './serveSpeed';
 export type { SpeedSample } from './serveSpeed';
 

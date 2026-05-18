@@ -19,17 +19,34 @@ export interface CodexHandoffContext {
  * Paste or stream to mcp__codex__codex as the `prompt` field.
  */
 export function buildCodexPrompt(ctx: CodexHandoffContext): string {
-  const { stage, currentMetrics, baselineMetrics, failingVideos, svgTimelines, allowedFiles, forbiddenFiles, constraints } = ctx;
+  const {
+    stage,
+    currentMetrics,
+    baselineMetrics,
+    failingVideos,
+    svgTimelines,
+    allowedFiles,
+    forbiddenFiles,
+    constraints,
+  } = ctx;
 
   const metricsDiff = baselineMetrics
     ? {
-        eventF1Delta: +(currentMetrics.aggregate.eventF1 - baselineMetrics.aggregate.eventF1).toFixed(3),
-        iouMeanDelta: +(currentMetrics.aggregate.iouMean - baselineMetrics.aggregate.iouMean).toFixed(3),
+        eventF1Delta: +(
+          currentMetrics.aggregate.eventF1 - baselineMetrics.aggregate.eventF1
+        ).toFixed(3),
+        iouMeanDelta: +(
+          currentMetrics.aggregate.iouMean - baselineMetrics.aggregate.iouMean
+        ).toFixed(3),
       }
     : null;
 
   let gitSha = 'unknown';
-  try { gitSha = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* ignore */ }
+  try {
+    gitSha = execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    /* ignore */
+  }
 
   const prompt = {
     task: `Improve Stage ${stage} rally detection accuracy in CourtLens`,

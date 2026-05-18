@@ -9,7 +9,14 @@
     "web": "expo start --web",
     "test": "jest",
     "type-check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint . --ext .ts,.tsx",
+    "eval:fetch": "tsx scripts/eval/fetch-video.ts",
+    "eval:clip": "tsx scripts/eval/clip-video.ts",
+    "eval:frames": "tsx scripts/eval/extract-frames.ts",
+    "eval:run1": "tsx scripts/eval/run-stage1.ts",
+    "eval:score": "tsx scripts/eval/score-stage1.ts",
+    "eval:viz": "tsx scripts/eval/visualize.ts",
+    "eval:stage1": "npm run eval:run1 -- $@ && npm run eval:score -- $@"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -60,6 +67,7 @@
     "jest-expo": "~54.0.17",
     "prettier": "^3.8.3",
     "sharp": "^0.34.5",
+    "tsx": "^4.22.1",
     "typescript": "~5.9.2"
   },
   "private": true

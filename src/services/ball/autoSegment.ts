@@ -1,35 +1,30 @@
 import { sampleFrames } from '@/services/pose/frameSampler';
 
-import { detectBlobs } from './blobDetect';
 import { decodeFrameGray } from './decodeFrame';
-import { computeMotionMask } from './frameDiff';
+import {
+  detectRallyWindowsFromFrames,
+  type FrameWithTimestamp,
+  type RallySegmentOptions,
+  type RallyWindow,
+} from './core/rallySegment';
 import { analyzeRally, type AnalyzeRallyOptions, type RallyAnalysis } from './index';
 
-export interface RallyWindow {
-  startSec: number;
-  endSec: number;
-  /** 0..1 estimate of detection confidence for this window */
-  confidence: number;
-}
+export type { RallyWindow, FrameWithTimestamp };
+export { detectRallyWindowsFromFrames };
 
-export interface DetectRallyWindowsOptions {
+export interface DetectRallyWindowsOptions extends RallySegmentOptions {
   videoUri: string;
   videoDurationSec: number;
   signal?: AbortSignal;
   onProgress?: (progress: number) => void;
   /** Scan FPS (default: 3) */
   scanFps?: number;
-  /** Minimum rally duration in seconds (default: 2) */
-  minDurationSec?: number;
-  /** Maximum rally duration in seconds (default: 30) */
-  maxDurationSec?: number;
-  /** Max gap between detections to treat as same rally in seconds (default: 0.5) */
-  gapToleranceSec?: number;
 }
 
 /**
  * Scans the full video at low fps and identifies time windows where ball candidates exist.
  * Returns merged rally windows sorted chronologically.
+ * React Native only — for Node eval use detectRallyWindowsFromFrames + decodeFrame.node.ts.
  */
 export async function detectRallyWindows(opts: DetectRallyWindowsOptions): Promise<RallyWindow[]> {
   const {
@@ -38,9 +33,9 @@ export async function detectRallyWindows(opts: DetectRallyWindowsOptions): Promi
     signal,
     onProgress,
     scanFps = 3,
-    minDurationSec = 2,
-    maxDurationSec = 30,
-    gapToleranceSec = 0.5,
+    minDurationSec,
+    maxDurationSec,
+    gapToleranceSec,
   } = opts;
 
   if (videoDurationSec <= 0) {
@@ -53,72 +48,26 @@ export async function detectRallyWindows(opts: DetectRallyWindowsOptions): Promi
 
   if (signal?.aborted) return [];
 
-  const ballPresentAt: number[] = [];
-
-  for (let i = 1; i < sampledFrames.length - 1; i++) {
+  // Decode all frames upfront so the pure core function can process them
+  const framesWithTimestamp: FrameWithTimestamp[] = [];
+  for (let i = 0; i < sampledFrames.length; i++) {
     if (signal?.aborted) break;
-
     try {
-      const [prev, curr, next] = await Promise.all([
-        decodeFrameGray(sampledFrames[i - 1].uri),
-        decodeFrameGray(sampledFrames[i].uri),
-        decodeFrameGray(sampledFrames[i + 1].uri),
-      ]);
-      const mask = computeMotionMask(prev, curr, next);
-      const blobs = detectBlobs(mask, curr.width, curr.height);
-
-      if (blobs.length > 0) {
-        ballPresentAt.push(sampledFrames[i].timeSec);
-      }
+      const decoded = await decodeFrameGray(sampledFrames[i].uri);
+      framesWithTimestamp.push({ decoded, timeSec: sampledFrames[i].timeSec });
     } catch {
       // Skip undecodable frames
     }
-
-    onProgress?.(0.3 + (i / sampledFrames.length) * 0.6);
+    onProgress?.(0.3 + (i / sampledFrames.length) * 0.55);
   }
 
-  onProgress?.(0.9);
+  onProgress?.(0.85);
 
-  // Merge detections into windows
-  const windows: RallyWindow[] = [];
-  if (ballPresentAt.length === 0) {
-    onProgress?.(1.0);
-    return [];
-  }
-
-  let windowStart = ballPresentAt[0];
-  let windowEnd = ballPresentAt[0];
-  let detectionCount = 1;
-  let totalInWindow = 1;
-
-  for (let i = 1; i < ballPresentAt.length; i++) {
-    const timeSec = ballPresentAt[i];
-    const gap = timeSec - windowEnd;
-
-    if (gap <= gapToleranceSec) {
-      windowEnd = timeSec;
-      detectionCount++;
-    } else {
-      const duration = windowEnd - windowStart;
-      if (duration >= minDurationSec) {
-        const clampedEnd = Math.min(windowStart + maxDurationSec, windowEnd);
-        const conf = Math.min(1, detectionCount / Math.max(1, totalInWindow));
-        windows.push({ startSec: windowStart, endSec: clampedEnd, confidence: conf });
-      }
-      windowStart = timeSec;
-      windowEnd = timeSec;
-      detectionCount = 1;
-    }
-    totalInWindow++;
-  }
-
-  // Flush last window
-  const duration = windowEnd - windowStart;
-  if (duration >= minDurationSec) {
-    const clampedEnd = Math.min(windowStart + maxDurationSec, windowEnd);
-    const conf = Math.min(1, detectionCount / Math.max(1, totalInWindow));
-    windows.push({ startSec: windowStart, endSec: clampedEnd, confidence: conf });
-  }
+  const windows = detectRallyWindowsFromFrames(framesWithTimestamp, {
+    minDurationSec,
+    maxDurationSec,
+    gapToleranceSec,
+  });
 
   onProgress?.(1.0);
   return windows;

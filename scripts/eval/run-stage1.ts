@@ -20,7 +20,10 @@ import type { VideoRunResult } from './lib/types';
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const get = (flag: string) => { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; };
+  const get = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i >= 0 ? args[i + 1] : null;
+  };
   const dataset = get('--dataset');
   const fps = parseFloat(get('--fps') ?? '3');
   const runId = get('--run-id') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -33,7 +36,11 @@ function parseArgs() {
 }
 
 function getGitSha(): string {
-  try { return execSync('git rev-parse --short HEAD').toString().trim(); } catch { return 'unknown'; }
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
 }
 
 async function runOnVideo(
@@ -110,7 +117,9 @@ async function main() {
     const derivedDuration = readdirSync(framesDir).filter((f) => f.endsWith('.jpg')).length / fps;
     const videoDurationSec = existsSync(clipPath)
       ? await getVideoDurationSec(clipPath)
-      : derivedDuration > 0 ? derivedDuration : 60;
+      : derivedDuration > 0
+        ? derivedDuration
+        : 60;
 
     process.stdout.write(`  Processing ${videoId}...`);
     const result = await runOnVideo(videoId, framesDir, videoDurationSec, fps);
@@ -120,7 +129,10 @@ async function main() {
 
   // Write manifest
   const manifest = {
-    runId, dataset, fps, gitSha: getGitSha(),
+    runId,
+    dataset,
+    fps,
+    gitSha: getGitSha(),
     createdAt: new Date().toISOString(),
     config: { scanFps: fps, minDurationSec: 2, maxDurationSec: 30, gapToleranceSec: 0.5 },
   };
@@ -130,4 +142,7 @@ async function main() {
   console.log(`Next: npm run eval:score -- --run-id ${runId} --dataset ${dataset}`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -23,11 +23,14 @@ export async function extractFramesNode(opts: ExtractFramesOptions): Promise<str
   await new Promise<void>((resolve, reject) => {
     const args = [
       '-y',
-      '-i', videoPath,
+      '-i',
+      videoPath,
       // Scale to 1280px wide (keeps 720p for 1080p source) and sample at given fps.
       // q:v 5 (~60-80 KB/frame) is sufficient for blob-based ball detection.
-      '-vf', `scale=1280:-1,fps=${fps}`,
-      '-q:v', '5',
+      '-vf',
+      `scale=1280:-1,fps=${fps}`,
+      '-q:v',
+      '5',
       join(outputDir, 'frame_%06d.jpg'),
     ];
 
@@ -52,12 +55,7 @@ export async function extractFramesNode(opts: ExtractFramesOptions): Promise<str
  */
 export async function getVideoDurationSec(videoPath: string): Promise<number> {
   return new Promise<number>((resolve, reject) => {
-    const args = [
-      '-v', 'quiet',
-      '-print_format', 'json',
-      '-show_format',
-      videoPath,
-    ];
+    const args = ['-v', 'quiet', '-print_format', 'json', '-show_format', videoPath];
     const proc = spawn('ffprobe', args, { stdio: ['ignore', 'pipe', 'ignore'] });
     let stdout = '';
     proc.stdout?.on('data', (d: Buffer) => (stdout += d.toString()));

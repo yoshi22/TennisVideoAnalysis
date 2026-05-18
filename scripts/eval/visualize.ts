@@ -14,7 +14,10 @@ import type { EvalMetrics, VideoRunResult, GroundTruth } from './lib/types';
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const get = (flag: string) => { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; };
+  const get = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i >= 0 ? args[i + 1] : null;
+  };
   const runId = get('--run-id');
   const dataset = get('--dataset');
   const topN = parseInt(get('--top-n') ?? '3', 10);
@@ -25,18 +28,13 @@ function parseArgs() {
   return { runId, dataset, topN };
 }
 
-function buildSVG(
-  videoId: string,
-  run: VideoRunResult,
-  gt: GroundTruth,
-  f1: number
-): string {
+function buildSVG(videoId: string, run: VideoRunResult, gt: GroundTruth, f1: number): string {
   const W = 1200;
   const TRACK_H = 40;
   const PAD = 60;
   const H = PAD * 2 + TRACK_H * 4;
   const duration = run.videoDurationSec;
-  const toX = (s: number) => PAD + ((s / duration) * (W - PAD * 2));
+  const toX = (s: number) => PAD + (s / duration) * (W - PAD * 2);
 
   const bars = (
     intervals: Array<{ startSec: number; endSec: number }>,
@@ -50,14 +48,18 @@ function buildSVG(
       return `<rect x="${x1.toFixed(1)}" y="${y}" width="${(x2 - x1).toFixed(1)}" height="${TRACK_H}" fill="${color}" opacity="0.75" rx="3"/>`;
     });
     return `<text x="${PAD}" y="${y - 6}" font-size="13" font-family="monospace" fill="#333">${label} (${intervals.length})</text>${rects.join('')}`;
-  }
+  };
 
   // 1-second tick marks
   const ticks: string[] = [];
   for (let s = 0; s <= duration; s += 10) {
     const x = toX(s).toFixed(1);
-    ticks.push(`<line x1="${x}" y1="${PAD - 8}" x2="${x}" y2="${H - PAD + 4}" stroke="#ccc" stroke-width="1"/>`);
-    ticks.push(`<text x="${x}" y="${PAD - 10}" font-size="11" font-family="monospace" fill="#999" text-anchor="middle">${s}s</text>`);
+    ticks.push(
+      `<line x1="${x}" y1="${PAD - 8}" x2="${x}" y2="${H - PAD + 4}" stroke="#ccc" stroke-width="1"/>`
+    );
+    ticks.push(
+      `<text x="${x}" y="${PAD - 10}" font-size="11" font-family="monospace" fill="#999" text-anchor="middle">${s}s</text>`
+    );
   }
 
   const gtBars = bars(gt.rallies, PAD, '#2196f3', 'GT rallies');
@@ -113,4 +115,7 @@ async function main() {
   console.log('Use these SVGs as input to the codex iteration loop.');
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

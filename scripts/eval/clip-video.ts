@@ -65,4 +65,7 @@ async function main() {
   console.log(`Next: npm run eval:frames -- --dataset ${dataset} --id ${videoId}`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

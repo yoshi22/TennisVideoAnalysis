@@ -74,9 +74,7 @@ export function computePerVideoMetrics(
   const ious = matches.map((m) => m.iou);
   const iouMean = ious.length > 0 ? ious.reduce((a, b) => a + b, 0) / ious.length : 0;
   const iouP10 =
-    ious.length > 0
-      ? [...ious].sort((a, b) => a - b)[Math.floor(ious.length * 0.1)]
-      : 0;
+    ious.length > 0 ? [...ious].sort((a, b) => a - b)[Math.floor(ious.length * 0.1)] : 0;
 
   const boundaryStartErrors = matches.map((m) =>
     Math.abs(detected[m.detIdx].startSec - gtRallies[m.gtIdx].startSec)
@@ -84,8 +82,7 @@ export function computePerVideoMetrics(
   const boundaryEndErrors = matches.map((m) =>
     Math.abs(detected[m.detIdx].endSec - gtRallies[m.gtIdx].endSec)
   );
-  const mae = (arr: number[]) =>
-    arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+  const mae = (arr: number[]) => (arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 
   // False-positive total seconds
   const fpSeconds = unmatchedDet.reduce(
@@ -115,10 +112,15 @@ export function aggregateMetrics(perVideo: PerVideoMetrics[]): AggregateMetrics 
   const count = perVideo.length;
   if (count === 0) {
     return {
-      eventF1: 0, eventPrecision: 0, eventRecall: 0,
-      iouMean: 0, iouP10: 0,
-      boundaryStartMaeSec: 0, boundaryEndMaeSec: 0,
-      fpSecondsPerMinute: 0, videoCount: 0,
+      eventF1: 0,
+      eventPrecision: 0,
+      eventRecall: 0,
+      iouMean: 0,
+      iouP10: 0,
+      boundaryStartMaeSec: 0,
+      boundaryEndMaeSec: 0,
+      fpSecondsPerMinute: 0,
+      videoCount: 0,
     };
   }
   const avg = (key: keyof PerVideoMetrics) =>

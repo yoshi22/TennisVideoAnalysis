@@ -54,4 +54,7 @@ async function main() {
   console.log(`\nNext: npm run eval:stage1 -- --dataset ${dataset} [--run-id <id>]`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
