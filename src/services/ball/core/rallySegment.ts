@@ -3,11 +3,13 @@ import { detectBlobs } from './blobDetect';
 import { computeMotionMask } from './frameDiff';
 import { removeLargeRegions } from './playerMask';
 
-const DEFAULT_MIN_DURATION_SEC = 2;
+// 4s discards post-serve bounces and net-cord fragments while keeping the
+// shortest GT rally (10s) well above threshold.
+const DEFAULT_MIN_DURATION_SEC = 4;
 
-// Amateur fixed-camera rallies range 10-27s. 25s gives headroom while keeping
-// the hard cap tight enough to prevent cascade merges across inter-point activity.
-const DEFAULT_MAX_DURATION_SEC = 25;
+// Amateur fixed-camera rallies range 10-27s. 30s gives headroom above the
+// longest observed rally (27s) while the hard-cap merge prevents cascade bloat.
+const DEFAULT_MAX_DURATION_SEC = 30;
 
 // At 3fps, 3s ≈ 9 frames. Shorter than broadcast (5s) because fixed cameras have
 // no broadcast-cut gaps to bridge; the only true within-rally gap is ball off-screen.
@@ -16,9 +18,9 @@ const DEFAULT_GAP_TOLERANCE_SEC = 3;
 // On fixed-camera footage, rally frames contain simultaneous motion from both players
 // AND the ball, producing a higher blob count than inter-point frames where players
 // are stationary. Empirically tuned on muko-clip1 (1798 frames, 18 GT rallies):
-// blob ≥ 13 separates rally activity from inter-point noise (F1=0.558 vs 0.000 baseline).
+// blob ≥ 11 separates rally activity from inter-point noise (iter-fc2, F1≈0.585).
 // This is the INVERSE of the broadcast heuristic (which used blob ≤ 20 to exclude closeups).
-const MIN_FIXED_CAM_RALLY_BLOBS = 13;
+const MIN_FIXED_CAM_RALLY_BLOBS = 11;
 
 // 3s serve lead-in captures the ball toss; 4s end padding retains the follow-through
 // and ball landing — together keeping boundary MAE low.
@@ -43,9 +45,9 @@ export interface FrameWithTimestamp {
 }
 
 export interface RallySegmentOptions {
-  /** Minimum rally duration in seconds (default: 2) */
+  /** Minimum rally duration in seconds (default: 4) */
   minDurationSec?: number;
-  /** Maximum rally duration in seconds (default: 25) */
+  /** Maximum rally duration in seconds (default: 30) */
   maxDurationSec?: number;
   /** Max gap between detections to treat as same rally in seconds (default: 3) */
   gapToleranceSec?: number;
