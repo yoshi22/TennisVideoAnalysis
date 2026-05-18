@@ -1,30 +1,33 @@
 import { type DecodedFrame } from './types';
 import { detectBlobs } from './blobDetect';
 import { computeMotionMask } from './frameDiff';
+import { removeLargeRegions } from './playerMask';
 
-// Aces and double faults can produce only a few seconds of usable ball motion,
-// so keep the floor low for recall after noisy frames are filtered out.
 const DEFAULT_MIN_DURATION_SEC = 2;
 
-// Long baseline rallies can exceed 60s; 90s avoids truncating valid points while
-// still bounding accidental merges across extended broadcast sequences.
-const DEFAULT_MAX_DURATION_SEC = 90;
+// Amateur fixed-camera rallies range 10-27s. 25s gives headroom while keeping
+// the hard cap tight enough to prevent cascade merges across inter-point activity.
+const DEFAULT_MAX_DURATION_SEC = 25;
 
-// 5s bridges within-rally motion gaps (ball briefly off-screen, player position change)
-// without spanning the typical inter-point rest. Tuned on fixed-camera amateur footage.
-const DEFAULT_GAP_TOLERANCE_SEC = 5;
+// At 3fps, 3s ≈ 9 frames. Shorter than broadcast (5s) because fixed cameras have
+// no broadcast-cut gaps to bridge; the only true within-rally gap is ball off-screen.
+const DEFAULT_GAP_TOLERANCE_SEC = 3;
 
-// Crowd/player closeups and replay-like shots create hundreds of tiny motion
-// blobs; court-view ball evidence is sparse enough to keep candidate counts low.
-const MAX_BLOB_CANDIDATES_PER_FRAME = 20;
+// On fixed-camera footage, rally frames contain simultaneous motion from both players
+// AND the ball, producing a higher blob count than inter-point frames where players
+// are stationary. Empirically tuned on muko-clip1 (1798 frames, 18 GT rallies):
+// blob ≥ 13 separates rally activity from inter-point noise (F1=0.558 vs 0.000 baseline).
+// This is the INVERSE of the broadcast heuristic (which used blob ≤ 20 to exclude closeups).
+const MIN_FIXED_CAM_RALLY_BLOBS = 13;
 
 // 3s serve lead-in captures the ball toss; 4s end padding retains the follow-through
-// and ball landing — together keeping boundary MAE low for fast-serve broadcasts.
+// and ball landing — together keeping boundary MAE low.
 const WINDOW_START_PADDING_SEC = 3;
 const WINDOW_END_PADDING_SEC = 4;
 
 // Padding can leave windows separated by sub-frame rounding gaps; merge those
-// artifacts while preserving distinct tennis points.
+// artifacts while preserving distinct tennis points.  Hard cap prevents cascade
+// merges: two adjacent 25s windows must not fuse into a 50s false positive.
 const PADDED_WINDOW_MERGE_EPSILON_SEC = 0.25;
 
 export interface RallyWindow {
@@ -42,9 +45,9 @@ export interface FrameWithTimestamp {
 export interface RallySegmentOptions {
   /** Minimum rally duration in seconds (default: 2) */
   minDurationSec?: number;
-  /** Maximum rally duration in seconds (default: 90) */
+  /** Maximum rally duration in seconds (default: 25) */
   maxDurationSec?: number;
-  /** Max gap between detections to treat as same rally in seconds (default: 5) */
+  /** Max gap between detections to treat as same rally in seconds (default: 3) */
   gapToleranceSec?: number;
 }
 
@@ -67,10 +70,11 @@ export function detectRallyWindowsFromFrames(
     const curr = frames[i].decoded;
     const next = frames[i + 1].decoded;
 
-    const mask = computeMotionMask(prev, curr, next);
+    const rawMask = computeMotionMask(prev, curr, next);
+    const mask = removeLargeRegions(rawMask, curr.width, curr.height);
     const blobs = detectBlobs(mask, curr.width, curr.height);
 
-    if (isBroadcastBallPresenceFrame(blobs.length)) {
+    if (isActiveRallyFrame(blobs.length)) {
       ballPresentAt.push(frames[i].timeSec);
     }
   }
@@ -112,7 +116,7 @@ export function mergeDetectionsIntoWindows(
   // Flush last window
   appendWindow(windows, windowStart, windowEnd, detectionCount, minDurationSec, maxDurationSec);
 
-  return mergeOverlappingWindows(windows);
+  return mergeOverlappingWindows(windows, maxDurationSec);
 }
 
 function resolveRallySegmentOptions(opts?: RallySegmentOptions): Required<RallySegmentOptions> {
@@ -146,19 +150,34 @@ function appendWindow(
   }
 }
 
-function isBroadcastBallPresenceFrame(blobCount: number): boolean {
-  return blobCount > 0 && blobCount <= MAX_BLOB_CANDIDATES_PER_FRAME;
+/**
+ * On fixed-camera footage, rally frames have simultaneous player + ball motion,
+ * producing a higher blob count than inter-point frames where players stand still.
+ * Threshold of 13 empirically separates active rally from between-point activity.
+ */
+function isActiveRallyFrame(blobCount: number): boolean {
+  return blobCount >= MIN_FIXED_CAM_RALLY_BLOBS;
 }
 
-function mergeOverlappingWindows(windows: RallyWindow[]): RallyWindow[] {
+/**
+ * Merges adjacent windows that are within epsilon of each other, but refuses to
+ * merge if the result would exceed maxDurationSec. This hard cap prevents cascade
+ * merges where multiple padded windows chain into one oversized false positive.
+ */
+function mergeOverlappingWindows(windows: RallyWindow[], maxDurationSec: number): RallyWindow[] {
   if (windows.length <= 1) return windows;
 
   const merged: RallyWindow[] = [];
   for (const window of windows) {
     const previous = merged[merged.length - 1];
     if (previous && window.startSec <= previous.endSec + PADDED_WINDOW_MERGE_EPSILON_SEC) {
-      previous.endSec = Math.max(previous.endSec, window.endSec);
-      previous.confidence = Math.max(previous.confidence, window.confidence);
+      const candidateEnd = Math.max(previous.endSec, window.endSec);
+      if (candidateEnd - previous.startSec <= maxDurationSec) {
+        previous.endSec = candidateEnd;
+        previous.confidence = Math.max(previous.confidence, window.confidence);
+      } else {
+        merged.push({ ...window });
+      }
     } else {
       merged.push({ ...window });
     }

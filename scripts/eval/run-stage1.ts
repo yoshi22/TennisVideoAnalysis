@@ -10,13 +10,13 @@
  * Writes: eval/results/<run-id>/per-video/<videoId>.json
  *         eval/results/<run-id>/manifest.json
  */
-import { mkdirSync, readdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { decodeFrameGrayNode } from '../../src/services/ball/core/decodeFrame.node';
 import { detectRallyWindowsFromFrames } from '../../src/services/ball/core/rallySegment';
 import { getVideoDurationSec } from './lib/frameSampler.node';
-import type { VideoRunResult, GroundTruth } from './lib/types';
+import type { VideoRunResult } from './lib/types';
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -96,7 +96,6 @@ async function main() {
 
   for (const labelFile of labelFiles) {
     const videoId = labelFile.replace('.json', '');
-    const gt = JSON.parse(readFileSync(join(labelsDir, labelFile), 'utf8')) as GroundTruth;
     const framesDir = join(framesBase, videoId);
     const clipPath = join('eval', 'datasets', dataset, 'clips', `${videoId}.mp4`);
 
@@ -105,9 +104,13 @@ async function main() {
       continue;
     }
 
+    // Prefer the clip file for exact duration. If deleted (48h ToS cleanup),
+    // derive from frame count and fps — more accurate than last-rally-end+10
+    // since ffmpeg extraction at fps=3 produces exactly framePaths.length/fps seconds.
+    const derivedDuration = readdirSync(framesDir).filter((f) => f.endsWith('.jpg')).length / fps;
     const videoDurationSec = existsSync(clipPath)
       ? await getVideoDurationSec(clipPath)
-      : gt.rallies.length > 0 ? gt.rallies[gt.rallies.length - 1].endSec + 10 : 60;
+      : derivedDuration > 0 ? derivedDuration : 60;
 
     process.stdout.write(`  Processing ${videoId}...`);
     const result = await runOnVideo(videoId, framesDir, videoDurationSec, fps);
