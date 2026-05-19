@@ -5,122 +5,108 @@
   "sourceSha256": "",
   "fps": 30,
   "clipOffsetSec": 600,
-  "note": "杉村太蔵 vs 向和彦 at 大正セントラルテニスクラブ目白 2023.10.25. Fixed-camera singles, hard court. Clip 600-1200s. AUTO-GENERATED 2026-05-19 from blob-density profile (min_blobs=11 via removeLargeRegions+detectBlobs pipeline). Boundary accuracy ±7s (visual verification pending). Rally #1 starts at t=0 indicating in-progress rally at clip start. Large dead zone 74-141s is likely a game changeover. server/winner/endReason fields omitted (unknown from density alone).",
+  "note": "杉村太蔵 vs 向和彦 at 大正セントラルテニスクラブ目白 2023.10.25. Fixed-camera singles, hard court. Clip 600-1200s. INDEPENDENT label created 2026-05-19 via scoreboard (POINTS column) transitions observed in 3fps JPEG frames — NOT derived from algorithm output (replacing previous circular label). Boundary accuracy ±7s. server/winner/endReason omitted (not determinable from scoreboard alone). Rally #1 is in-progress at clip start (score 40-15 杉村 vs 向 at t=0). Game 1 (t=0-75s): 40-15 → 40-30 → DEUCE → game. Changeover t≈75-155s. Game 2 (t≈155-316s): 0-0 → 15-0 → 15-15 → 15-30 → 30-30 → 30-40 → game. Changeover t≈316-330s. Game 3 (t≈330-526s): 0-0 → 0-15 → 15-15 → 15-30 → 30-30 → 30-40 → game. Density FPs (no score change): W1[0,8], W3[37,46], W8[186,210], W11[275,288], W14[349,366], W15[371,388], W19[505,513]. Algorithm FNs: rally #7 [257,268] and rally #12 [415,426] have confirmed score transitions but no density signal above threshold.",
   "rallies": [
     {
       "startSec": 0.0,
-      "endSec": 25.0,
+      "endSec": 28.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
-      "startSec": 37.0,
-      "endSec": 55.0,
+      "startSec": 47.0,
+      "endSec": 58.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 62.0,
-      "endSec": 70.0,
-      "server": null,
-      "winner": null,
-      "endReason": null
-    },
-    {
-      "startSec": 141.0,
-      "endSec": 151.0,
+      "endSec": 73.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 154.0,
-      "endSec": 168.0,
-      "server": null,
-      "winner": null,
-      "endReason": null
-    },
-    {
-      "startSec": 186.0,
-      "endSec": 210.0,
+      "endSec": 175.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 214.0,
-      "endSec": 232.0,
+      "endSec": 226.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 237.0,
-      "endSec": 253.0,
+      "endSec": 252.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
-      "startSec": 275.0,
-      "endSec": 288.0,
+      "startSec": 257.0,
+      "endSec": 268.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 295.0,
-      "endSec": 320.0,
+      "endSec": 302.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
-      "startSec": 326.0,
+      "startSec": 307.0,
+      "endSec": 316.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 330.0,
       "endSec": 337.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
-      "startSec": 349.0,
-      "endSec": 366.0,
-      "server": null,
-      "winner": null,
-      "endReason": null
-    },
-    {
-      "startSec": 370.0,
-      "endSec": 388.0,
-      "server": null,
-      "winner": null,
-      "endReason": null
-    },
-    {
       "startSec": 400.0,
-      "endSec": 414.0,
+      "endSec": 407.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 415.0,
+      "endSec": 426.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 432.0,
-      "endSec": 443.0,
+      "endSec": 455.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
       "startSec": 466.0,
-      "endSec": 488.0,
+      "endSec": 487.0,
       "server": null,
       "winner": null,
       "endReason": null
     },
     {
-      "startSec": 505.0,
+      "startSec": 517.0,
       "endSec": 526.0,
       "server": null,
       "winner": null,
