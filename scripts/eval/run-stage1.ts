@@ -14,7 +14,10 @@ import { mkdirSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { decodeFrameGrayNode } from '../../src/services/ball/core/decodeFrame.node';
-import { detectRallyWindowsFromFrames } from '../../src/services/ball/core/rallySegment';
+import {
+  detectRallyWindowsFromFrames,
+  detectRallyWindowsFromTrajectories,
+} from '../../src/services/ball/core/rallySegment';
 import { getVideoDurationSec } from './lib/frameSampler.node';
 import type { VideoRunResult } from './lib/types';
 
@@ -27,12 +30,15 @@ function parseArgs() {
   const dataset = get('--dataset');
   const fps = parseFloat(get('--fps') ?? '3');
   const runId = get('--run-id') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const detector = (get('--detector') ?? 'blob') as 'blob' | 'trajectory';
 
   if (!dataset) {
-    console.error('Usage: npm run eval:run1 -- --dataset <name> [--run-id <id>] [--fps <n>]');
+    console.error(
+      'Usage: npm run eval:run1 -- --dataset <name> [--run-id <id>] [--fps <n>] [--detector blob|trajectory]'
+    );
     process.exit(1);
   }
-  return { dataset, fps, runId };
+  return { dataset, fps, runId, detector };
 }
 
 function getGitSha(): string {
@@ -47,7 +53,8 @@ async function runOnVideo(
   videoId: string,
   framesDir: string,
   videoDurationSec: number,
-  fps: number
+  fps: number,
+  detector: 'blob' | 'trajectory'
 ): Promise<VideoRunResult> {
   const framePaths = readdirSync(framesDir)
     .filter((f) => f.endsWith('.jpg'))
@@ -68,8 +75,10 @@ async function runOnVideo(
     }))
   );
 
-  // Use library defaults (maxDurationSec=90, gapToleranceSec=5) optimised for broadcast tennis
-  const windows = detectRallyWindowsFromFrames(framesWithTimestamp);
+  const windows =
+    detector === 'trajectory'
+      ? detectRallyWindowsFromTrajectories(framesWithTimestamp)
+      : detectRallyWindowsFromFrames(framesWithTimestamp);
 
   return {
     videoId,
@@ -81,7 +90,7 @@ async function runOnVideo(
 }
 
 async function main() {
-  const { dataset, fps, runId } = parseArgs();
+  const { dataset, fps, runId, detector } = parseArgs();
 
   const labelsDir = join('eval', 'datasets', dataset, 'labels');
   const framesBase = join('eval', 'datasets', dataset, 'frames');
@@ -122,7 +131,7 @@ async function main() {
         : 60;
 
     process.stdout.write(`  Processing ${videoId}...`);
-    const result = await runOnVideo(videoId, framesDir, videoDurationSec, fps);
+    const result = await runOnVideo(videoId, framesDir, videoDurationSec, fps, detector);
     writeFileSync(join(resultsDir, `${videoId}.json`), JSON.stringify(result, null, 2));
     console.log(` ${result.detectedRallies.length} rallies in ${result.runtimeMs}ms`);
   }
@@ -132,6 +141,7 @@ async function main() {
     runId,
     dataset,
     fps,
+    detector,
     gitSha: getGitSha(),
     createdAt: new Date().toISOString(),
     config: { scanFps: fps, minDurationSec: 2, maxDurationSec: 30, gapToleranceSec: 0.5 },

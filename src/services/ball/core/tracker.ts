@@ -5,7 +5,7 @@ import { type BlobCandidate } from './blobDetect';
 export const MAX_JUMP = 0.08; // max normalized-distance between frames (image coords)
 export const MIN_TRACK_LENGTH = 5; // discard tracks shorter than this
 
-interface FrameInput {
+export interface FrameInput {
   timeSec: number;
   candidates: BlobCandidate[];
 }
@@ -64,8 +64,8 @@ export function trackBall(frames: FrameInput[]): BallTrajectory {
           confidence: cand.score,
         });
       } else {
-        // Start new track
-        tracks.push({
+        // Start new track — add to matched so it survives to the next frame
+        const newTrack: Track = {
           detections: [
             {
               timeSec: frame.timeSec,
@@ -80,11 +80,13 @@ export function trackBall(frames: FrameInput[]): BallTrajectory {
           vx: 0,
           vy: 0,
           lastTime: frame.timeSec,
-        });
+        };
+        tracks.push(newTrack);
+        matched.add(newTrack);
       }
     }
 
-    // Expire tracks that weren't matched
+    // Expire tracks that weren't matched this frame
     const alive: Track[] = [];
     for (const track of tracks) {
       if (matched.has(track)) {
@@ -111,4 +113,93 @@ export function trackBall(frames: FrameInput[]): BallTrajectory {
   // Return the longest track
   const best = completedTracks.reduce((a, b) => (a.length >= b.length ? a : b));
   return { detections: best };
+}
+
+/**
+ * Returns ALL completed ball trajectories (each ≥ MIN_TRACK_LENGTH detections).
+ * Use this for rally segmentation where multiple short trajectories per rally
+ * are expected (ball lost and re-acquired mid-rally).
+ */
+export function trackAllBalls(frames: FrameInput[]): BallTrajectory[] {
+  const tracks: Track[] = [];
+  const completedTracks: BallDetection[][] = [];
+
+  for (const frame of frames) {
+    const matched = new Set<Track>();
+
+    for (const cand of frame.candidates) {
+      let bestTrack: Track | null = null;
+      let bestDist = MAX_JUMP;
+
+      for (const track of tracks) {
+        const dt = frame.timeSec - track.lastTime;
+        const predX = track.lastX + track.vx * dt;
+        const predY = track.lastY + track.vy * dt;
+        const d = Math.sqrt((cand.imageX - predX) ** 2 + (cand.imageY - predY) ** 2);
+        if (d < bestDist) {
+          bestDist = d;
+          bestTrack = track;
+        }
+      }
+
+      if (bestTrack && !matched.has(bestTrack)) {
+        matched.add(bestTrack);
+        const dt = frame.timeSec - bestTrack.lastTime;
+        if (dt > 0) {
+          bestTrack.vx = (cand.imageX - bestTrack.lastX) / dt;
+          bestTrack.vy = (cand.imageY - bestTrack.lastY) / dt;
+        }
+        bestTrack.lastX = cand.imageX;
+        bestTrack.lastY = cand.imageY;
+        bestTrack.lastTime = frame.timeSec;
+        bestTrack.detections.push({
+          timeSec: frame.timeSec,
+          imageX: cand.imageX,
+          imageY: cand.imageY,
+          radiusPx: cand.radiusPx,
+          confidence: cand.score,
+        });
+      } else {
+        const newTrack: Track = {
+          detections: [
+            {
+              timeSec: frame.timeSec,
+              imageX: cand.imageX,
+              imageY: cand.imageY,
+              radiusPx: cand.radiusPx,
+              confidence: cand.score,
+            },
+          ],
+          lastX: cand.imageX,
+          lastY: cand.imageY,
+          vx: 0,
+          vy: 0,
+          lastTime: frame.timeSec,
+        };
+        tracks.push(newTrack);
+        matched.add(newTrack);
+      }
+    }
+
+    const alive: Track[] = [];
+    for (const track of tracks) {
+      if (matched.has(track)) {
+        alive.push(track);
+      } else {
+        if (track.detections.length >= MIN_TRACK_LENGTH) {
+          completedTracks.push(track.detections);
+        }
+      }
+    }
+    tracks.length = 0;
+    tracks.push(...alive);
+  }
+
+  for (const track of tracks) {
+    if (track.detections.length >= MIN_TRACK_LENGTH) {
+      completedTracks.push(track.detections);
+    }
+  }
+
+  return completedTracks.map((detections) => ({ detections }));
 }

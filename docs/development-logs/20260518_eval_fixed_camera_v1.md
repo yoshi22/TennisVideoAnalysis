@@ -577,3 +577,56 @@ Aggregate     F1=0.599  (target ≥ 0.85, gap = 0.251)
 1. **ボール軌跡追跡**: 高 fps フレームを再抽出してボール位置を追跡 → ラリー確定信号。元動画の再 DL が必要（48h ToS ルールで削除済み）。
 2. **ML アプローチ（1D CNN/LSTM）**: 3 本 57 ラリーのラベルを訓練データに使用。データが少ないため汎化は課題。
 3. **Stage 1 目標の再スコープ**: 正直な天井（aggregate F1≈0.60）を受容し、Stage 2（サーブ速度検出など）へ移行。
+
+---
+
+## Phase E: ボール軌跡ベースのラリー検出（2026-05-19）
+
+### 背景・選択
+
+ユーザーがエスカレーション選択肢の中から **「ボール追跡」** を選択。  
+仮説: blob の位置を時間方向に連結し、「小さな物体が連続した弾道を描いているか」でラリーを判定。inter-point は coherent な軌跡が存在しないので落とせる。
+
+### 実装（Phase E-1〜E-3）
+
+既存の `trackBall`（greedy NN + 等速予測、`src/services/ball/core/tracker.ts`）を基盤に:
+
+- **バグ修正**: `trackBall` / `trackAllBalls` で新規トラックが同フレームで即期限切れになる問題（`matched.add(newTrack)` が欠けていた）を修正。
+- **`trackAllBalls` 追加** (`tracker.ts`): 最長1本ではなく `completedTracks`（`MIN_TRACK_LENGTH=5` 以上）を全部返す。
+- **`detectRallyWindowsFromTrajectories` 追加** (`rallySegment.ts`): 軌跡の `timeSec` を `mergeDetectionsIntoWindows` に渡す。baseline 関数は無改変。
+- **`--detector blob|trajectory` フラグ** (`run-stage1.ts`): 既存 blob-count 路を維持しつつ軌跡路を追加。
+- **muko-clip1 30fps 再取得・フレーム抽出**: 動画再 DL → 600s クリップ → 30fps 抽出（18003 frames）。
+- ユニットテスト追加（`tracker.test.ts`: 5件）。全テスト緑。
+
+### Phase E-3.5: 解析ゲート（not viable 判定）
+
+`trackAllBalls` の挙動を GT7 [215s, 241s]（真の長ラリー・分割してはいけない）と inter-point [190s, 215s] で比較した。
+
+| 設定 | 対象窓 | avg candidates/frame | trajectories | coverage |
+|---|---|---|---|---|
+| TARGET_WIDTH=320 | GT7 [215,241] | 5.2 | 3 本（各 0.13s） | 5/779 (0.6%) |
+| TARGET_WIDTH=320 | inter-point [190,215] | 6.7 | 6 本（各 0.13s） | 15/749 (2.0%) |
+| TARGET_WIDTH=640 | GT7 [215,241] | 13.6 | 5 本（各 0.13s） | 10/779 (1.3%) |
+
+**判定: not viable**。以下の理由：
+
+1. **全軌跡が最小長（0.13s = 4 フレーム）で終端**。rally や inter-point に関わらず、ボールが 5 フレーム以上連続して検出されない。
+2. **coverage が rally / inter-point 共に 1-2% と区別不能**。inter-point の方が coverage が高いケースもある（真逆の傾向）。
+3. **TARGET_WIDTH=640 に引き上げても改善なし**。candidates は 5.2→13.6 に増えたが coherent な軌跡が出ない構造は変わらない。
+
+**根本原因**: 30fps では連続フレーム間のボール移動が 0.045 正規化距離/フレームと小さく、AND-diff モーションマスクの信号も極めて小さい。ボール検出は 4-5 フレームのバーストで散発するが、バースト間のギャップが数秒〜数十秒あるため `mergeDetectionsIntoWindows`（gapTol=3s）でも連結できない。3fps baseline が有効だったのは、フレーム間隔が大きくモーション信号が強いから。
+
+### 結論
+
+ボール軌跡アプローチは **現行のモーションマスク + blob 検出パイプラインと組み合わせた場合、30fps でも動作しない**。  
+tracker コード（`trackAllBalls` 等）はインフラとして保持するが、ラリー検出への利用は保留。
+
+### 3 連続失敗（fc7 / fc8 / Phase E）→ window-level 完全頭打ち
+
+| 試み | 結果 |
+|---|---|
+| iter-fc7: raw 境界マージ | rejected（clip1 −0.087） |
+| iter-fc8: dead-valley 分割 | not viable（物理分離不能） |
+| Phase E: ボール軌跡追跡 | not viable（検出パイプライン限界） |
+
+**次の選択肢**: ML アプローチ（1D CNN/LSTM）または Stage 1 目標再スコープ。

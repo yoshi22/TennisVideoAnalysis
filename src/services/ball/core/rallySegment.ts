@@ -2,6 +2,7 @@ import { type DecodedFrame } from './types';
 import { computeMotionMask } from './frameDiff';
 import { removeLargeRegions } from './playerMask';
 import { detectBlobs } from './blobDetect';
+import { trackAllBalls, type FrameInput } from './tracker';
 
 // 4s discards post-serve bounces and net-cord fragments while keeping the
 // shortest GT rally (10s) well above threshold.
@@ -135,6 +136,46 @@ export function mergeDetectionsIntoWindows(
   appendWindow(windows, windowStart, windowEnd, detectionCount, minDurationSec, maxDurationSec);
 
   return mergeOverlappingWindows(windows, maxDurationSec);
+}
+
+/**
+ * Trajectory-based rally detector.
+ * Uses ball position tracking (greedy NN) instead of blob count.
+ * A rally frame is one covered by any completed ball trajectory.
+ * The underlying mergeDetectionsIntoWindows logic is identical to the baseline.
+ */
+export function detectRallyWindowsFromTrajectories(
+  frames: FrameWithTimestamp[],
+  opts?: RallySegmentOptions
+): RallyWindow[] {
+  const resolvedOpts = resolveRallySegmentOptions(opts);
+
+  if (frames.length < 3) return [];
+
+  const frameInputs: FrameInput[] = [];
+
+  for (let i = 1; i < frames.length - 1; i++) {
+    const prev = frames[i - 1].decoded;
+    const curr = frames[i].decoded;
+    const next = frames[i + 1].decoded;
+
+    const rawMask = computeMotionMask(prev, curr, next);
+    const cleanedMask = removeLargeRegions(rawMask, curr.width, curr.height);
+    const candidates = detectBlobs(cleanedMask, curr.width, curr.height);
+
+    frameInputs.push({ timeSec: frames[i].timeSec, candidates });
+  }
+
+  const trajectories = trackAllBalls(frameInputs);
+
+  const ballPresentAt: number[] = [];
+  for (const traj of trajectories) {
+    for (const det of traj.detections) {
+      ballPresentAt.push(det.timeSec);
+    }
+  }
+
+  return mergeDetectionsIntoWindows(ballPresentAt, resolvedOpts);
 }
 
 function resolveRallySegmentOptions(opts?: RallySegmentOptions): Required<RallySegmentOptions> {
