@@ -630,3 +630,70 @@ tracker コード（`trackAllBalls` 等）はインフラとして保持する�
 | Phase E: ボール軌跡追跡 | not viable（検出パイプライン限界） |
 
 **次の選択肢**: ML アプローチ（1D CNN/LSTM）または Stage 1 目標再スコープ。
+
+---
+
+## Phase F: ML アプローチ（1D スライディングウィンドウ分類器）（2026-05-19）
+
+### 背景・選択
+
+ユーザーがエスカレーション選択肢から **「ML アプローチ（1D CNN/LSTM）」** を選択。  
+データ: `debug-density.ts` 出力の per-frame 9 列 TSV（rawMotionPx, motionPx, blobCount, 上下左右ハーフ）+ 3 本 GT ラベル。
+
+### 実装
+
+- **`debug-density.ts` 改修**: 全フレームを一括ロードするメモリ非効率なコードを rolling 3-frame window（ストリーミング処理）に書き換え。`--fps <n> --stride <n>` フラグ追加。clip1（30fps, 18003 frames）に `--stride 10` を適用して 3fps 相当のタイムスタンプを生成。  
+- **フィーチャ抽出**: 全 3 本の TSV を生成（各 ~1799 行）。
+- **`scripts/eval/train-rally-ml.py` 新規作成**: `HistGradientBoostingClassifier`（sklearn 1.6.1）、±5 フレームスライディングウィンドウ統計（mean/max/std）× 7 特徴量 = 28 次元。leave-one-clip-out CV。
+
+### iter-ml1 結果（aggregate F1 = 0.085、reject）
+
+```
+fukui-clip1:  F1=0.108  P=0.154  R=0.083
+muko-clip1:   F1=0.000  P=0.000  R=0.000
+muko-clip2:   F1=0.148  P=0.167  R=0.133
+Aggregate     F1=0.085  (baseline: 0.599)
+```
+
+### パラメータスイープ（per-clip Z-score 正規化 + gap_tol × threshold）
+
+`gap_tol ∈ {0.5, 1.0, 2.0, 3.0}` × `threshold ∈ {0.40..0.65}` の全 24 組を評価。  
+**最良: gap_tol=2.0, threshold=0.65 → aggregate F1 = 0.254**（baseline 0.599 に届かず）。
+
+### 根本原因: clip1 の信号方向反転
+
+**決定的な発見**: clip1 では inter-point の blobCount 平均が rally を上回る（inverted signal）。
+
+| クリップ | rally 平均 blobCount | inter 平均 blobCount | 比率 | 方向 |
+|---|---|---|---|---|
+| clip1 | 9.79 | 10.61 | 0.92 | **逆転** |
+| clip2 | 10.16 | 6.66 | 1.53 | 正 |
+| fukui | 12.67 | 8.66 | 1.46 | 正 |
+
+clip2+fukui で訓練した ML は「高 blob = rally」を学習する。clip1 に適用すると inter-point が rally として予測され、隣接ラリーが 1 つの巨大窓に融合（IoU < 0.5 → 全 FP）。
+
+**物理的解釈**: 320px / 3fps 環境では、高速飛行中のボール（rally 中）は AND-diff マスクにほぼ映らない。一方、inter-point のサーバーがゆっくりバウンドさせるボールは低速で長く映り、blob を生成しやすい。clip1 は camera 角度・距離・照明の違いからこの傾向が clip2/fukui より強い。
+
+### 判定: not viable
+
+- per-clip 正規化・長窓・高閾値でも aggregate F1 ≤ 0.254 → baseline 未満。
+- 根本は信号品質: AND-diff blob 特徴量は 3 本横断での rally/inter-point 識別に十分な識別力を持たない。
+- 追加 feature engineering（minTB/ratio/delta）では clip1 の信号反転を解消できない。
+
+### 4 連続失敗 → 全アプローチ頭打ち確定
+
+| 試み | 結果 |
+|---|---|
+| iter-fc7: raw 境界マージ | rejected（clip1 −0.087） |
+| iter-fc8: dead-valley 分割 | not viable（物理分離不能） |
+| Phase E: ボール軌跡追跡 | not viable（検出パイプライン限界） |
+| **Phase F: ML 1D 分類器** | **not viable（信号方向反転、aggregate F1=0.254 ≤ 0.599）** |
+
+### 次の意思決定（最終エスカレーション）
+
+現行の検出パイプライン（AND-diff → blob → window heuristic）は **aggregate F1≈0.6 が構造的天井**であることが4アプローチの失敗から確定した。
+
+**選択肢**:
+1. **Stage 1 目標の再スコープ**: 正直な天井（F1≈0.60）を受容し、Stage 2（サーブ速度など）へ進む。
+2. **検出パイプライン再設計**: optical flow、高解像度フレーム、deep CNN 特徴量など、現行 AND-diff を置き換える根本的に異なるアプローチ。
+3. **データ拡充**: より多くの動画で GT ラベルを作成し、ML の汎化性能向上を図る（小データ問題への対処）。
