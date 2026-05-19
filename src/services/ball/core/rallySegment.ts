@@ -1,7 +1,7 @@
 import { type DecodedFrame } from './types';
-import { detectBlobs } from './blobDetect';
 import { computeMotionMask } from './frameDiff';
 import { removeLargeRegions } from './playerMask';
+import { detectBlobs } from './blobDetect';
 
 // 4s discards post-serve bounces and net-cord fragments while keeping the
 // shortest GT rally (10s) well above threshold.
@@ -15,12 +15,22 @@ const DEFAULT_MAX_DURATION_SEC = 30;
 // no broadcast-cut gaps to bridge; the only true within-rally gap is ball off-screen.
 const DEFAULT_GAP_TOLERANCE_SEC = 3;
 
-// On fixed-camera footage, rally frames contain simultaneous motion from both players
-// AND the ball, producing a higher blob count than inter-point frames where players
-// are stationary. Empirically tuned on muko-clip1 (1798 frames, 18 GT rallies):
-// blob ≥ 11 separates rally activity from inter-point noise (iter-fc2, F1=0.632).
-// This is the INVERSE of the broadcast heuristic (which used blob ≤ 20 to exclude closeups).
+// Primary signal: after removing player silhouettes (large CCs), a rally frame
+// has ≥11 small ball-sized blobs from ball motion, racket tips, and spray.
+// Youden J=0.073 at frame level but produces F1=0.632 at window level because
+// the signal is bursty and aligns well with rally boundaries.
 const MIN_FIXED_CAM_RALLY_BLOBS = 11;
+
+// Bridge signal: mid-rally gaps occur when the ball is mid-flight and both
+// players pause (blobCount drops to 7-10 for 1-4s). The bridge fires when
+// moderate blob activity (≥7) coincides with very high simultaneous motion
+// in BOTH vertical halves (minTB ≥ 320 raw AND-diff pixels).
+// Threshold=320 is calibrated: inter-point walk-ins peak at minTB≈315 while
+// genuine mid-rally pauses (both players actively in rally position) reach
+// minTB≥356 (GT14 at t=429s). Fires at most 1-2 frames per bridge, so the
+// sole effect is reducing effective gap from 3.3s to ≤3.0s for gap_tol merge.
+const BRIDGE_BLOB_THRESH = 7;
+const BRIDGE_MIN_DUAL_ZONE_PX = 320;
 
 // 3s serve lead-in captures the ball toss; 4s end padding retains the follow-through
 // and ball landing — together keeping boundary MAE low.
@@ -73,10 +83,16 @@ export function detectRallyWindowsFromFrames(
     const next = frames[i + 1].decoded;
 
     const rawMask = computeMotionMask(prev, curr, next);
-    const mask = removeLargeRegions(rawMask, curr.width, curr.height);
-    const blobs = detectBlobs(mask, curr.width, curr.height);
+    const cleanedMask = removeLargeRegions(rawMask, curr.width, curr.height);
+    const blobCount = detectBlobs(cleanedMask, curr.width, curr.height).length;
 
-    if (isActiveRallyFrame(blobs.length)) {
+    const isHighActivity = blobCount >= MIN_FIXED_CAM_RALLY_BLOBS;
+    const isBridgeActivity =
+      !isHighActivity &&
+      blobCount >= BRIDGE_BLOB_THRESH &&
+      computeMinHalfMotion(rawMask, curr.width, curr.height) >= BRIDGE_MIN_DUAL_ZONE_PX;
+
+    if (isHighActivity || isBridgeActivity) {
       ballPresentAt.push(frames[i].timeSec);
     }
   }
@@ -153,12 +169,23 @@ function appendWindow(
 }
 
 /**
- * On fixed-camera footage, rally frames have simultaneous player + ball motion,
- * producing a higher blob count than inter-point frames where players stand still.
- * Threshold of 13 empirically separates active rally from between-point activity.
+ * Returns min(topHalfMotion, bottomHalfMotion) of the raw AND-diff mask.
+ * A high value means BOTH vertical halves of the frame have simultaneous motion —
+ * the characteristic signature of a live rally on a side-view fixed camera.
  */
-function isActiveRallyFrame(blobCount: number): boolean {
-  return blobCount >= MIN_FIXED_CAM_RALLY_BLOBS;
+function computeMinHalfMotion(mask: Uint8Array, width: number, height: number): number {
+  let top = 0;
+  let bot = 0;
+  const midY = Math.floor(height / 2);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (mask[y * width + x]) {
+        if (y < midY) top++;
+        else bot++;
+      }
+    }
+  }
+  return Math.min(top, bot);
 }
 
 /**
