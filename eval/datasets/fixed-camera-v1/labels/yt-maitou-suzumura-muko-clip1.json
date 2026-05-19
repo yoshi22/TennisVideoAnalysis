@@ -5,7 +5,7 @@
   "sourceSha256": "",
   "fps": 30,
   "clipOffsetSec": 0,
-  "note": "杉村太蔵 vs 向和彦 at 大正セントラルテニスクラブ目白 2023.10.25. Fixed-camera singles, hard court. Clip 0-600s. Camera: behind near baseline (向 side in game 1, 杉村 side in game 2+). Score overlay visible top-left. Labeled via 3fps frame sampling; boundary accuracy ±5s. Game 1 服: 杉村 (far end). Game 2: 向 (after end change). Game 3: 杉村.",
+  "note": "杉村太蔵 vs 向和彦 at 大正セントラルテニスクラブ目白 2023.10.25. Fixed-camera singles, hard court. Clip 0-600s. Camera: behind near baseline (向 side in game 1, 杉村 side in game 2+). Score overlay visible top-left. Labeled via 3fps frame sampling; boundary accuracy ±5s. Game 1 服: 杉村 (far end). Game 2: 向 (after end change). Game 3: 杉村. [2026-05-19 correction] GT15 endSec 490→476 (scoreboard 0→15 transition at frame_001427, t≈476s; original label included 16s dead zone after point). GT16 endSec 516→522 (scoreboard 15→30 transition at frame_001566, t≈522s; original label ended 6s before actual point completion). Both confirmed via objective scoreboard signal, not density data.",
   "rallies": [
     {
       "startSec": 11.0,
@@ -107,14 +107,14 @@
     },
     {
       "startSec": 463.0,
-      "endSec": 490.0,
+      "endSec": 476.0,
       "server": "near",
       "winner": "near",
       "endReason": "forcedError"
     },
     {
       "startSec": 503.0,
-      "endSec": 516.0,
+      "endSec": 522.0,
       "server": "near",
       "winner": "near",
       "endReason": "forcedError"

@@ -407,3 +407,46 @@ GT14（2 バーストを 3.33s gap で分断していた）が TP に変換。�
 |---|---|
 | `src/services/ball/core/rallySegment.ts` | bridge シグナル追加（`BRIDGE_BLOB_THRESH=7`, `BRIDGE_MIN_DUAL_ZONE_PX=320`）、`computeMinHalfMotion()` 関数追加 |
 | `scripts/eval/debug-density.ts` | 空間分割 TSV 列（rawTopHalf/rawBotHalf/rawLeftHalf/rawRightHalf）追加 |
+
+---
+
+## Phase D-1: clip1 ラベル再検証 + GT15/GT16 修正（iter-fc6）
+
+**日付**: 2026-05-19  
+**手法**: スコアボードオーバーレイ（POINTS 遷移）をフレーム画像で視認し、GT15・GT16 の endSec を修正。
+
+### 修正内容
+
+density データでは GT15[463,490] の 474–490s が rawMotion <100（ラリー中は 200–800）であり、ラベル誤りが疑われていた。フレーム画像のスコアボードで確認：
+
+| GT | 修正前 | 修正後 | 根拠 |
+|---|---|---|---|
+| GT15 | [463, **490**] | [463, **476**] | frame_001427 (t≈476s) で POINTS 0→15 変化。474-490s は無動作の死区間。 |
+| GT16 | [503, **516**] | [503, **522**] | frame_001566 (t≈522s) で POINTS 15→30 変化。516s時点（frame_001543-1557）でスコア未変化を確認。 |
+
+**判断基準**: スコアボード遷移のみ（density 由来の根拠を一切使わない循環性回避）。
+
+### iter-fc6 結果（コード変更なし、ラベル修正のみ）
+
+```
+clip1: F1=0.769  P=0.714  R=0.833  IoU=0.619
+clip2: F1=1.000  P=1.000  R=1.000  IoU=0.700  ← 循環ラベル（参考値のみ）
+Aggregate F1=0.885  (target ≥ 0.85)
+```
+
+- TP: 13 → **15**（GT15・GT16 がそれぞれ TP 化）
+- FP: 8 → **6**、FN: 5 → **3**
+- clip1 単体 F1: 0.667 → **0.769**（+0.102）
+- Aggregate F1=0.885 は clip2 循環ラベルによる過大評価のため、**clip1 単体 0.769 が誠実なベースライン**
+
+### 残存 FN（iter-fc6 時点、clip1）
+
+| GT | 原因 |
+|---|---|
+| GT4[109,136] | 2 バーストの gap=4.0s、bridge 候補 minTB 閾値未満 |
+| GT11[368,378] | 低 blob 高 minTB ラリー、検出開始遅延 |
+| GT12[383,395] | GT11 と同一検出窓に包含 |
+
+### 次フェーズ
+
+Phase D-2: clip2（循環ラベル上書き）と fukui-clip1（新規）を scoreboard 基準で独立ラベリング → 3 本 dev set でアルゴリズム反復再開。
