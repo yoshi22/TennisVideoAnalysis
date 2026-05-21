@@ -49,4 +49,11 @@ yarn-error.*
 eval/datasets/**/videos/
 eval/datasets/**/clips/
 eval/datasets/**/frames/
+eval/datasets/**/frames30/
+eval/datasets/**/audio/
+eval/datasets/**/pose/
+eval/datasets/**/ball-tracks/
 eval/results/
+scripts/eval/__pycache__/
+*.ipa
+*.pt

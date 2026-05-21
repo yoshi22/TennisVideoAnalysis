@@ -1,0 +1,7 @@
+# eval harness Python dependencies (Python 3.11)
+# Do not install on device — these are eval/training tools only.
+ultralytics>=8.4
+opencv-python>=4.13
+scikit-learn>=1.3
+numpy>=1.24
+pandas>=2.0
