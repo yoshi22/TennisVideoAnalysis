@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "videoId": "yt-maitou-suzumura-fukui-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=OUVjrjDr0Ww",
+  "sourceSha256": "",
+  "fps": 30,
+  "clipOffsetSec": 0,
+  "note": "鈴村 vs 福井 at 大正セントラルテニスクラブ目白. Soft-tennis singles, hard court (indoor). Clip 0-600s. Score display: LED POINTS counter incrementing by 1 per point won (not 15/30/40 — soft tennis format). INDEPENDENT label created 2026-05-19 via scoreboard transitions in 3fps JPEG frames. Boundary accuracy ±15s; server/winner/endReason omitted. Score at clip start: 0-0 (display initialises). Final score at clip end: 12-12. FP density windows (no score change): W2[53,64], W7[208,221], W9[253,257], W10[261,265], W16[402,409], W17[418,430], W19[487,500], W21[548,553]. Undetected algorithm rallies: 3 in gap t=146-183s, 1 in gap t=221-233s, 1 in gap t=323-333s, 1 in gap t=370-380s, 1 in gap t=430-442s, 1 in gap t=481-505s. W18[442,481] and W20[505,543] each contain 2 merged rallies (density windows too long for single rally).",
+  "rallies": [
+    {
+      "startSec": 6.0,
+      "endSec": 48.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 69.0,
+      "endSec": 82.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 89.0,
+      "endSec": 127.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 135.0,
+      "endSec": 145.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 149.0,
+      "endSec": 161.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 164.0,
+      "endSec": 175.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 177.0,
+      "endSec": 182.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 183.0,
+      "endSec": 200.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 222.0,
+      "endSec": 232.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 233.0,
+      "endSec": 241.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 273.0,
+      "endSec": 298.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 309.0,
+      "endSec": 322.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 324.0,
+      "endSec": 332.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 333.0,
+      "endSec": 343.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 357.0,
+      "endSec": 369.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 371.0,
+      "endSec": 379.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 380.0,
+      "endSec": 398.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 431.0,
+      "endSec": 441.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 442.0,
+      "endSec": 461.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 463.0,
+      "endSec": 480.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 483.0,
+      "endSec": 503.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 505.0,
+      "endSec": 542.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 564.0,
+      "endSec": 586.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 592.0,
+      "endSec": 598.0,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    }
+  ]
+}

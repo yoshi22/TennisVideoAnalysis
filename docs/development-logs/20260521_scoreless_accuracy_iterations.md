@@ -193,3 +193,99 @@ run: `iter-scoreless-augment2`
 - `iter-scoreless-rerank1`、`iter-scoreless-augment1`、`iter-scoreless-augment2` はすべて current best を下回った。
 - TrackNet V1 gate は AUC 不足で不採用。
 - 目標 `0.85` までは、追加データの独立ラベルと、TrackNetV4 などのより強い ball/motion perception が必要。
+
+---
+
+## Iter 4: fixed-camera-v2 scaffold と再現 smoke
+
+追加:
+
+- `eval/datasets/fixed-camera-v2/README.md`
+- `eval/datasets/fixed-camera-v2/candidates.json`
+- `eval/datasets/fixed-camera-v2/labels/*`
+- `scripts/eval/scoreless-rally-refine.py --dataset`
+- `scripts/eval/scoreless-window-rerank.py` から refine module への dataset 伝播
+- `scripts/eval/scoreless-rally-refine.py --allow-refined-base` guard
+
+目的:
+
+- `fixed-camera-v1` の3clipを seed として `fixed-camera-v2` 評価パイプラインを作る。
+- raw video / frames / results は git 管理せず、labels と候補metadataだけを管理する。
+- 新規clipの独立ラベル追加後に、scoreless method を LOCO / holdout で検証できる状態にする。
+
+Web / 論文再調査:
+
+- TrackNet: https://arxiv.org/abs/1907.03698
+  - 高速・小物体の heatmap tracking。既存 TrackNet V1 gate は今回の fixed-camera では AUC 不足。
+- TrackNetV4: https://arxiv.org/abs/2409.14543
+  - frame differencing と motion attention を TrackNet 系に組み込む。現在の scoreless visual activity failure と方向性が合う。
+- TOTNet: https://arxiv.org/abs/2508.09650
+  - occlusion-aware temporal tracking。open weights / runtime が実用的なら次候補。
+
+v2 seed baseline:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/scoreless-rally-refine.py \
+  --dataset fixed-camera-v2 \
+  --run-id iter-v2-scoreless-refine-seed \
+  --base-run-id iter-fc6-3clip
+
+npm run eval:score -- \
+  --run-id iter-v2-scoreless-refine-seed \
+  --dataset fixed-camera-v2 \
+  --baseline-run-id iter-scoreless-refine1
+```
+
+結果:
+
+| clip | F1 | P | R |
+|---|---:|---:|---:|
+| `yt-maitou-suzumura-fukui-clip1` | 0.696 | 0.727 | 0.667 |
+| `yt-maitou-suzumura-muko-clip1` | 0.769 | 0.714 | 0.833 |
+| `yt-maitou-suzumura-muko-clip2` | 0.437 | 0.412 | 0.467 |
+| **Aggregate** | **0.634** | **0.618** | **0.656** |
+
+判定: **reproduced**
+
+補足:
+
+- `iter-scoreless-refine1` をさらに refine した smoke (`iter-v2-scoreless-refine1`) は aggregate F1 `0.601` に低下。
+- これは dataset 問題ではなく、post-refinement を二重適用したことによる過trim。baseline としては採用しない。
+- 同じ誤操作を避けるため、refine 済み run を base にした二重 refine は明示的な `--allow-refined-base` なしでは停止するようにした。
+
+v2 reranker smoke:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/scoreless-window-rerank.py \
+  --dataset fixed-camera-v2 \
+  --run-id iter-v2-scoreless-rerank-smoke \
+  --base-run-id iter-v2-scoreless-refine-seed
+
+npm run eval:score -- \
+  --run-id iter-v2-scoreless-rerank-smoke \
+  --dataset fixed-camera-v2 \
+  --baseline-run-id iter-v2-scoreless-refine-seed
+```
+
+結果:
+
+| clip | F1 | P | R |
+|---|---:|---:|---:|
+| `yt-maitou-suzumura-fukui-clip1` | 0.708 | 0.708 | 0.708 |
+| `yt-maitou-suzumura-muko-clip1` | 0.625 | 0.500 | 0.833 |
+| `yt-maitou-suzumura-muko-clip2` | 0.485 | 0.444 | 0.533 |
+| **Aggregate** | **0.606** | **0.551** | **0.692** |
+
+判定: **rejected**
+
+理由:
+
+- fukui と muko-clip2 の recall は一部改善するが、muko-clip1 の FP が増えて aggregate は `0.634` を下回る。
+- `analyze-errors.py` の next hypothesis は引き続き `yt-maitou-suzumura-muko-clip2` の precision 改善。
+- 3clip seed だけでは reranker が clip 固有差に過学習しやすい。
+
+現時点の採用方針:
+
+- current best は `iter-scoreless-refine1` / `iter-v2-scoreless-refine-seed` の aggregate F1 `0.634`。
+- `scoreless-window-rerank.py` は研究用に残すが、production には採用しない。
+- 次の精度改善 iteration は、新規候補動画の独立ラベルを `fixed-camera-v2` に追加してから実施する。ラベル無しで目標 F1 `0.85` 到達を主張しない。

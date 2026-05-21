@@ -454,6 +454,7 @@ def main() -> None:
     LABEL_DIR = DATASET_DIR / "labels"
 
     refine = load_refine_module()
+    refine.set_dataset(args.dataset)
     activity_args = argparse.Namespace(
         sample_fps=args.sample_fps,
         active_blob_threshold=11,

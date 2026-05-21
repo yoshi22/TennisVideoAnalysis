@@ -56,6 +56,7 @@ class ActivityRow:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-id", default="iter-scoreless-refine1")
+    parser.add_argument("--dataset", default=DATASET)
     parser.add_argument("--base-run-id", default="iter-fc6-3clip")
     parser.add_argument("--sample-fps", type=float, default=3.0)
     parser.add_argument("--active-blob-threshold", type=int, default=11)
@@ -72,7 +73,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-active-coverage", type=float, default=0.0)
     parser.add_argument("--merge-eps-sec", type=float, default=0.25)
     parser.add_argument("--prune-inactive-windows", action="store_true")
+    parser.add_argument("--allow-refined-base", action="store_true")
     return parser.parse_args()
+
+
+def set_dataset(dataset: str) -> None:
+    global DATASET, DATASET_DIR, FRAMES_DIR
+    DATASET = dataset
+    DATASET_DIR = BASE / "eval/datasets" / DATASET
+    FRAMES_DIR = DATASET_DIR / "frames"
 
 
 def frame_number(path: Path) -> int:
@@ -358,10 +367,21 @@ def refine_clip(
 
 def main() -> None:
     args = parse_args()
+    set_dataset(args.dataset)
     base_dir = RESULTS_DIR / args.base_run_id
     base_per_video = base_dir / "per-video"
     if not base_per_video.exists():
         raise FileNotFoundError(f"Base per-video results missing: {base_per_video}")
+    base_manifest_path = base_dir / "manifest.json"
+    if base_manifest_path.exists() and not args.allow_refined_base:
+        base_manifest = load_json(base_manifest_path)
+        base_model = base_manifest.get("config", {}).get("model")
+        if base_model == "scoreless visual activity post-refinement":
+            raise ValueError(
+                f"{args.base_run_id} is already a scoreless refinement. "
+                "Use the original detector run as --base-run-id, or pass "
+                "--allow-refined-base to intentionally refine twice."
+            )
 
     run_dir = RESULTS_DIR / args.run_id
     per_video_dir = run_dir / "per-video"
@@ -404,6 +424,7 @@ def main() -> None:
         "minActiveCoverage": args.min_active_coverage,
         "mergeEpsSec": args.merge_eps_sec,
         "pruneInactiveWindows": args.prune_inactive_windows,
+        "allowRefinedBase": args.allow_refined_base,
     }
     created_at = datetime.now(timezone.utc).isoformat()
     write_json(

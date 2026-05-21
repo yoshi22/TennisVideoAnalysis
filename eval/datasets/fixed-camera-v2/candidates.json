@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "dataset": "fixed-camera-v2",
+  "createdAt": "2026-05-21",
+  "purpose": "Backlog for expanding scoreless fixed-camera rally detection validation.",
+  "seedClips": [
+    "yt-maitou-suzumura-fukui-clip1",
+    "yt-maitou-suzumura-muko-clip1",
+    "yt-maitou-suzumura-muko-clip2"
+  ],
+  "candidateVideos": [
+    {
+      "id": "Na9S4gJzel0",
+      "title": "テニステップ 男子シングルス大会 西大宮テニスクラブ",
+      "url": "https://www.youtube.com/watch?v=Na9S4gJzel0",
+      "duration": "1:25:39",
+      "sourceSearch": "yt-dlp flat playlist search",
+      "status": "candidate",
+      "notes": "General-user tournament style. Needs manual fixed-camera clip selection and independent labels."
+    },
+    {
+      "id": "61L1sW26dtg",
+      "title": "多摩社会人テニス連盟 シングルス",
+      "url": "https://www.youtube.com/watch?v=61L1sW26dtg",
+      "duration": "37:03",
+      "sourceSearch": "yt-dlp flat playlist search",
+      "status": "candidate",
+      "notes": "Adult singles match. Needs camera stability check and independent labels."
+    },
+    {
+      "id": "-FQkEndhdNo",
+      "title": "草トーナメント 中級シングルス その2",
+      "url": "https://www.youtube.com/watch?v=-FQkEndhdNo",
+      "duration": "36:51",
+      "sourceSearch": "yt-dlp flat playlist search",
+      "status": "candidate",
+      "notes": "General-user intermediate singles. Needs manual clip selection and labels."
+    },
+    {
+      "id": "aIAx_p6LlFo",
+      "title": "USTA 4.5 Baseliner vs. USTA 4.0 Pusher",
+      "url": "https://www.youtube.com/watch?v=aIAx_p6LlFo",
+      "duration": "15:12",
+      "sourceSearch": "yt-dlp flat playlist search",
+      "status": "candidate",
+      "notes": "English-language recreational/league play. Needs fixed-camera and visibility review."
+    },
+    {
+      "id": "WuywQtrG4Rw",
+      "title": "USTA 4.5 vs WTA #800",
+      "url": "https://www.youtube.com/watch?v=WuywQtrG4Rw",
+      "duration": "17:09",
+      "sourceSearch": "yt-dlp flat playlist search",
+      "status": "candidate",
+      "notes": "Competitive general-play mix. Needs labelability review."
+    },
+    {
+      "id": "29hnQXTyUzM",
+      "title": "USTA 4.5 Baseliner vs USTA 4.5 Big Hitter",
+      "url": "https://www.youtube.com/watch?v=29hnQXTyUzM",
+      "duration": "17:39",
+      "sourceSearch": "yt-dlp flat playlist search",
+      "status": "candidate",
+      "notes": "Recreational singles. Needs fixed-camera and occlusion review."
+    }
+  ],
+  "methodResearch": [
+    {
+      "name": "TrackNet",
+      "url": "https://arxiv.org/abs/1907.03698",
+      "reason": "Baseline heatmap approach for high-speed tiny ball tracking."
+    },
+    {
+      "name": "TrackNetV4",
+      "url": "https://arxiv.org/abs/2409.14543",
+      "reason": "Adds frame-difference motion attention; aligns with current scoreless visual activity failures."
+    },
+    {
+      "name": "TOTNet",
+      "url": "https://arxiv.org/abs/2508.09650",
+      "reason": "Occlusion-aware temporal tracking candidate if code/weights/runtime are practical."
+    }
+  ],
+  "acceptanceGate": {
+    "targetEventF1": 0.85,
+    "minimumValidation": "Leave-one-clip-out or holdout validation across expanded clips.",
+    "scoreInputsAllowed": false
+  }
+}
