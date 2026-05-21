@@ -9,23 +9,28 @@ Computes per-frame activity metrics from pose TSVs, then reports:
   - Verdict: PASS (viable → proceed to rally-classify.py) or FAIL (escalate)
 
 Usage:
-  /usr/local/bin/python3.11 scripts/eval/pose-gate.py
+  /usr/local/bin/python3.11 scripts/eval/pose-gate.py --dataset fixed-camera-v2
 
 Reads:
-  eval/datasets/fixed-camera-v1/pose/<clipId>.tsv
-  eval/datasets/fixed-camera-v1/labels/<clipId>.json
+  eval/datasets/<dataset>/pose/<clipId>.tsv
+  eval/datasets/<dataset>/labels/<clipId>.json
 """
 
 import sys
 import json
+import argparse
 import numpy as np
 import pandas as pd
+from datetime import datetime, timezone
 from pathlib import Path
 from sklearn.metrics import roc_auc_score
 
 BASE = Path(__file__).parent.parent.parent
-POSE_DIR  = BASE / "eval/datasets/fixed-camera-v1/pose"
-LABEL_DIR = BASE / "eval/datasets/fixed-camera-v1/labels"
+DATASET = "fixed-camera-v1"
+DATASET_DIR = BASE / "eval/datasets" / DATASET
+POSE_DIR  = DATASET_DIR / "pose"
+LABEL_DIR = DATASET_DIR / "labels"
+RESULTS_DIR = BASE / "eval/results"
 
 CLIPS = [
     "yt-maitou-suzumura-muko-clip1",
@@ -38,6 +43,34 @@ CLIP_FPS = {
     "yt-maitou-suzumura-muko-clip2":  3,
     "yt-maitou-suzumura-fukui-clip1": 3,
 }
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", default=DATASET)
+    parser.add_argument("--clip-id", action="append")
+    parser.add_argument("--run-id", default="pose-gate")
+    parser.add_argument("--auc-threshold", type=float, default=0.75)
+    return parser.parse_args()
+
+
+def set_dataset(dataset: str) -> None:
+    global DATASET, DATASET_DIR, POSE_DIR, LABEL_DIR
+    DATASET = dataset
+    DATASET_DIR = BASE / "eval/datasets" / DATASET
+    POSE_DIR = DATASET_DIR / "pose"
+    LABEL_DIR = DATASET_DIR / "labels"
+
+
+def clip_ids(selected: list[str] | None) -> list[str]:
+    wanted = set(selected or [])
+    ids = []
+    for path in sorted(LABEL_DIR.glob("*.json")):
+        clip_id = path.stem
+        if wanted and clip_id not in wanted:
+            continue
+        ids.append(clip_id)
+    return ids
 
 
 def load_pose(clip_id: str) -> pd.DataFrame:
@@ -234,20 +267,23 @@ def check_clip(clip_id: str, verbose: bool = True) -> dict:
 
 
 def main():
+    args = parse_args()
+    set_dataset(args.dataset)
     print("═" * 60)
     print("Phase G-2 Analysis Gate — pose feature separability check")
     print("═" * 60)
+    print(f"Dataset: {DATASET}")
 
-    AUC_THRESHOLD = 0.75
+    AUC_THRESHOLD = args.auc_threshold
     all_results = []
-    for clip_id in CLIPS:
+    for clip_id in clip_ids(args.clip_id):
         print(f"\n── {clip_id}")
         try:
             r = check_clip(clip_id, verbose=True)
             all_results.append(r)
         except FileNotFoundError as e:
-            print(f"  ERROR: {e}", file=sys.stderr)
-            sys.exit(1)
+            print(f"  SKIP: {e}", file=sys.stderr)
+            continue
 
     print("\n" + "═" * 60)
     print("Gate Summary")
@@ -264,7 +300,10 @@ def main():
         print(f"    best_feature={feat}  AUC={auc:.3f}  sign_correct={sign}  → {status}")
 
     print()
-    if all_pass:
+    if not all_results:
+        all_pass = False
+        print("❌ GATE FAIL — no pose files were processed.")
+    elif all_pass:
         print("✅ GATE PASS — pose features separate rally/inter-point in all 3 clips.")
         print("   Proceed to rally-classify.py (G-3).")
     else:
@@ -272,6 +311,38 @@ def main():
         print("   Try: adjust court ROI, increase fps, use keypoint-velocity features.")
         print("   Escalate if no improvement after tuning.")
     print("═" * 60)
+
+    run_dir = RESULTS_DIR / args.run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "runId": args.run_id,
+        "dataset": DATASET,
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "config": {
+            "model": "pose feature separability gate",
+            "scoreInputs": "none",
+            "aucThreshold": AUC_THRESHOLD,
+        },
+        "perClip": {row["clip_id"]: row for row in all_results},
+        "verdict": {
+            "passed": bool(all_results) and all_pass,
+            "reason": "All processed clips reached the pose AUC gate" if all_results and all_pass else "Missing pose files or at least one clip failed the pose AUC gate",
+        },
+    }
+    with open(run_dir / "pose-gate.json", "w") as f:
+        json.dump(payload, f, indent=2)
+    with open(run_dir / "manifest.json", "w") as f:
+        json.dump(
+            {
+                "runId": args.run_id,
+                "dataset": DATASET,
+                "createdAt": payload["createdAt"],
+                "config": payload["config"],
+            },
+            f,
+            indent=2,
+        )
+    print(f"Wrote {run_dir / 'pose-gate.json'}")
 
 
 if __name__ == "__main__":

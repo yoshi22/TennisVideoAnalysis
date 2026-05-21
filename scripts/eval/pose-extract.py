@@ -4,13 +4,14 @@ pose-extract.py — Run YOLO11n-pose on clip frames to extract per-frame
 person detections. Outputs a compact TSV + JSON for each clip.
 
 Usage:
-  /usr/local/bin/python3.11 scripts/eval/pose-extract.py [--clip <clipId>] [--stride <n>]
+  /usr/local/bin/python3.11 scripts/eval/pose-extract.py \
+      --dataset fixed-camera-v2 [--clip <clipId>] [--stride <n>]
 
 Reads:
-  eval/datasets/fixed-camera-v1/frames/<clipId>/frame_*.jpg
+  eval/datasets/<dataset>/frames/<clipId>/frame_*.jpg
 
 Writes:
-  eval/datasets/fixed-camera-v1/pose/<clipId>.tsv
+  eval/datasets/<dataset>/pose/<clipId>.tsv
   (columns: frameNum timeSec nPersons
             p0_cx p0_cy p0_area p0_conf p0_wrist_l_x p0_wrist_l_y p0_wrist_r_x p0_wrist_r_y
             p1_cx ...  (up to 4 persons, NaN-padded))
@@ -32,8 +33,11 @@ import numpy as np
 from pathlib import Path
 
 BASE = Path(__file__).parent.parent.parent
-FRAMES_DIR = BASE / "eval/datasets/fixed-camera-v1/frames"
-POSE_DIR = BASE / "eval/datasets/fixed-camera-v1/pose"
+DATASET = "fixed-camera-v1"
+DATASET_DIR = BASE / "eval/datasets" / DATASET
+FRAMES_DIR = DATASET_DIR / "frames"
+LABEL_DIR = DATASET_DIR / "labels"
+POSE_DIR = DATASET_DIR / "pose"
 
 # Clip configuration: id → (fps, default_stride)
 CLIP_CONFIGS = {
@@ -58,14 +62,43 @@ MAX_PERSONS = 4
 
 def parse_args():
     p = argparse.ArgumentParser()
+    p.add_argument("--dataset", default=DATASET)
     p.add_argument("--clip", default=None, help="Clip ID to process (default: all)")
     p.add_argument("--stride", type=int, default=None, help="Frame stride override")
     p.add_argument("--conf", type=float, default=0.25, help="YOLO confidence threshold")
     return p.parse_args()
 
 
+def set_dataset(dataset: str) -> None:
+    global DATASET, DATASET_DIR, FRAMES_DIR, LABEL_DIR, POSE_DIR
+    DATASET = dataset
+    DATASET_DIR = BASE / "eval/datasets" / DATASET
+    FRAMES_DIR = DATASET_DIR / "frames"
+    LABEL_DIR = DATASET_DIR / "labels"
+    POSE_DIR = DATASET_DIR / "pose"
+
+
+def clip_ids() -> list[str]:
+    return sorted(path.stem for path in LABEL_DIR.glob("*.json"))
+
+
+def frame_number(path: Path) -> int:
+    match = re.search(r"(\d+)", path.name)
+    return int(match.group(1)) if match else 0
+
+
+def clip_config(clip_id: str) -> dict[str, int]:
+    if clip_id in CLIP_CONFIGS:
+        return CLIP_CONFIGS[clip_id]
+    frames_dir = FRAMES_DIR / clip_id
+    files = sorted([f for f in frames_dir.iterdir() if f.suffix == ".jpg"], key=frame_number)
+    fps = 30 if len(files) > 5000 else 3
+    stride = max(1, round(fps / 5))
+    return {"fps": fps, "stride": stride}
+
+
 def extract_clip(model, clip_id: str, stride_override, conf_thresh: float):
-    cfg = CLIP_CONFIGS[clip_id]
+    cfg = clip_config(clip_id)
     fps = cfg["fps"]
     stride = stride_override if stride_override is not None else cfg["stride"]
 
@@ -74,7 +107,7 @@ def extract_clip(model, clip_id: str, stride_override, conf_thresh: float):
         print(f"  SKIP: frames dir not found: {frames_dir}", file=sys.stderr)
         return
 
-    files = sorted([f for f in frames_dir.iterdir() if f.suffix == ".jpg"])
+    files = sorted([f for f in frames_dir.iterdir() if f.suffix == ".jpg"], key=frame_number)
     if not files:
         print(f"  SKIP: no jpg frames in {frames_dir}", file=sys.stderr)
         return
@@ -99,9 +132,7 @@ def extract_clip(model, clip_id: str, stride_override, conf_thresh: float):
     print(f"  {clip_id}: fps={fps} stride={stride} → {len(selected)} frames to process")
 
     for j, fpath in enumerate(selected):
-        # Extract frame index from filename (frame_000123.jpg → 123)
-        m = re.search(r"(\d+)", fpath.name)
-        frame_num = int(m.group(1)) if m else (j * stride + stride)
+        frame_num = frame_number(fpath)
         time_sec = frame_num / fps
 
         results = model(str(fpath), conf=conf_thresh, verbose=False)
@@ -165,16 +196,14 @@ def extract_clip(model, clip_id: str, stride_override, conf_thresh: float):
 
 def main():
     args = parse_args()
+    set_dataset(args.dataset)
     from ultralytics import YOLO
 
     print("Loading YOLO11n-pose model...")
     model = YOLO("yolo11n-pose.pt")
 
-    clips = [args.clip] if args.clip else list(CLIP_CONFIGS.keys())
+    clips = [args.clip] if args.clip else clip_ids()
     for clip_id in clips:
-        if clip_id not in CLIP_CONFIGS:
-            print(f"Unknown clip: {clip_id}", file=sys.stderr)
-            continue
         print(f"\n── {clip_id} ──")
         extract_clip(model, clip_id, args.stride, args.conf)
 

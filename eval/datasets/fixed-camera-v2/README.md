@@ -47,6 +47,21 @@ After a fixed-camera interval is chosen, add a `selectedClips` entry with
   --clip-id <clip-id>
 ```
 
+Useful local tools:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/screen-fixed-camera-candidates.py \
+  --dataset fixed-camera-v2 \
+  --candidate-id aIAx_p6LlFo
+
+/usr/local/bin/python3.11 scripts/eval/validate-rally-labels.py \
+  --dataset fixed-camera-v2
+
+/usr/local/bin/python3.11 scripts/eval/label-audit-report.py \
+  --dataset fixed-camera-v2 \
+  --run-id iter-v2-scoreless-refine-seed
+```
+
 ## Method direction
 
 Current local validation rejected the TrackNet V1 confidence gate on this
@@ -64,3 +79,8 @@ The lightweight motion-attention proxy in
 `scripts/eval/motion-attention-gate.py` is the first gate for this direction.
 On the three seed clips, `iter-motion-attention-gate1` did not pass the AUC
 gate, so it should not be integrated into the rally reranker yet.
+
+`scripts/eval/scoreless-window-rerank-v2.py` can combine visual, motion, and
+pose features when they exist. On the three seed clips, `iter-rerank-v2-seed`
+regressed to aggregate F1 `0.590`, so it is also research-only until expanded
+labels are available.

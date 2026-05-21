@@ -347,3 +347,86 @@ v2候補の優先順位:
 - current best は引き続き `iter-scoreless-refine1` / `iter-v2-scoreless-refine-seed` の aggregate F1 `0.634`。
 - `motion-attention-gate.py` は研究用 gate として残すが、production へ統合しない。
 - 精度改善の次手は、`fixed-camera-v2` の新規独立ラベル追加を優先する。ラベル追加後に、TrackNetV4 / TOTNet 系の実モデル導入または fine-tuning を評価する。
+
+---
+
+## Iter 6: ローカル限定 9clip 化に向けた実装基盤
+
+追加:
+
+- `scripts/eval/validate-rally-labels.py`
+- `scripts/eval/screen-fixed-camera-candidates.py`
+- `scripts/eval/label-audit-report.py`
+- `scripts/eval/pose-extract.py --dataset`
+- `scripts/eval/pose-gate.py --dataset`
+- `scripts/eval/scoreless-window-rerank-v2.py`
+- `eval/datasets/**/screening/` を git ignore
+
+目的:
+
+- `fixed-camera-v2` を seed 3clip から 9clip へ拡張する前提で、候補確認、ラベル検証、ラベル監査、pose/motion/visual特徴の評価経路を整備する。
+- ローカルCPU限定のため、TrackNetV4/TOTNetのfine-tuningではなく、まずは公開重み/軽量特徴/HistGradientBoosting の範囲で評価する。
+- ラベル無しでF1 `0.85` 到達を主張しない。新規独立ラベルを追加してから expanded v2 leaderboard を固定する。
+
+検証:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/validate-rally-labels.py \
+  --dataset fixed-camera-v2
+
+/usr/local/bin/python3.11 scripts/eval/screen-fixed-camera-candidates.py \
+  --dataset fixed-camera-v2 \
+  --dry-run \
+  --candidate-id aIAx_p6LlFo
+
+/usr/local/bin/python3.11 scripts/eval/pose-gate.py \
+  --dataset fixed-camera-v2 \
+  --run-id iter-pose-gate-v2-seed
+
+/usr/local/bin/python3.11 scripts/eval/scoreless-window-rerank-v2.py \
+  --dataset fixed-camera-v2 \
+  --run-id iter-rerank-v2-seed \
+  --base-run-id iter-v2-scoreless-refine-seed
+
+npm run eval:score -- \
+  --run-id iter-rerank-v2-seed \
+  --dataset fixed-camera-v2 \
+  --baseline-run-id iter-v2-scoreless-refine-seed
+```
+
+結果:
+
+| run | aggregate F1 | P | R | 判定 |
+|---|---:|---:|---:|---|
+| `iter-v2-scoreless-refine-seed` | 0.634 | 0.618 | 0.656 | current best |
+| `iter-rerank-v2-seed` | 0.590 | 0.542 | 0.656 | rejected |
+
+clip別:
+
+| clip | baseline F1 | rerank-v2 F1 |
+|---|---:|---:|
+| `yt-maitou-suzumura-fukui-clip1` | 0.696 | 0.667 |
+| `yt-maitou-suzumura-muko-clip1` | 0.769 | 0.714 |
+| `yt-maitou-suzumura-muko-clip2` | 0.437 | 0.389 |
+
+判定: **rejected**
+
+理由:
+
+- motion feature は `iter-motion-attention-gate1` で既にAUC不足。
+- v2 seedにはpose TSVがまだなく、rerank-v2は実質 visual + weak motion のみ。
+- 3clip seed のままではモデルがclip固有差に過学習し、全clipでbaselineを下回った。
+
+次の必須作業:
+
+1. `screen-fixed-camera-candidates.py` で6候補のpreview/contact sheetを作る。
+2. 各候補から固定カメラ区間を1つ選び、`candidates.json` に `selectedClips` を追加する。
+3. `prepare-fixed-camera-assets.py --dataset fixed-camera-v2 --include-candidate-clips` でframesを作る。
+4. 手作業で独立ラベルを作り、`validate-rally-labels.py` を通す。
+5. 9clipで baseline / pose gate / rerank-v2 を再評価する。
+
+現時点の採用方針:
+
+- production採用は引き続き `iter-scoreless-refine1` 相当。
+- `scoreless-window-rerank-v2.py` は expanded v2 で再評価するまで研究用。
+- ローカル限定でF1 `0.85` に届かない場合は、GPU fine-tuning が必要な段階として扱う。
