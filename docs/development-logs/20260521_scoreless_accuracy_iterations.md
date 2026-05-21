@@ -430,3 +430,61 @@ clip別:
 - production採用は引き続き `iter-scoreless-refine1` 相当。
 - `scoreless-window-rerank-v2.py` は expanded v2 で再評価するまで研究用。
 - ローカル限定でF1 `0.85` に届かない場合は、GPU fine-tuning が必要な段階として扱う。
+
+---
+
+## Iter 7: fixed-camera-v2 候補6本のスクリーニング完了
+
+目的:
+
+- seed 3clip のまま特徴量を重ねても過学習しやすいため、まず新規6clip候補の固定カメラ区間を確定する。
+- ラベルを捏造せず、preview/contact sheetで確認できた区間だけを `selectedClips` として登録する。
+- 9clip評価へ進むための入力素材を作る。F1改善は、手動ラベル作成後に初めて評価する。
+
+実行:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/screen-fixed-camera-candidates.py \
+  --dataset fixed-camera-v2 \
+  --max-height 480 \
+  --preview-duration-sec 900 \
+  --sheet-interval-sec 30
+```
+
+生成物:
+
+- `eval/datasets/fixed-camera-v2/screening/*-contact-0s.jpg`
+- `eval/datasets/fixed-camera-v2/screening/*-preview-0s.mp4`
+- `eval/datasets/fixed-camera-v2/videos/source-*.mp4`
+
+上記は `.gitignore` 配下のローカル確認用ファイルで、Gitには含めない。
+
+選定結果:
+
+| priority | clipId | source | offset | duration | 判定 |
+|---:|---|---|---:|---:|---|
+| 1 | `yt-61l1sw26dtg-clip1` | `61L1sW26dtg` | 0 | 900 | fixed full-court, best new label candidate |
+| 2 | `yt-29hnqxtyuzm-clip1` | `29hnQXTyUzM` | 30 | 870 | fixed full-court, hard shadows and score overlay |
+| 3 | `yt-na9s4gjzel0-clip1` | `Na9S4gJzel0` | 0 | 900 | fixed wide view, adjacent courts/background motion |
+| 4 | `yt-wuywqtrg4rw-clip1` | `WuywQtrG4Rw` | 270 | 510 | middle fixed section only |
+| 5 | `yt-aiax-p6llfo-clip1` | `aIAx_p6LlFo` | 90 | 630 | middle fixed section only, glare/cuts present |
+| 6 | `yt-fqk-endhdno-clip1` | `-FQkEndhdNo` | 0 | 900 | fixed full-court but severe fence occlusion; hard case |
+
+追加実装:
+
+- `screen-fixed-camera-candidates.py` に `--start-sec`, `--sheet-cols`, `--sheet-rows` を追加済み。
+- contact sheet / preview のファイル名に start秒を含めた。
+- contact sheet生成に `ffmpeg -update 1` を追加し、単一JPEG出力の警告を抑制した。
+
+判定:
+
+- `fixed-camera-v2` は seed 3clip + candidate 6clip の 9clip化に進める状態になった。
+- まだ新規clipのrallyラベルは存在しないため、aggregate F1は更新しない。
+- 次に必要なのは、各 `selectedClips` の手動ラベル作成、`validate-rally-labels.py --dataset fixed-camera-v2`、その後の baseline / pose gate / rerank-v2 再評価。
+
+次の評価順:
+
+1. 優先度1から5までを先に手動ラベル化し、最低8clip評価を作る。
+2. 優先度6のフェンス越しclipは hard-case holdout として最後に加える。
+3. expanded評価で `iter-v2-scoreless-refine-seed` を再実行し、clip別の失敗要因を確認する。
+4. それでもF1が伸びない場合は、TrackNetV4/TOTNet系のボール追跡モデルをローカル推論またはGPU fine-tuning候補として切り分ける。

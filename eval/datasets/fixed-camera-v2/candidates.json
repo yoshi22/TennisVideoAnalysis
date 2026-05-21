@@ -17,7 +17,26 @@
       "sourceSearch": "yt-dlp flat playlist search",
       "status": "selected_for_labeling",
       "selectionPriority": 3,
-      "notes": "General-user tournament style. Needs manual fixed-camera clip selection and independent labels."
+      "screening": {
+        "completedAt": "2026-05-21",
+        "contactSheet": "screening/Na9S4gJzel0-contact-0s.jpg",
+        "preview": "screening/Na9S4gJzel0-preview-0s.mp4",
+        "decision": "clip_selected",
+        "reason": "Stable wide outdoor tournament view in the first 15 minutes; adjacent courts and occasional foreground players require careful manual labels."
+      },
+      "selectedClips": [
+        {
+          "clipId": "yt-na9s4gjzel0-clip1",
+          "sourceVideoId": "Na9S4gJzel0",
+          "offsetSec": 0,
+          "durationSec": 900,
+          "status": "needs_manual_labeling",
+          "labelingPriority": 3,
+          "selectionSource": "screening/Na9S4gJzel0-contact-0s.jpg",
+          "notes": "First 15 minutes are fixed-camera and labelable, but contain multi-court background motion."
+        }
+      ],
+      "notes": "General-user tournament style. Screened as a labelable fixed-camera clip with background-court noise."
     },
     {
       "id": "61L1sW26dtg",
@@ -25,8 +44,28 @@
       "url": "https://www.youtube.com/watch?v=61L1sW26dtg",
       "duration": "37:03",
       "sourceSearch": "yt-dlp flat playlist search",
-      "status": "candidate",
-      "notes": "Adult singles match. Needs camera stability check and independent labels."
+      "status": "selected_for_labeling",
+      "selectionPriority": 1,
+      "screening": {
+        "completedAt": "2026-05-21",
+        "contactSheet": "screening/61L1sW26dtg-contact-0s.jpg",
+        "preview": "screening/61L1sW26dtg-preview-0s.mp4",
+        "decision": "clip_selected",
+        "reason": "Clean fixed full-court view with stable camera and visible singles rallies."
+      },
+      "selectedClips": [
+        {
+          "clipId": "yt-61l1sw26dtg-clip1",
+          "sourceVideoId": "61L1sW26dtg",
+          "offsetSec": 0,
+          "durationSec": 900,
+          "status": "needs_manual_labeling",
+          "labelingPriority": 1,
+          "selectionSource": "screening/61L1sW26dtg-contact-0s.jpg",
+          "notes": "Best new label candidate: stable fixed full-court singles with modest scoreboard overlay."
+        }
+      ],
+      "notes": "Adult singles match. Screened as the highest-priority new manual-label candidate."
     },
     {
       "id": "-FQkEndhdNo",
@@ -34,8 +73,28 @@
       "url": "https://www.youtube.com/watch?v=-FQkEndhdNo",
       "duration": "36:51",
       "sourceSearch": "yt-dlp flat playlist search",
-      "status": "candidate",
-      "notes": "General-user intermediate singles. Needs manual clip selection and labels."
+      "status": "selected_for_labeling",
+      "selectionPriority": 6,
+      "screening": {
+        "completedAt": "2026-05-21",
+        "contactSheet": "screening/-FQkEndhdNo-contact-0s.jpg",
+        "preview": "screening/-FQkEndhdNo-preview-0s.mp4",
+        "decision": "hard_case_clip_selected",
+        "reason": "Fixed full-court interval is present, but foreground fence occlusion makes this a low-priority hard case."
+      },
+      "selectedClips": [
+        {
+          "clipId": "yt-fqk-endhdno-clip1",
+          "sourceVideoId": "-FQkEndhdNo",
+          "offsetSec": 0,
+          "durationSec": 900,
+          "status": "needs_manual_labeling_hard_case",
+          "labelingPriority": 6,
+          "selectionSource": "screening/-FQkEndhdNo-contact-0s.jpg",
+          "notes": "Fence occlusion is severe; include only as a hard-case validation clip after cleaner clips are labeled."
+        }
+      ],
+      "notes": "General-user intermediate singles. Fixed interval exists, but fence occlusion makes it a hard-case candidate."
     },
     {
       "id": "aIAx_p6LlFo",
@@ -44,8 +103,27 @@
       "duration": "15:12",
       "sourceSearch": "yt-dlp flat playlist search",
       "status": "selected_for_labeling",
-      "selectionPriority": 1,
-      "notes": "English-language recreational/league play. Needs fixed-camera and visibility review."
+      "selectionPriority": 5,
+      "screening": {
+        "completedAt": "2026-05-21",
+        "contactSheet": "screening/aIAx_p6LlFo-contact-0s.jpg",
+        "preview": "screening/aIAx_p6LlFo-preview-0s.mp4",
+        "decision": "clip_selected",
+        "reason": "Middle section is fixed-camera rally footage, while intro, sponsor screen, and outro/black frames must be excluded."
+      },
+      "selectedClips": [
+        {
+          "clipId": "yt-aiax-p6llfo-clip1",
+          "sourceVideoId": "aIAx_p6LlFo",
+          "offsetSec": 90,
+          "durationSec": 630,
+          "status": "needs_manual_labeling",
+          "labelingPriority": 5,
+          "selectionSource": "screening/aIAx_p6LlFo-contact-0s.jpg",
+          "notes": "Use the middle fixed-camera match section only; avoid intro, sponsor screen, and outro black frames."
+        }
+      ],
+      "notes": "English-language recreational/league play. Labelable middle segment with glare and cuts."
     },
     {
       "id": "WuywQtrG4Rw",
@@ -53,8 +131,28 @@
       "url": "https://www.youtube.com/watch?v=WuywQtrG4Rw",
       "duration": "17:09",
       "sourceSearch": "yt-dlp flat playlist search",
-      "status": "candidate",
-      "notes": "Competitive general-play mix. Needs labelability review."
+      "status": "selected_for_labeling",
+      "selectionPriority": 4,
+      "screening": {
+        "completedAt": "2026-05-21",
+        "contactSheet": "screening/WuywQtrG4Rw-contact-0s.jpg",
+        "preview": "screening/WuywQtrG4Rw-preview-0s.mp4",
+        "decision": "clip_selected",
+        "reason": "Middle section is a clean fixed full-court match segment; intro, ad, and outro interview content must be excluded."
+      },
+      "selectedClips": [
+        {
+          "clipId": "yt-wuywqtrg4rw-clip1",
+          "sourceVideoId": "WuywQtrG4Rw",
+          "offsetSec": 270,
+          "durationSec": 510,
+          "status": "needs_manual_labeling",
+          "labelingPriority": 4,
+          "selectionSource": "screening/WuywQtrG4Rw-contact-0s.jpg",
+          "notes": "Use only the middle fixed match section; skip close-up intro, sponsor/ad content, and outro."
+        }
+      ],
+      "notes": "Competitive general-play mix. Screened with a labelable middle fixed-camera interval."
     },
     {
       "id": "29hnQXTyUzM",
@@ -64,7 +162,26 @@
       "sourceSearch": "yt-dlp flat playlist search",
       "status": "selected_for_labeling",
       "selectionPriority": 2,
-      "notes": "Recreational singles. Needs fixed-camera and occlusion review."
+      "screening": {
+        "completedAt": "2026-05-21",
+        "contactSheet": "screening/29hnQXTyUzM-contact-0s.jpg",
+        "preview": "screening/29hnQXTyUzM-preview-0s.mp4",
+        "decision": "clip_selected",
+        "reason": "Clear fixed-camera recreational singles after the opening talk segment; strong shadows and score overlay should be represented in validation."
+      },
+      "selectedClips": [
+        {
+          "clipId": "yt-29hnqxtyuzm-clip1",
+          "sourceVideoId": "29hnQXTyUzM",
+          "offsetSec": 30,
+          "durationSec": 870,
+          "status": "needs_manual_labeling",
+          "labelingPriority": 2,
+          "selectionSource": "screening/29hnQXTyUzM-contact-0s.jpg",
+          "notes": "Skip opening talk. Fixed match section is clear but includes hard shadows and a score overlay."
+        }
+      ],
+      "notes": "Recreational singles. Screened as a high-priority fixed-camera manual-label candidate."
     }
   ],
   "methodResearch": [

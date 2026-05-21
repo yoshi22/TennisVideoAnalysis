@@ -29,7 +29,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-id", action="append")
     parser.add_argument("--status", default="selected_for_labeling")
     parser.add_argument("--max-height", type=int, default=720)
+    parser.add_argument("--start-sec", type=float, default=0.0)
     parser.add_argument("--sheet-interval-sec", type=float, default=30.0)
+    parser.add_argument("--sheet-cols", type=int, default=5)
+    parser.add_argument("--sheet-rows", type=int, default=12)
     parser.add_argument("--preview-fps", type=float, default=1.0)
     parser.add_argument("--preview-duration-sec", type=float, default=900.0)
     parser.add_argument("--dry-run", action="store_true")
@@ -90,18 +93,22 @@ def download_video(candidate: dict[str, Any], video_dir: Path, args: argparse.Na
 
 
 def create_contact_sheet(candidate: dict[str, Any], video_path: Path, out_dir: Path, args: argparse.Namespace) -> None:
-    sheet_path = out_dir / f"{candidate['id']}-contact.jpg"
+    sheet_path = out_dir / f"{candidate['id']}-contact-{int(args.start_sec)}s.jpg"
     if sheet_path.exists() and not args.overwrite:
         return
     run(
         [
             "ffmpeg",
             "-y",
+            "-ss",
+            f"{args.start_sec:g}",
             "-i",
             str(video_path),
             "-vf",
-            f"fps=1/{args.sheet_interval_sec:g},scale=240:-1,tile=5x",
+            f"fps=1/{args.sheet_interval_sec:g},scale=240:-1,tile={args.sheet_cols}x{args.sheet_rows}",
             "-frames:v",
+            "1",
+            "-update",
             "1",
             str(sheet_path),
         ],
@@ -110,13 +117,15 @@ def create_contact_sheet(candidate: dict[str, Any], video_path: Path, out_dir: P
 
 
 def create_preview(candidate: dict[str, Any], video_path: Path, out_dir: Path, args: argparse.Namespace) -> None:
-    preview_path = out_dir / f"{candidate['id']}-preview.mp4"
+    preview_path = out_dir / f"{candidate['id']}-preview-{int(args.start_sec)}s.mp4"
     if preview_path.exists() and not args.overwrite:
         return
     run(
         [
             "ffmpeg",
             "-y",
+            "-ss",
+            f"{args.start_sec:g}",
             "-i",
             str(video_path),
             "-t",
