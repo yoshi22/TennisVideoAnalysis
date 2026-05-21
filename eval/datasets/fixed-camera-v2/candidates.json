@@ -15,7 +15,8 @@
       "url": "https://www.youtube.com/watch?v=Na9S4gJzel0",
       "duration": "1:25:39",
       "sourceSearch": "yt-dlp flat playlist search",
-      "status": "candidate",
+      "status": "selected_for_labeling",
+      "selectionPriority": 3,
       "notes": "General-user tournament style. Needs manual fixed-camera clip selection and independent labels."
     },
     {
@@ -42,7 +43,8 @@
       "url": "https://www.youtube.com/watch?v=aIAx_p6LlFo",
       "duration": "15:12",
       "sourceSearch": "yt-dlp flat playlist search",
-      "status": "candidate",
+      "status": "selected_for_labeling",
+      "selectionPriority": 1,
       "notes": "English-language recreational/league play. Needs fixed-camera and visibility review."
     },
     {
@@ -60,7 +62,8 @@
       "url": "https://www.youtube.com/watch?v=29hnQXTyUzM",
       "duration": "17:39",
       "sourceSearch": "yt-dlp flat playlist search",
-      "status": "candidate",
+      "status": "selected_for_labeling",
+      "selectionPriority": 2,
       "notes": "Recreational singles. Needs fixed-camera and occlusion review."
     }
   ],

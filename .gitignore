@@ -53,6 +53,7 @@ eval/datasets/**/frames30/
 eval/datasets/**/audio/
 eval/datasets/**/pose/
 eval/datasets/**/ball-tracks/
+eval/datasets/**/motion-tracks/
 eval/results/
 scripts/eval/__pycache__/
 *.ipa

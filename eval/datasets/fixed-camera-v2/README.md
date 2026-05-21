@@ -31,6 +31,22 @@ ignored by git.
    accept a model if aggregate F1 improves by trading off a large held-out clip
    regression.
 
+Selected first expansion candidates:
+
+- `aIAx_p6LlFo`
+- `29hnQXTyUzM`
+- `Na9S4gJzel0`
+
+After a fixed-camera interval is chosen, add a `selectedClips` entry with
+`clipId`, `offsetSec`, and optional `durationSec` to `candidates.json`, then run:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/prepare-fixed-camera-assets.py \
+  --dataset fixed-camera-v2 \
+  --include-candidate-clips \
+  --clip-id <clip-id>
+```
+
 ## Method direction
 
 Current local validation rejected the TrackNet V1 confidence gate on this
@@ -43,3 +59,8 @@ temporal ball evidence:
 
 These model features should be evaluated as perception features only. They
 must not consume score, OCR, scoreboard ROI, or score-state artifacts.
+
+The lightweight motion-attention proxy in
+`scripts/eval/motion-attention-gate.py` is the first gate for this direction.
+On the three seed clips, `iter-motion-attention-gate1` did not pass the AUC
+gate, so it should not be integrated into the rally reranker yet.

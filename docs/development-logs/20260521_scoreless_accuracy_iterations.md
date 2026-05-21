@@ -289,3 +289,61 @@ npm run eval:score -- \
 - current best は `iter-scoreless-refine1` / `iter-v2-scoreless-refine-seed` の aggregate F1 `0.634`。
 - `scoreless-window-rerank.py` は研究用に残すが、production には採用しない。
 - 次の精度改善 iteration は、新規候補動画の独立ラベルを `fixed-camera-v2` に追加してから実施する。ラベル無しで目標 F1 `0.85` 到達を主張しない。
+
+---
+
+## Iter 5: v2 asset tooling と lightweight motion-attention gate
+
+追加:
+
+- `scripts/eval/prepare-fixed-camera-assets.py --dataset`
+- `scripts/eval/prepare-fixed-camera-assets.py --scan-fps / --track-fps`
+- `scripts/eval/prepare-fixed-camera-assets.py --include-candidate-clips`
+- `scripts/eval/motion-attention-gate.py`
+- `eval/datasets/**/motion-tracks/` を git ignore
+
+目的:
+
+- `fixed-camera-v2` の label / candidate metadata から、動画取得、clip切り出し、3fps scan frames、30fps tracking frames を同じスクリプトで作れるようにする。
+- TrackNetV4 の完全再現に入る前に、frame differencing と小さな高速blobを使った軽量 motion-attention proxy の分離力を確認する。
+- score / OCR / scoreboard / score-state は引き続き使わない。
+
+v2候補の優先順位:
+
+| priority | id | title |
+|---:|---|---|
+| 1 | `aIAx_p6LlFo` | USTA 4.5 Baseliner vs. USTA 4.0 Pusher |
+| 2 | `29hnQXTyUzM` | USTA 4.5 Baseliner vs USTA 4.5 Big Hitter |
+| 3 | `Na9S4gJzel0` | テニステップ 男子シングルス大会 西大宮テニスクラブ |
+
+実行:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/motion-attention-gate.py \
+  --dataset fixed-camera-v2 \
+  --run-id iter-motion-attention-gate1 \
+  --sample-fps 6 \
+  --max-samples 2400
+```
+
+結果:
+
+| clip | confidence adjusted AUC | window oracle F1 |
+|---|---:|---:|
+| `yt-maitou-suzumura-fukui-clip1` | 0.516 | 0.000 |
+| `yt-maitou-suzumura-muko-clip1` | 0.517 | 0.000 |
+| `yt-maitou-suzumura-muko-clip2` | 0.523 | 0.000 |
+
+判定: **rejected**
+
+理由:
+
+- 採用基準の adjusted AUC `0.65` に届かない。
+- window oracle F1 も `0.000` で、現時点では rally reranker の feature に入れる価値がない。
+- 単純な「小さく速いblob」だけでは、ノイズ、選手動作、ボール拾い、サーブ準備とラリー中のボールを十分に分離できない。
+
+次の判断:
+
+- current best は引き続き `iter-scoreless-refine1` / `iter-v2-scoreless-refine-seed` の aggregate F1 `0.634`。
+- `motion-attention-gate.py` は研究用 gate として残すが、production へ統合しない。
+- 精度改善の次手は、`fixed-camera-v2` の新規独立ラベル追加を優先する。ラベル追加後に、TrackNetV4 / TOTNet 系の実モデル導入または fine-tuning を評価する。
