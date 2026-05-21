@@ -11,12 +11,12 @@ describe('mergeDetectionsIntoWindows', () => {
     expect(mergeDetectionsIntoWindows([], DEFAULT_OPTS)).toEqual([]);
   });
 
-  it('pads a single window by WINDOW_START_PADDING_SEC and WINDOW_END_PADDING_SEC', () => {
-    // 5s raw cluster at t=10-15 → padded [7,19]
+  it('pads a single window then trims lightly back toward visual activity', () => {
+    // 5s raw cluster at t=10-15 -> initial [7,19], refined to [7.5,18].
     const dets = [10, 11, 12, 13, 14, 15];
     const [w] = mergeDetectionsIntoWindows(dets, DEFAULT_OPTS);
-    expect(w.startSec).toBeCloseTo(7, 1);
-    expect(w.endSec).toBeCloseTo(19, 1);
+    expect(w.startSec).toBeCloseTo(7.5, 1);
+    expect(w.endSec).toBeCloseTo(18, 1);
   });
 
   it('two clusters split by gap > gapTolerance stay as separate windows', () => {
@@ -32,15 +32,15 @@ describe('mergeDetectionsIntoWindows', () => {
     // Raw gap = 50-46 = 4s > gapTol=3s → two separate raw clusters, each appended individually.
     // Padding: A padded to [33,50], B padded to [47,59].
     // Padded B.startSec=47 ≤ A.endSec=50 + epsilon → baseline mergeOverlappingWindows re-merges
-    // into a single window [33,59]. This is the baseline behaviour iter-fc8 overrides surgically.
+    // into a single window; visual refinement then trims only the outer quiet padding.
     const a: number[] = [];
     const b: number[] = [];
     for (let t = 36; t <= 46; t++) a.push(t);
     for (let t = 50; t <= 55; t++) b.push(t);
     const windows = mergeDetectionsIntoWindows([...a, ...b], DEFAULT_OPTS);
     expect(windows).toHaveLength(1);
-    expect(windows[0].startSec).toBeCloseTo(33, 0);
-    expect(windows[0].endSec).toBeCloseTo(59, 0);
+    expect(windows[0].startSec).toBeCloseTo(33.5, 1);
+    expect(windows[0].endSec).toBeCloseTo(58, 1);
   });
 
   it('two clusters split by tiny rounding gap merge correctly', () => {
