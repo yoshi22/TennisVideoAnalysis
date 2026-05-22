@@ -86,6 +86,86 @@ ManualAnalyzer や CV 分析の構造化結果を LLM に渡し、プレイヤ�
 - 試合前チェックリスト。
 - 保護者やコーチ向けの共有サマリー。
 
+## v1.5 動画解析の実現性評価と開発計画
+
+### 結論
+
+テニス動画分析アプリとしての方向性は技術的に実現可能です。ただし、任意の動画をそのまま高精度に解析するのではなく、まずは撮影条件を制約し、ユーザーが修正できる補助機能として段階的に実装します。
+
+既存アプリの SwingVision は、単一スマホカメラでボール、選手、コートを機械学習モデルで処理し、ショット統計、ハイライト、ライン判定などを提供しています。ITF の Player Analysis Technology レポートでも、iPhone の 60fps 映像からボール、コート、選手の tracking 情報を出す構成が説明されています。一方で、同レポートはライン判定精度そのものを保証するものではありません。
+
+参考:
+
+- SwingVision App Store: https://apps.apple.com/us/app/swingvision-tennis-pickleball/id989461317
+- ITF SwingVision approval report: https://www.itftennis.com/media/15294/pat-25-037-approval-report-swingvision.pdf
+- TrackNetV4: https://arxiv.org/abs/2409.14543
+- TOTNet: https://arxiv.org/abs/2508.09650
+
+### 現在の評価から見えた限界
+
+`fixed-camera-v2` の expanded 8clip 評価では、scoreless motion/blob baseline の F1 は `0.433`、grid/LOCO の best experimental は `0.487` でした。改善は確認できましたが、既存 seed clip で regression が出たため、production default には採用していません。
+
+この結果から、単純な motion/blob 方式だけでは、影、隣コート、選手の移動、屋内外の背景差、グレア、遮蔽を十分に分離できないと判断します。motion/blob は評価基盤や軽量な初期候補生成には有効ですが、高精度化の主軸はボール追跡モデルへ移す必要があります。
+
+### 機能別の実現可能性
+
+| 機能 | 実現可能性 | 方針 |
+|---|---:|---|
+| 手動記録 + 動画付き分析 | 高 | 既存アプリ構成で継続強化する |
+| ラリー区間の自動検出 | 中 | 固定カメラ条件に限定し、ユーザー修正可能にする |
+| ボール追跡 | 中〜高 | TrackNetV4 / TOTNet 系の検証を次段にする |
+| ショット数・ラリー数・簡易ハイライト | 中〜高 | ボール追跡が安定した後に実装する |
+| ショット種別分類 | 中 | 軌道、接触点、姿勢推定を組み合わせる |
+| サーブ速度推定 | 中 | 厳密計測ではなく練習内の相対比較を優先する |
+| ライン判定 | 低〜中 | 後回し。精度保証ではなく参考表示から始める |
+| 任意動画の完全自動解析 | 低 | 撮影条件を満たさない動画は対象外または低信頼扱いにする |
+
+### 実装方針
+
+1. 固定カメラ、後方設置、60fps 推奨など、解析可能な入力条件を明示する。
+2. ラリー区間検出は「自動下書き」として提供し、ユーザーが境界を修正できる UI を前提にする。
+3. motion/blob tuning は補助に留め、次の精度改善は TrackNetV4 / TOTNet 系の ball tracking 検証へ移す。
+4. まず商品価値が出やすいラリー数、ショット数、ハイライト生成を優先する。
+5. ライン判定や高精度なイン/アウト判定は、設置条件、検証データ、責任範囲が整理できるまで後回しにする。
+
+### 段階的ロードマップ
+
+#### Phase A: 評価基盤の強化
+
+- `fixed-camera-v2` の新規5clipラベルを 1〜2秒単位で再確認する。
+- hard-case holdout を追加し、clean / shadow / adjacent-court / glare / occlusion に分類する。
+- F1 だけでなく、clip type 別の recall、false-positive 秒数、boundary error を追跡する。
+
+#### Phase B: ボール追跡モデルの検証 — **CLOSED (2026-05-23)**
+
+**実施済み**: TrackNet V1 (HF weights `vishnushenoy09/tracknet-v1-tennis`) を MPS で再評価。  
+**結果**: 5-clip aggregate F1=**0.225** vs blob baseline **0.423** (delta −0.198)。全パラメータ設定で REJECT。  
+**根本原因**: ドメインギャップ（放送テニス学習 → 固定カメラ広角アマチュア映像）。フェンスパターン・コート外物体を tennis ball と区別できない。事前学習重みのみでは構造的に限界。  
+**WASB-SBDT**: 同アーキテクチャ (N-frame→heatmap) + CUDA ハードコード + 同ドメイン学習 → 同一問題が予想されるため追跡せず。  
+**次の選択肢**:
+- **Fine-tune** (次サイクル): ローカルデータで学習させてドメインギャップを解消。本サイクル対象外 → escalate。
+- **Phase A 先行**: ラベル精緻化で blob の真の天井を再測定。
+- **blob F1=0.433 暫定採用**: Stage 1 の upstream 機能をこの精度で先行開発。
+
+開発ログ: `docs/development-logs/20260522_phaseB_ball_tracking.md`
+
+#### Phase C: アプリ機能への接続
+
+- 自動検出結果を確定データではなく編集可能な候補として保存する。
+- ラリー区間、ショット数、長いラリー、ハイライト抽出を UI に接続する。
+- 信頼度が低い区間には「確認が必要」状態を付ける。
+
+#### Phase D: 高度解析
+
+- ショット種別分類、サーブ速度推定、姿勢推定によるフォーム解析を追加する。
+- ライン判定は、固定設置・高fps・コート検出・十分な検証データが揃ってから参考機能として検討する。
+
+### 採用基準
+
+- 自動ラリー検出は、expanded clean set で event F1 `0.85` を目標にする。
+- ただし production 採用は aggregate F1 だけでは判断しない。主要 clip type ごとの regression が `-0.05` を超えないことを条件にする。
+- 目標未達の場合でも、ユーザー修正可能な「下書き機能」として価値があるかを別途評価する。
+
 ## v2 ロードマップ
 
 ### ダブルスのポジショニング分析
