@@ -51,6 +51,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-height", type=int, default=720)
     parser.add_argument("--duration-sec", type=float, default=600.0)
     parser.add_argument("--include-candidate-clips", action="store_true")
+    parser.add_argument("--skip-track-frames", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
@@ -234,16 +235,22 @@ def main() -> None:
     source_cache: dict[str, Path] = {}
     for spec in specs:
         print(f"\n-- {spec.clip_id} offset={spec.offset_sec:.1f}s duration={spec.duration_sec:.1f}s ({spec.source})")
-        source_path = source_cache.get(spec.source_url)
-        if source_path is None:
-            source_path = download_source(spec.source_url, args.overwrite, args.max_height)
-            source_cache[spec.source_url] = source_path
-        clip_path = clip_source(source_path, spec, args.overwrite)
+        clip_path = CLIP_DIR / f"{spec.clip_id}.mp4"
+        if clip_path.exists() and not args.overwrite:
+            print(f"  clip exists: {clip_path}")
+        else:
+            source_path = source_cache.get(spec.source_url)
+            if source_path is None:
+                source_path = download_source(spec.source_url, args.overwrite, args.max_height)
+                source_cache[spec.source_url] = source_path
+            clip_path = clip_source(source_path, spec, args.overwrite)
         scan_dir = extract_frames(clip_path, spec.clip_id, FRAMES_DIR, args.scan_fps, args.overwrite, 960)
-        track_dir = extract_frames(clip_path, spec.clip_id, FRAMES30_DIR, track_fps, args.overwrite, 1280)
         n_scan = len(list(scan_dir.glob("*.jpg")))
-        n_track = len(list(track_dir.glob("*.jpg")))
         print(f"  frames: {scan_dir} ({n_scan} jpg @ {args.scan_fps:g}fps)")
+        if args.skip_track_frames:
+            continue
+        track_dir = extract_frames(clip_path, spec.clip_id, FRAMES30_DIR, track_fps, args.overwrite, 1280)
+        n_track = len(list(track_dir.glob("*.jpg")))
         print(f"  frames30: {track_dir} ({n_track} jpg @ {track_fps:g}fps)")
 
 

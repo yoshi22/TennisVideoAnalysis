@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "videoId": "yt-wuywqtrg4rw-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=WuywQtrG4Rw",
+  "sourceSha256": "",
+  "fps": 30,
+  "clipOffsetSec": 270,
+  "clipDurationSec": 510,
+  "note": "Middle fixed-camera match segment. Manual visual rally labels created from 3-second review contact sheets, excluding the initial close-up/interview frame and dead-ball movement. Boundary accuracy is approximately +/-6s; no detector or score output was used.",
+  "rallies": [
+    { "startSec": 3.0, "endSec": 24.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 30.0, "endSec": 54.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 63.0, "endSec": 84.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 93.0, "endSec": 118.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 129.0, "endSec": 153.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 162.0, "endSec": 188.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 198.0, "endSec": 221.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 234.0, "endSec": 260.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 270.0, "endSec": 294.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 300.0, "endSec": 324.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 336.0, "endSec": 360.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 372.0, "endSec": 396.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 408.0, "endSec": 432.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 444.0, "endSec": 468.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 480.0, "endSec": 507.0, "server": null, "winner": null, "endReason": null }
+  ]
+}

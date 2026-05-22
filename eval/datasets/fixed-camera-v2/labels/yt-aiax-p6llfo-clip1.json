@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "videoId": "yt-aiax-p6llfo-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=aIAx_p6LlFo",
+  "sourceSha256": "",
+  "fps": 30,
+  "clipOffsetSec": 90,
+  "clipDurationSec": 630,
+  "note": "Middle fixed-camera match segment with glare and occasional cuts. Manual visual rally labels created from 3-second review contact sheets, excluding intro presenter frames and non-rally setup. Boundary accuracy is approximately +/-6s; no detector or score output was used.",
+  "rallies": [
+    { "startSec": 9.0, "endSec": 30.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 42.0, "endSec": 63.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 75.0, "endSec": 102.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 114.0, "endSec": 141.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 153.0, "endSec": 177.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 189.0, "endSec": 216.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 228.0, "endSec": 255.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 267.0, "endSec": 297.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 306.0, "endSec": 333.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 348.0, "endSec": 375.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 393.0, "endSec": 420.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 435.0, "endSec": 462.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 477.0, "endSec": 504.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 519.0, "endSec": 546.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 561.0, "endSec": 588.0, "server": null, "winner": null, "endReason": null },
+    { "startSec": 600.0, "endSec": 627.0, "server": null, "winner": null, "endReason": null }
+  ]
+}

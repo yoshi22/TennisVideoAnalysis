@@ -488,3 +488,105 @@ clip別:
 2. 優先度6のフェンス越しclipは hard-case holdout として最後に加える。
 3. expanded評価で `iter-v2-scoreless-refine-seed` を再実行し、clip別の失敗要因を確認する。
 4. それでもF1が伸びない場合は、TrackNetV4/TOTNet系のボール追跡モデルをローカル推論またはGPU fine-tuning候補として切り分ける。
+
+---
+
+## Iter 8: fixed-camera-v2 expanded 8clip F1更新と scoreless grid tuning
+
+目的:
+
+- 優先度1-5の新規 fixed-camera clip を手動ラベル化し、seed 3clip + new 5clip の 8clip 評価へ拡張する。
+- hard-case の `yt-fqk-endhdno-clip1` はフェンス遮蔽が強いため、今回の main 評価からは除外し holdout 候補に残す。
+- TrackNetV4 / TOTNet 系のボール追跡モデルは引き続き候補だが、今回は追加weightなしで再現できる scoreless motion/blob feature の parameter tuning を先に実施する。
+  - TrackNetV4: https://arxiv.org/abs/2409.14543
+  - TOTNet: https://arxiv.org/abs/2508.09650
+
+実装:
+
+- `prepare-fixed-camera-assets.py`
+  - `--skip-track-frames` を追加し、3fps scan frames だけを作れるようにした。
+  - clip が既に存在する場合は source video の再DLを避けるようにした。
+- `run-stage1.ts`
+  - legacy 30fps frames を `--fps 3` の timeline へ均一サンプルする処理を追加した。
+  - decode concurrency を制限し、`EMFILE: too many open files` を回避した。
+  - rally segmentation の閾値・padding・split条件を CLI から渡せるようにした。
+- `rallySegment.ts`
+  - blob threshold、bridge threshold、window padding、refine padding、split quiet gap などを `RallySegmentOptions` 化した。
+  - default 値は既存挙動と同じにして、production default は変更していない。
+- `tune-scoreless-stage1.ts`
+  - 各clipを一度だけfeature化し、複数configを比較する scoreless grid tuning script を追加した。
+  - LOCO selection、global aggregates、per-config F1、baseline差分、regression summary を manifest に記録する。
+
+手動ラベル:
+
+新規5clipは、3秒間隔の contact sheet を目視確認し、タイトル・会話・移動だけの時間を除外して rally boundary を作成した。検出結果やscore出力は使っていない。
+
+| clip | rallies | note |
+|---|---:|---|
+| `yt-61l1sw26dtg-clip1` | 26 | clean fixed full-court |
+| `yt-29hnqxtyuzm-clip1` | 26 | hard shadows + scoreboard overlay |
+| `yt-na9s4gjzel0-clip1` | 25 | adjacent-court background motion |
+| `yt-wuywqtrg4rw-clip1` | 15 | middle fixed match section |
+| `yt-aiax-p6llfo-clip1` | 16 | glare/cuts present |
+
+検証コマンド:
+
+```bash
+/usr/local/bin/python3.11 scripts/eval/validate-rally-labels.py \
+  --dataset fixed-camera-v2
+
+npm run eval:run1 -- \
+  --dataset fixed-camera-v2 \
+  --run-id iter-v2-expanded-blob1 \
+  --fps 3 \
+  --detector blob
+
+npm run eval:score -- \
+  --run-id iter-v2-expanded-blob1 \
+  --dataset fixed-camera-v2
+
+npx tsx scripts/eval/tune-scoreless-stage1.ts \
+  --dataset fixed-camera-v2 \
+  --run-id iter-v2-expanded-loco-tune2 \
+  --fps 3 \
+  --baseline-run-id iter-v2-expanded-blob1
+
+npm run eval:score -- \
+  --run-id iter-v2-expanded-loco-tune2 \
+  --dataset fixed-camera-v2 \
+  --baseline-run-id iter-v2-expanded-blob1
+```
+
+結果:
+
+| run | aggregate F1 | P | R | 判定 |
+|---|---:|---:|---:|---|
+| `iter-v2-expanded-blob1` | 0.433 | 0.424 | 0.451 | expanded baseline |
+| `iter-v2-expanded-refine1` | 0.419 | 0.411 | 0.435 | rejected |
+| `iter-v2-expanded-tight-gap-long1` | 0.459 | 0.467 | 0.456 | rejected |
+| `iter-v2-expanded-tight-refine1` | 0.464 | 0.475 | 0.458 | rejected |
+| `iter-v2-expanded-loco-tune2` | 0.487 | 0.507 | 0.476 | rejected by regression guard |
+
+best experimental は `split-sensitive` / LOCO の F1 `0.487` で、expanded baseline から `+0.054` 改善した。ただし regression guard は rejected。
+
+主な clip 別変化:
+
+| clip | baseline F1 | best experimental F1 | delta |
+|---|---:|---:|---:|
+| `yt-61l1sw26dtg-clip1` | 0.367 | 0.571 | +0.205 |
+| `yt-wuywqtrg4rw-clip1` | 0.353 | 0.563 | +0.210 |
+| `yt-aiax-p6llfo-clip1` | 0.500 | 0.625 | +0.125 |
+| `yt-maitou-suzumura-fukui-clip1` | 0.652 | 0.545 | -0.107 |
+| `yt-maitou-suzumura-muko-clip2` | 0.437 | 0.258 | -0.179 |
+
+判定:
+
+- expanded F1 は更新できたが、採用gate（aggregate +0.02 かつ clip regression < -0.05 なし）は未達。
+- `split-sensitive` は屋外一般ユーザーclipでは効く一方、既存seedの soft-tennis / indoor clip で落ちる。
+- production default は変更しない。今回の成果は「評価拡張」「再現可能なtuning基盤」「experimental F1上限の更新」として扱う。
+
+次の改善仮説:
+
+1. seed と新規clipで最適閾値が分かれており、単一の blob threshold では限界がある。court/backgroundの状態に応じた adaptive threshold が必要。
+2. 3秒 contact sheet ラベルは初回ラベルとしては有効だが、F1 0.85 を目指すには boundary の再確認が必要。特に新規5clipは 1-2秒単位の追加reviewを行う。
+3. scoreless motion/blob だけでは adjacent-court / shadow / glare を分離しきれないため、次段は TrackNetV4/TOTNet 系の ball trajectory を検証対象にする。

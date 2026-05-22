@@ -72,7 +72,33 @@ export interface RallySegmentOptions {
   maxDurationSec?: number;
   /** Max gap between detections to treat as same rally in seconds (default: 3) */
   gapToleranceSec?: number;
+  /** Blob count needed for a primary rally-activity frame (default: 11) */
+  rallyBlobThreshold?: number;
+  /** Blob count needed for a bridge frame between stronger activity (default: 7) */
+  bridgeBlobThreshold?: number;
+  /** Minimum simultaneous top/bottom motion pixels for bridge frames (default: 320) */
+  bridgeMinDualZonePx?: number;
+  /** Seconds to pad before the first raw activity frame (default: 3) */
+  windowStartPaddingSec?: number;
+  /** Seconds to pad after the last raw activity frame (default: 4) */
+  windowEndPaddingSec?: number;
+  /** Seconds to pad before refined activity groups (default: 2.5) */
+  refinedWindowStartPaddingSec?: number;
+  /** Seconds to pad after refined activity groups (default: 3) */
+  refinedWindowEndPaddingSec?: number;
+  /** Maximum seconds a refined boundary may trim from the padded source window (default: 2) */
+  maxVisualTrimSec?: number;
+  /** Minimum source-window duration before split refinement is allowed (default: 18) */
+  splitMinWindowSec?: number;
+  /** Quiet gap that triggers split refinement (default: 6) */
+  splitQuietSec?: number;
+  /** Max gap between visual activity frames inside a refinement group (default: 3) */
+  visualActivityGapSec?: number;
+  /** Merge epsilon for adjacent padded windows (default: 0.25) */
+  paddedWindowMergeEpsilonSec?: number;
 }
+
+type ResolvedRallySegmentOptions = Required<RallySegmentOptions>;
 
 /**
  * Pure function: given pre-decoded frames, detects rally windows via motion + blob analysis.
@@ -97,11 +123,11 @@ export function detectRallyWindowsFromFrames(
     const cleanedMask = removeLargeRegions(rawMask, curr.width, curr.height);
     const blobCount = detectBlobs(cleanedMask, curr.width, curr.height).length;
 
-    const isHighActivity = blobCount >= MIN_FIXED_CAM_RALLY_BLOBS;
+    const isHighActivity = blobCount >= resolvedOpts.rallyBlobThreshold;
     const isBridgeActivity =
       !isHighActivity &&
-      blobCount >= BRIDGE_BLOB_THRESH &&
-      computeMinHalfMotion(rawMask, curr.width, curr.height) >= BRIDGE_MIN_DUAL_ZONE_PX;
+      blobCount >= resolvedOpts.bridgeBlobThreshold &&
+      computeMinHalfMotion(rawMask, curr.width, curr.height) >= resolvedOpts.bridgeMinDualZonePx;
 
     if (isHighActivity || isBridgeActivity) {
       ballPresentAt.push(frames[i].timeSec);
@@ -113,9 +139,10 @@ export function detectRallyWindowsFromFrames(
 
 export function mergeDetectionsIntoWindows(
   ballPresentAt: number[],
-  opts: Required<RallySegmentOptions>
+  opts: RallySegmentOptions = {}
 ): RallyWindow[] {
-  const { minDurationSec, maxDurationSec, gapToleranceSec } = resolveRallySegmentOptions(opts);
+  const resolvedOpts = resolveRallySegmentOptions(opts);
+  const { gapToleranceSec } = resolvedOpts;
   const detections = ballPresentAt
     .filter((timeSec) => Number.isFinite(timeSec))
     .sort((a, b) => a - b);
@@ -135,7 +162,7 @@ export function mergeDetectionsIntoWindows(
       windowEnd = timeSec;
       detectionCount++;
     } else {
-      appendWindow(windows, windowStart, windowEnd, detectionCount, minDurationSec, maxDurationSec);
+      appendWindow(windows, windowStart, windowEnd, detectionCount, resolvedOpts);
       windowStart = timeSec;
       windowEnd = timeSec;
       detectionCount = 1;
@@ -143,10 +170,14 @@ export function mergeDetectionsIntoWindows(
   }
 
   // Flush last window
-  appendWindow(windows, windowStart, windowEnd, detectionCount, minDurationSec, maxDurationSec);
+  appendWindow(windows, windowStart, windowEnd, detectionCount, resolvedOpts);
 
-  const mergedWindows = mergeOverlappingWindows(windows, maxDurationSec);
-  return refineWindowsWithDetections(mergedWindows, detections, minDurationSec, maxDurationSec);
+  const mergedWindows = mergeOverlappingWindows(
+    windows,
+    resolvedOpts.maxDurationSec,
+    resolvedOpts.paddedWindowMergeEpsilonSec
+  );
+  return refineWindowsWithDetections(mergedWindows, detections, resolvedOpts);
 }
 
 /**
@@ -189,14 +220,57 @@ export function detectRallyWindowsFromTrajectories(
   return mergeDetectionsIntoWindows(ballPresentAt, resolvedOpts);
 }
 
-function resolveRallySegmentOptions(opts?: RallySegmentOptions): Required<RallySegmentOptions> {
+function resolveRallySegmentOptions(opts?: RallySegmentOptions): ResolvedRallySegmentOptions {
   const minDurationSec = getPositiveOption(opts?.minDurationSec, DEFAULT_MIN_DURATION_SEC);
   const maxDurationSec = Math.max(
     getPositiveOption(opts?.maxDurationSec, DEFAULT_MAX_DURATION_SEC),
     minDurationSec
   );
   const gapToleranceSec = getPositiveOption(opts?.gapToleranceSec, DEFAULT_GAP_TOLERANCE_SEC);
-  return { minDurationSec, maxDurationSec, gapToleranceSec };
+  const rallyBlobThreshold = getPositiveOption(opts?.rallyBlobThreshold, MIN_FIXED_CAM_RALLY_BLOBS);
+  const bridgeBlobThreshold = getPositiveOption(opts?.bridgeBlobThreshold, BRIDGE_BLOB_THRESH);
+  const bridgeMinDualZonePx = getPositiveOption(opts?.bridgeMinDualZonePx, BRIDGE_MIN_DUAL_ZONE_PX);
+  const windowStartPaddingSec = getPositiveOption(
+    opts?.windowStartPaddingSec,
+    WINDOW_START_PADDING_SEC
+  );
+  const windowEndPaddingSec = getPositiveOption(opts?.windowEndPaddingSec, WINDOW_END_PADDING_SEC);
+  const refinedWindowStartPaddingSec = getPositiveOption(
+    opts?.refinedWindowStartPaddingSec,
+    REFINED_WINDOW_START_PADDING_SEC
+  );
+  const refinedWindowEndPaddingSec = getPositiveOption(
+    opts?.refinedWindowEndPaddingSec,
+    REFINED_WINDOW_END_PADDING_SEC
+  );
+  const maxVisualTrimSec = getPositiveOption(opts?.maxVisualTrimSec, MAX_VISUAL_TRIM_SEC);
+  const splitMinWindowSec = getPositiveOption(opts?.splitMinWindowSec, SPLIT_MIN_WINDOW_SEC);
+  const splitQuietSec = getPositiveOption(opts?.splitQuietSec, SPLIT_QUIET_SEC);
+  const visualActivityGapSec = getPositiveOption(
+    opts?.visualActivityGapSec,
+    VISUAL_ACTIVITY_GAP_SEC
+  );
+  const paddedWindowMergeEpsilonSec = getPositiveOption(
+    opts?.paddedWindowMergeEpsilonSec,
+    PADDED_WINDOW_MERGE_EPSILON_SEC
+  );
+  return {
+    minDurationSec,
+    maxDurationSec,
+    gapToleranceSec,
+    rallyBlobThreshold,
+    bridgeBlobThreshold,
+    bridgeMinDualZonePx,
+    windowStartPaddingSec,
+    windowEndPaddingSec,
+    refinedWindowStartPaddingSec,
+    refinedWindowEndPaddingSec,
+    maxVisualTrimSec,
+    splitMinWindowSec,
+    splitQuietSec,
+    visualActivityGapSec,
+    paddedWindowMergeEpsilonSec,
+  };
 }
 
 function getPositiveOption(value: number | undefined, fallback: number): number {
@@ -208,13 +282,15 @@ function appendWindow(
   windowStart: number,
   windowEnd: number,
   detectionCount: number,
-  minDurationSec: number,
-  maxDurationSec: number
+  opts: ResolvedRallySegmentOptions
 ): void {
   const duration = windowEnd - windowStart;
-  if (duration >= minDurationSec) {
-    const paddedStart = Math.max(0, windowStart - WINDOW_START_PADDING_SEC);
-    const clampedEnd = Math.min(paddedStart + maxDurationSec, windowEnd + WINDOW_END_PADDING_SEC);
+  if (duration >= opts.minDurationSec) {
+    const paddedStart = Math.max(0, windowStart - opts.windowStartPaddingSec);
+    const clampedEnd = Math.min(
+      paddedStart + opts.maxDurationSec,
+      windowEnd + opts.windowEndPaddingSec
+    );
     const confidence = Math.min(1, detectionCount / Math.max(1, duration));
     windows.push({ startSec: paddedStart, endSec: clampedEnd, confidence });
   }
@@ -223,8 +299,7 @@ function appendWindow(
 function refineWindowsWithDetections(
   windows: RallyWindow[],
   detections: number[],
-  minDurationSec: number,
-  maxDurationSec: number
+  opts: ResolvedRallySegmentOptions
 ): RallyWindow[] {
   if (windows.length === 0) return windows;
 
@@ -239,18 +314,16 @@ function refineWindowsWithDetections(
       continue;
     }
 
-    const groups = groupDetectionTimes(activeTimes, VISUAL_ACTIVITY_GAP_SEC);
-    const selectedGroups = shouldSplitRefinedWindow(window, groups)
-      ? groups
-      : [activeTimes];
+    const groups = groupDetectionTimes(activeTimes, opts.visualActivityGapSec);
+    const selectedGroups = shouldSplitRefinedWindow(window, groups, opts) ? groups : [activeTimes];
 
     for (const group of selectedGroups) {
-      const candidate = refinedWindowFromGroup(window, group, minDurationSec, maxDurationSec);
+      const candidate = refinedWindowFromGroup(window, group, opts);
       if (candidate) refined.push(candidate);
     }
   }
 
-  return mergeOverlappingWindows(refined, maxDurationSec);
+  return mergeOverlappingWindows(refined, opts.maxDurationSec, opts.paddedWindowMergeEpsilonSec);
 }
 
 function groupDetectionTimes(times: number[], maxGapSec: number): number[][] {
@@ -269,8 +342,12 @@ function groupDetectionTimes(times: number[], maxGapSec: number): number[][] {
   return groups;
 }
 
-function shouldSplitRefinedWindow(window: RallyWindow, groups: number[][]): boolean {
-  if (window.endSec - window.startSec < SPLIT_MIN_WINDOW_SEC || groups.length < 2) {
+function shouldSplitRefinedWindow(
+  window: RallyWindow,
+  groups: number[][],
+  opts: ResolvedRallySegmentOptions
+): boolean {
+  if (window.endSec - window.startSec < opts.splitMinWindowSec || groups.length < 2) {
     return false;
   }
 
@@ -278,7 +355,7 @@ function shouldSplitRefinedWindow(window: RallyWindow, groups: number[][]): bool
     const previousGroup = groups[i - 1];
     const currentGroup = groups[i];
     const quietGap = currentGroup[0] - previousGroup[previousGroup.length - 1];
-    if (quietGap >= SPLIT_QUIET_SEC) return true;
+    if (quietGap >= opts.splitQuietSec) return true;
   }
   return false;
 }
@@ -286,21 +363,20 @@ function shouldSplitRefinedWindow(window: RallyWindow, groups: number[][]): bool
 function refinedWindowFromGroup(
   source: RallyWindow,
   group: number[],
-  minDurationSec: number,
-  maxDurationSec: number
+  opts: ResolvedRallySegmentOptions
 ): RallyWindow | null {
-  let startSec = Math.max(source.startSec, group[0] - REFINED_WINDOW_START_PADDING_SEC);
-  let endSec = Math.min(source.endSec, group[group.length - 1] + REFINED_WINDOW_END_PADDING_SEC);
+  let startSec = Math.max(source.startSec, group[0] - opts.refinedWindowStartPaddingSec);
+  let endSec = Math.min(source.endSec, group[group.length - 1] + opts.refinedWindowEndPaddingSec);
 
-  if (startSec - source.startSec > MAX_VISUAL_TRIM_SEC) {
-    startSec = source.startSec + MAX_VISUAL_TRIM_SEC;
+  if (startSec - source.startSec > opts.maxVisualTrimSec) {
+    startSec = source.startSec + opts.maxVisualTrimSec;
   }
-  if (source.endSec - endSec > MAX_VISUAL_TRIM_SEC) {
-    endSec = source.endSec - MAX_VISUAL_TRIM_SEC;
+  if (source.endSec - endSec > opts.maxVisualTrimSec) {
+    endSec = source.endSec - opts.maxVisualTrimSec;
   }
 
   const duration = endSec - startSec;
-  if (duration < minDurationSec || duration > maxDurationSec) return null;
+  if (duration < opts.minDurationSec || duration > opts.maxDurationSec) return null;
 
   const activityConfidence = Math.min(1, group.length / Math.max(1, duration));
   return {
@@ -335,13 +411,17 @@ function computeMinHalfMotion(mask: Uint8Array, width: number, height: number): 
  * merge if the result would exceed maxDurationSec. This hard cap prevents cascade
  * merges where multiple padded windows chain into one oversized false positive.
  */
-function mergeOverlappingWindows(windows: RallyWindow[], maxDurationSec: number): RallyWindow[] {
+function mergeOverlappingWindows(
+  windows: RallyWindow[],
+  maxDurationSec: number,
+  mergeEpsilonSec = PADDED_WINDOW_MERGE_EPSILON_SEC
+): RallyWindow[] {
   if (windows.length <= 1) return windows;
 
   const merged: RallyWindow[] = [];
   for (const window of windows) {
     const previous = merged[merged.length - 1];
-    if (previous && window.startSec <= previous.endSec + PADDED_WINDOW_MERGE_EPSILON_SEC) {
+    if (previous && window.startSec <= previous.endSec + mergeEpsilonSec) {
       const candidateEnd = Math.max(previous.endSec, window.endSec);
       if (candidateEnd - previous.startSec <= maxDurationSec) {
         previous.endSec = candidateEnd;
