@@ -23,7 +23,8 @@
         "NSMicrophoneUsageDescription": "動画録画時に音声を収録するために使用します",
         "NSPhotoLibraryUsageDescription": "撮影済みの動画をライブラリから選択するために使用します",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
