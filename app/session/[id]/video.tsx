@@ -15,9 +15,12 @@ import { VideoPlayer, type VideoPlayerRef } from '@/components/video';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
 import { useSession } from '@/hooks';
 import { consumePendingSeek } from '@/services/video';
+import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
-import { type PointRecord } from '@/types';
+import { type PointOutcome, type PointRecord } from '@/types';
 import { formatSeconds } from '@/utils/formatTime';
+import { generateId } from '@/utils/id';
+import { getPointDetailStatus } from '@/utils/pointDetails';
 
 type TimestampedPoint = PointRecord & { videoTimestamp: number };
 
@@ -33,10 +36,16 @@ function hasVideoTimestamp(point: PointRecord): point is TimestampedPoint {
 export default function SessionVideoScreen() {
   const { colors } = useTheme();
   const { session, sessionId } = useSession();
+  const addPoint = useSessionStore((state) => state.addPoint);
+  const deletePoint = useSessionStore((state) => state.deletePoint);
   const playerRef = useRef<VideoPlayerRef>(null);
   const requestedSeekRef = useRef<number | null>(null);
   const [durationSec, setDurationSec] = useState(0);
   const [initialSeekSec, setInitialSeekSec] = useState<number | null>(null);
+  const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [undoStack, setUndoStack] = useState<
+    { id: string; outcome: PointOutcome; timeSec: number }[]
+  >([]);
 
   const timestampedPoints = useMemo(
     () =>
@@ -47,6 +56,14 @@ export default function SessionVideoScreen() {
         : [],
     [session]
   );
+
+  const score = useMemo(() => {
+    const points = session?.points ?? [];
+    return {
+      won: points.filter((point) => point.outcome === 'won').length,
+      lost: points.filter((point) => point.outcome === 'lost').length,
+    };
+  }, [session]);
 
   const seekTo = useCallback((seconds: number) => {
     requestedSeekRef.current = seconds;
@@ -78,6 +95,30 @@ export default function SessionVideoScreen() {
     }
   };
 
+  const handleQuickLog = (outcome: PointOutcome) => {
+    const videoTimestamp = Math.max(0, playerRef.current?.getCurrentTime() ?? currentTimeSec ?? 0);
+    const point: PointRecord = {
+      id: generateId(),
+      sessionId,
+      timestamp: new Date().toISOString(),
+      outcome,
+      videoTimestamp,
+      detailStatus: 'quick',
+    };
+
+    addPoint(sessionId, point);
+    setUndoStack((prev) => [...prev, { id: point.id, outcome, timeSec: videoTimestamp }]);
+  };
+
+  const handleUndoLast = () => {
+    const lastEntry = undoStack[undoStack.length - 1];
+    if (!lastEntry) return;
+    deletePoint(sessionId, lastEntry.id);
+    setUndoStack((prev) => prev.slice(0, -1));
+  };
+
+  const latestUndoEntry = undoStack[undoStack.length - 1];
+
   const renderPoint = ({ item, index }: ListRenderItemInfo<TimestampedPoint>) => {
     const isWon = item.outcome === 'won';
     return (
@@ -104,10 +145,22 @@ export default function SessionVideoScreen() {
         </Text>
         <View style={styles.pointBody}>
           <Text style={[styles.pointTitle, { color: colors.text }]} numberOfLines={1}>
-            {SHOT_TYPE_META[item.shotType].label}
+            {item.shotType ? SHOT_TYPE_META[item.shotType].label : '詳細未入力'}
           </Text>
-          <Text style={[styles.pointOutcome, { color: isWon ? colors.primary : colors.danger }]}>
-            {OUTCOME_LABELS[item.outcome]}
+          <Text
+            style={[
+              styles.pointOutcome,
+              {
+                color:
+                  getPointDetailStatus(item) === 'quick'
+                    ? colors.warning
+                    : isWon
+                      ? colors.primary
+                      : colors.danger,
+              },
+            ]}
+          >
+            {getPointDetailStatus(item) === 'quick' ? '後で補完' : OUTCOME_LABELS[item.outcome]}
           </Text>
         </View>
       </TouchableOpacity>
@@ -142,10 +195,84 @@ export default function SessionVideoScreen() {
       <VideoPlayer
         initialTimeSec={initialSeekSec ?? 0}
         onDurationLoaded={handleDurationLoaded}
+        onTimeUpdate={setCurrentTimeSec}
         ref={playerRef}
         style={styles.player}
         uri={session.videoUri}
       />
+
+      <View
+        style={[
+          styles.quickDock,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <View style={styles.quickMetaRow}>
+          <View>
+            <Text style={[styles.quickLabel, { color: colors.textMuted }]}>現在</Text>
+            <Text style={[styles.quickTime, { color: colors.text }]}>
+              {formatSeconds(currentTimeSec)}
+            </Text>
+          </View>
+          <View style={styles.quickScoreBox}>
+            <Text style={[styles.quickScore, { color: colors.text }]}>
+              {score.won}–{score.lost}
+            </Text>
+            <Text style={[styles.quickLabel, { color: colors.textMuted }]}>スコア</Text>
+          </View>
+          <TouchableOpacity
+            accessibilityLabel="直前の記録を取り消す"
+            accessibilityRole="button"
+            activeOpacity={0.82}
+            disabled={undoStack.length === 0}
+            onPress={handleUndoLast}
+            style={[
+              styles.undoButton,
+              {
+                backgroundColor: undoStack.length > 0 ? colors.surfaceAlt : colors.bg,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.undoText,
+                { color: undoStack.length > 0 ? colors.textSub : colors.textMuted },
+              ]}
+            >
+              取り消し
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.quickActionRow}>
+          <TouchableOpacity
+            accessibilityLabel="現在時刻を得点として記録"
+            accessibilityRole="button"
+            activeOpacity={0.86}
+            onPress={() => handleQuickLog('won')}
+            style={[styles.quickActionButton, { backgroundColor: colors.success }]}
+          >
+            <Text style={[styles.quickActionText, { color: colors.surface }]}>得点</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityLabel="現在時刻を失点として記録"
+            accessibilityRole="button"
+            activeOpacity={0.86}
+            onPress={() => handleQuickLog('lost')}
+            style={[styles.quickActionButton, { backgroundColor: colors.danger }]}
+          >
+            <Text style={[styles.quickActionText, { color: colors.surface }]}>失点</Text>
+          </TouchableOpacity>
+        </View>
+
+        {latestUndoEntry ? (
+          <Text style={[styles.quickFeedback, { color: colors.textSub }]}>
+            {formatSeconds(latestUndoEntry.timeSec)} に
+            {latestUndoEntry.outcome === 'won' ? '得点' : '失点'}を記録しました
+          </Text>
+        ) : null}
+      </View>
 
       {durationSec > 0 ? (
         <View style={styles.timelineSection}>
@@ -214,6 +341,70 @@ const styles = StyleSheet.create({
   player: {
     width: '100%',
   },
+  quickDock: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  quickMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  quickLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  quickTime: {
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  quickScoreBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quickScore: {
+    fontSize: 22,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
+  },
+  undoButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 76,
+    paddingHorizontal: 12,
+  },
+  undoText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  quickActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  quickActionButton: {
+    alignItems: 'center',
+    borderRadius: 10,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  quickActionText: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  quickFeedback: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   timelineSection: {
     paddingBottom: 10,
     paddingHorizontal: 20,
@@ -237,12 +428,12 @@ const styles = StyleSheet.create({
   },
   markerTouch: {
     alignItems: 'center',
-    height: 34,
+    height: 44,
     justifyContent: 'center',
-    marginLeft: -14,
+    marginLeft: -22,
     position: 'absolute',
-    top: 0,
-    width: 28,
+    top: -5,
+    width: 44,
   },
   marker: {
     borderBottomWidth: 12,

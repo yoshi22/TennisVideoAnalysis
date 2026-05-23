@@ -10,6 +10,7 @@ interface SessionStoreState {
   updateSession: (id: string, patch: Partial<TennisSession>) => void;
   deleteSession: (id: string) => void;
   addPoint: (sessionId: string, point: PointRecord) => void;
+  updatePoint: (sessionId: string, pointId: string, patch: Partial<PointRecord>) => void;
   deletePoint: (sessionId: string, pointId: string) => void;
   setCourtCalibration: (sessionId: string, calibration: CourtCalibration | undefined) => void;
   clearAll: () => void;
@@ -50,6 +51,20 @@ export const useSessionStore = create<SessionStoreState>()(
               ? {
                   ...session,
                   points: [...session.points, point],
+                  updatedAt: nowISO(),
+                }
+              : session
+          ),
+        })),
+      updatePoint: (sessionId, pointId, patch) =>
+        set((state) => ({
+          sessions: state.sessions.map((session) =>
+            session.id === sessionId
+              ? {
+                  ...session,
+                  points: session.points.map((point) =>
+                    point.id === pointId ? { ...point, ...patch } : point
+                  ),
                   updatedAt: nowISO(),
                 }
               : session

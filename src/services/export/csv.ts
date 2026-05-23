@@ -1,4 +1,5 @@
 import { type TennisSession } from '@/types/session';
+import { getPointDetailStatus } from '@/utils/pointDetails';
 
 const BOM = '﻿';
 
@@ -14,6 +15,7 @@ const HEADERS = [
   'targetLocationX',
   'targetLocationY',
   'videoTimestamp',
+  'detailStatus',
   'note',
 ] as const;
 
@@ -41,6 +43,7 @@ export function buildPointsCSV(session: TennisSession): string {
       p.targetLocation?.x ?? '',
       p.targetLocation?.y ?? '',
       p.videoTimestamp ?? '',
+      getPointDetailStatus(p),
       p.note ?? '',
     ];
     return fields.map(escapeField).join(',');

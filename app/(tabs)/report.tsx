@@ -3,7 +3,14 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CourtLines, Donut, EmptyState, SectionHeader, Tag } from '@/components/common';
+import {
+  AnalysisConfidenceBanner,
+  CourtLines,
+  Donut,
+  EmptyState,
+  SectionHeader,
+  Tag,
+} from '@/components/common';
 import { CourtHeatmap } from '@/components/court';
 import { SHOT_TYPE_META, SHOT_TYPES } from '@/constants/shotTypes';
 import { getAnalyzer } from '@/services/analysis';
@@ -16,6 +23,7 @@ import {
   type WeaknessPattern,
 } from '@/types';
 import { formatPercent } from '@/utils/format';
+import { isPointComplete } from '@/utils/pointDetails';
 
 const WEAKNESS_LABELS: Record<WeaknessPattern, string> = {
   highDoubleFault: 'ダブルフォルトが多い',
@@ -63,6 +71,7 @@ export default function ReportTabScreen() {
     sessions.length > 0
       ? [...sessions].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
       : null;
+  const totalCompleteCount = sessions.flatMap((s) => s.points).filter(isPointComplete).length;
 
   const analysis = useMemo(
     () => (latestSession ? getAnalyzer().analyze(latestSession) : null),
@@ -100,6 +109,8 @@ export default function ReportTabScreen() {
   const s = latestSession;
   const wonCount = s.points.filter((p) => p.outcome === 'won').length;
   const lostCount = s.points.filter((p) => p.outcome === 'lost').length;
+  const completePointCount = s.points.filter(isPointComplete).length;
+  const quickPointCount = s.points.length - completePointCount;
   const date = new Date(s.startedAt);
   const dateStr = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
 
@@ -112,7 +123,7 @@ export default function ReportTabScreen() {
     { l: 'ポイント', v: `${s.points.length}`, c: colors.text },
     { l: '得点率', v: formatPercent(analysis.winRate), c: colors.success },
     { l: '1st%', v: formatPercent(analysis.firstServeInRate), c: colors.text },
-    { l: 'エース', v: `${analysis.aceCount}`, c: colors.text },
+    { l: '詳細', v: `${completePointCount}/${s.points.length}`, c: colors.text },
   ];
 
   return (
@@ -138,6 +149,11 @@ export default function ReportTabScreen() {
             <Text style={[styles.heroScore, { color: colors.surface }]}>
               {wonCount}–{lostCount}
             </Text>
+            {quickPointCount > 0 ? (
+              <Text style={[styles.heroSub, { color: colors.surface }]}>
+                詳細未入力 {quickPointCount}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -162,9 +178,23 @@ export default function ReportTabScreen() {
               </View>
             ))}
           </View>
+          {quickPointCount > 0 ? (
+            <View
+              style={[
+                styles.detailNotice,
+                { backgroundColor: colors.surface, borderColor: colors.warning },
+              ]}
+            >
+              <Text style={[styles.detailNoticeText, { color: colors.text }]}>
+                詳細未入力 {quickPointCount} 件。分析グラフは詳細入力済み {completePointCount}{' '}
+                件をもとに表示します。
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* shot breakdown */}
+        <AnalysisConfidenceBanner completeCount={totalCompleteCount} />
         <SectionHeader title="ショット内訳" />
         <View style={styles.padH}>
           <View
@@ -375,9 +405,16 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     letterSpacing: -0.3,
   },
+  heroSub: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+    opacity: 0.86,
+  },
   statsGridWrap: {
     padding: 20,
     paddingBottom: 22,
+    gap: 10,
   },
   statsGrid: {
     borderRadius: 14,
@@ -405,6 +442,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
     letterSpacing: 0.04,
+  },
+  detailNotice: {
+    borderRadius: 12,
+    borderWidth: 0.5,
+    padding: 12,
+  },
+  detailNoticeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   padH: { paddingHorizontal: 20, marginBottom: 22 },
   card: {

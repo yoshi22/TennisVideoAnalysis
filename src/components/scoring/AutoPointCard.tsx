@@ -71,6 +71,7 @@ export function AutoPointCard({ sessionId, candidate, onAccept, onReject }: Auto
       shotType: candidate.suggestedShotType,
       resultReason: candidate.suggestedResultReason,
       rallyCount: candidate.suggestedRallyCount,
+      detailStatus: 'complete',
       shotLocation: candidate.suggestedShotLocation,
       videoTimestamp: candidate.videoTimestamp,
     };

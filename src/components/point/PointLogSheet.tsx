@@ -23,6 +23,7 @@ import {
   type ShotType,
   type SportType,
 } from '@/types';
+import { formatSeconds } from '@/utils/formatTime';
 
 function IcClose({ color, size }: { color: string; size: number }) {
   return (
@@ -69,22 +70,50 @@ function chunk<T>(arr: T[], n: number): T[][] {
 export interface PointLogSheetProps {
   open: boolean;
   outcome: PointOutcome;
+  initialPoint?: PointRecord;
+  sessionId?: string;
   sport: SportType;
   onCommit: (data: Omit<PointRecord, 'id' | 'sessionId' | 'timestamp'>) => void;
   onClose: () => void;
+  onGoToVideo?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
-export function PointLogSheet({ open, outcome, sport, onCommit, onClose }: PointLogSheetProps) {
+function makeDraft(point?: PointRecord): Draft {
+  return {
+    serveResult: point?.serveResult,
+    shotType: point?.shotType,
+    resultReason: point?.resultReason,
+    rallyCount: point?.rallyCount ?? 1,
+  };
+}
+
+export function PointLogSheet({
+  open,
+  outcome,
+  initialPoint,
+  sport,
+  onCommit,
+  onClose,
+  onGoToVideo,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
+}: PointLogSheetProps) {
   const { colors } = useTheme();
   const [step, setStep] = useState(1);
-  const [draft, setDraft] = useState<Draft>({ rallyCount: 1 });
+  const [draft, setDraft] = useState<Draft>(makeDraft(initialPoint));
 
   useEffect(() => {
     if (open) {
       setStep(1);
-      setDraft({ rallyCount: 1 });
+      setDraft(makeDraft(initialPoint));
     }
-  }, [open, outcome]);
+  }, [open, outcome, initialPoint]);
 
   const advance = (update: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...update }));
@@ -100,6 +129,7 @@ export function PointLogSheet({ open, outcome, sport, onCommit, onClose }: Point
       resultReason: draft.resultReason,
       rallyCount: draft.rallyCount,
       shotLocation: loc,
+      detailStatus: 'complete',
     });
   };
 
@@ -107,6 +137,9 @@ export function PointLogSheet({ open, outcome, sport, onCommit, onClose }: Point
     tone === 'success' ? colors.success : tone === 'warning' ? colors.warning : colors.danger;
 
   const outcomeColor = outcome === 'won' ? colors.success : colors.danger;
+  const videoTimestamp = initialPoint?.videoTimestamp;
+  const showVideoLink = typeof videoTimestamp === 'number' && onGoToVideo;
+  const showNavigation = hasPrev || hasNext;
 
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
@@ -123,7 +156,7 @@ export function PointLogSheet({ open, outcome, sport, onCommit, onClose }: Point
                 </Text>
               </View>
               <Text style={[styles.stepName, { color: colors.text }]}>
-                {STEP_NAMES[step]}を選択
+                {initialPoint ? '詳細を入力' : `${STEP_NAMES[step]}を選択`}
               </Text>
             </View>
             <View style={styles.headerRight}>
@@ -133,6 +166,14 @@ export function PointLogSheet({ open, outcome, sport, onCommit, onClose }: Point
               </TouchableOpacity>
             </View>
           </View>
+
+          {showVideoLink ? (
+            <TouchableOpacity activeOpacity={0.7} onPress={onGoToVideo} style={styles.videoLink}>
+              <Text style={[styles.videoLinkText, { color: colors.primary }]}>
+                ◀ 動画で確認 ({formatSeconds(videoTimestamp)})
+              </Text>
+            </TouchableOpacity>
+          ) : null}
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -263,6 +304,40 @@ export function PointLogSheet({ open, outcome, sport, onCommit, onClose }: Point
               </View>
             )}
           </ScrollView>
+          {showNavigation ? (
+            <View style={styles.navigation}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                disabled={!hasPrev || !onPrev}
+                onPress={onPrev}
+                style={styles.navigationButton}
+              >
+                <Text
+                  style={[
+                    styles.navigationText,
+                    { color: hasPrev && onPrev ? colors.primary : colors.textMuted },
+                  ]}
+                >
+                  ◀ 前
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                disabled={!hasNext || !onNext}
+                onPress={onNext}
+                style={styles.navigationButton}
+              >
+                <Text
+                  style={[
+                    styles.navigationText,
+                    { color: hasNext && onNext ? colors.primary : colors.textMuted },
+                  ]}
+                >
+                  次 ▶
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </Pressable>
       </Pressable>
     </Modal>
@@ -328,6 +403,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  videoLink: {
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    minHeight: 28,
+    justifyContent: 'center',
+  },
+  videoLinkText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
   scrollContent: {
     gap: 8,
     paddingBottom: 8,
@@ -385,5 +470,19 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  navigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 14,
+  },
+  navigationButton: {
+    minHeight: 32,
+    minWidth: 72,
+    justifyContent: 'center',
+  },
+  navigationText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

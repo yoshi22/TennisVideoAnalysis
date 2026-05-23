@@ -112,4 +112,66 @@ describe('ManualAnalyzer', () => {
     expect(result.firstServeInRate).toBeGreaterThan(0);
     expect(result.averageRallyCount).toBeCloseTo((1 + 4 + 7) / 3, 5);
   });
+
+  it('handles quick video points without detailed fields', () => {
+    const points: PointRecord[] = [
+      {
+        id: '1',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:00.000Z',
+        outcome: 'won',
+        videoTimestamp: 12.5,
+        detailStatus: 'quick',
+      },
+      {
+        id: '2',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:01.000Z',
+        outcome: 'lost',
+        shotType: 'forehand',
+        resultReason: 'unforcedError',
+        rallyCount: 6,
+        detailStatus: 'complete',
+      },
+    ];
+    const result = analyzer.analyze(makeSession(points));
+
+    expect(result.winRate).toBe(0.5);
+    expect(result.averageRallyCount).toBe(6);
+  });
+
+  it('excludes partial points (shotType+resultReason without rallyCount) from rally and weakness analysis', () => {
+    // Regression: before fix, ManualAnalyzer.detectWeaknesses used its own inline filter
+    // (shotType && resultReason only) while isPointComplete also requires rallyCount.
+    // A partial point would inflate weakness/rally totals while showing as "未補完" in the UI.
+    const points: PointRecord[] = [
+      // complete point
+      {
+        id: '1',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:00.000Z',
+        outcome: 'lost',
+        shotType: 'backhand',
+        resultReason: 'unforcedError',
+        rallyCount: 3,
+        detailStatus: 'complete',
+      },
+      // partial: has shotType + resultReason but missing rallyCount → NOT complete
+      {
+        id: '2',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:01.000Z',
+        outcome: 'lost',
+        shotType: 'backhand',
+        resultReason: 'unforcedError',
+        detailStatus: 'quick',
+      },
+    ];
+    const result = analyzer.analyze(makeSession(points));
+
+    // winRate counts all points (1 won = 0, 2 lost → 0/2)
+    expect(result.winRate).toBe(0);
+    // averageRallyCount counts only complete points: [3] → 3
+    expect(result.averageRallyCount).toBe(3);
+  });
 });

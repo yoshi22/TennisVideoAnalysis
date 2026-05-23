@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  AnalysisConfidenceBanner,
   Card,
   CourtLines,
   Donut,
@@ -28,6 +29,7 @@ import {
   type WeaknessPattern,
 } from '@/types';
 import { formatPercent } from '@/utils/format';
+import { isPointComplete } from '@/utils/pointDetails';
 
 interface ShotBreakdownItem {
   shotType: ShotType;
@@ -112,6 +114,8 @@ export default function ReportScreen() {
   const wonCount = session.points.filter((p) => p.outcome === 'won').length;
   const lostCount = session.points.filter((p) => p.outcome === 'lost').length;
   const totalPoints = session.points.length;
+  const completePointCount = session.points.filter(isPointComplete).length;
+  const quickPointCount = totalPoints - completePointCount;
   const sessionVideoUri = session.videoUri;
 
   const donutItems = shotBreakdown
@@ -165,7 +169,10 @@ export default function ReportScreen() {
           <Text style={[styles.heroScore, { color: colors.surface }]}>
             {wonCount}–{lostCount}
           </Text>
-          <Text style={[styles.heroSub, { color: colors.surface }]}>{totalPoints} ポイント</Text>
+          <Text style={[styles.heroSub, { color: colors.surface }]}>
+            {totalPoints} ポイント
+            {quickPointCount > 0 ? ` ・ 詳細未入力 ${quickPointCount}` : ''}
+          </Text>
         </View>
 
         {/* Key stats row */}
@@ -176,7 +183,7 @@ export default function ReportScreen() {
             { label: 'ポイント', value: String(totalPoints), color: colors.text },
             { label: '得点率', value: formatPercent(analysis.winRate), color: colors.success },
             { label: '1st%', value: formatPercent(analysis.firstServeInRate), color: colors.text },
-            { label: 'WNR', value: String(analysis.aceCount), color: colors.text },
+            { label: '詳細', value: `${completePointCount}/${totalPoints}`, color: colors.text },
           ].map((stat, i, arr) => (
             <View
               key={stat.label}
@@ -190,8 +197,22 @@ export default function ReportScreen() {
             </View>
           ))}
         </View>
+        {quickPointCount > 0 ? (
+          <View
+            style={[
+              styles.detailNotice,
+              { backgroundColor: colors.surface, borderColor: colors.warning },
+            ]}
+          >
+            <Text style={[styles.detailNoticeText, { color: colors.text }]}>
+              詳細未入力 {quickPointCount} 件。ショット内訳、ヒートマップ、弱点分析は詳細入力済み
+              {completePointCount} 件をもとに表示します。
+            </Text>
+          </View>
+        ) : null}
 
         {/* Shot breakdown with donut */}
+        <AnalysisConfidenceBanner completeCount={completePointCount} />
         <View>
           <SectionHeader title="ショット内訳" />
           <View
@@ -555,6 +576,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.04,
+  },
+  detailNotice: {
+    borderRadius: 12,
+    borderWidth: 0.5,
+    padding: 12,
+  },
+  detailNoticeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   donutCard: {
     flexDirection: 'row',

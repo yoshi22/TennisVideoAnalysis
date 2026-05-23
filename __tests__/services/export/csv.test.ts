@@ -25,6 +25,7 @@ describe('buildPointsCSV', () => {
     expect(lines[0]).toContain('outcome');
     expect(lines[0]).toContain('shotType');
     expect(lines[0]).toContain('videoTimestamp');
+    expect(lines[0]).toContain('detailStatus');
     expect(lines.length).toBe(1); // header only (no data rows)
   });
 
@@ -91,5 +92,29 @@ describe('buildPointsCSV', () => {
     const fields = lines[1].split(',');
     expect(fields[5]).toBe(''); // serveResult
     expect(fields[6]).toBe(''); // shotLocationX
+  });
+
+  it('exports quick video points with empty detail columns', () => {
+    const session = makeSession({
+      points: [
+        {
+          id: 'p4',
+          sessionId: 'sess1',
+          timestamp: '2026-05-17T10:04:00.000Z',
+          outcome: 'lost',
+          videoTimestamp: 42,
+          detailStatus: 'quick',
+        },
+      ],
+    });
+    const csv = buildPointsCSV(session);
+    const fields = csv.split('\r\n')[1].split(',');
+
+    expect(fields[1]).toBe('lost');
+    expect(fields[2]).toBe('');
+    expect(fields[3]).toBe('');
+    expect(fields[4]).toBe('');
+    expect(fields[10]).toBe('42');
+    expect(fields[11]).toBe('quick');
   });
 });

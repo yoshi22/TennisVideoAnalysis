@@ -59,6 +59,7 @@ export function PointLoggerForm({ sessionId, sport, onSave, onCancel }: PointLog
       shotType: point.shotType,
       resultReason: point.resultReason,
       rallyCount: point.rallyCount,
+      detailStatus: 'complete',
       shotLocation: point.shotLocation,
     };
 

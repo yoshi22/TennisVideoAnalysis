@@ -14,7 +14,9 @@ import { setPendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
+import { formatSeconds } from '@/utils/formatTime';
 import { generateId } from '@/utils/id';
+import { getPointDetailStatus } from '@/utils/pointDetails';
 
 const RESULT_REASON_LABELS: Record<string, string> = {
   winner: 'ウィナー',
@@ -23,6 +25,8 @@ const RESULT_REASON_LABELS: Record<string, string> = {
   net: 'ネット',
   out: 'アウト',
 };
+
+type LogFilter = 'all' | 'quick';
 
 function formatDateTime(isoString: string): string {
   return new Date(isoString).toLocaleString('ja-JP', {
@@ -36,12 +40,18 @@ function formatDateTime(isoString: string): string {
 export default function SessionLogScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const push = (path: string) => router.push(path as any);
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
+  const updatePoint = useSessionStore((state) => state.updatePoint);
   const deletePoint = useSessionStore((state) => state.deletePoint);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pendingOutcome, setPendingOutcome] = useState<PointOutcome>('won');
+  const [editingPoint, setEditingPoint] = useState<PointRecord | undefined>(undefined);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [filter, setFilter] = useState<LogFilter>('all');
 
   const chronologicalPoints = useMemo(
     () =>
@@ -53,6 +63,11 @@ export default function SessionLogScreen() {
     [session]
   );
   const points = useMemo(() => [...chronologicalPoints].reverse(), [chronologicalPoints]);
+  const quickPoints = useMemo(
+    () => points.filter((point) => getPointDetailStatus(point) === 'quick'),
+    [points]
+  );
+  const visiblePoints = filter === 'quick' ? quickPoints : points;
 
   const ourScore = useMemo(() => points.filter((p) => p.outcome === 'won').length, [points]);
   const oppScore = useMemo(() => points.filter((p) => p.outcome === 'lost').length, [points]);
@@ -78,11 +93,49 @@ export default function SessionLogScreen() {
   }, [chronologicalPoints]);
 
   const openSheet = (outcome: PointOutcome) => {
+    setEditingPoint(undefined);
+    setEditingIndex(null);
     setPendingOutcome(outcome);
     setSheetOpen(true);
   };
 
+  const openEditSheet = (point: PointRecord, index: number) => {
+    if (index < 0) return;
+
+    setEditingPoint(point);
+    setEditingIndex(index);
+    setPendingOutcome(point.outcome);
+    setSheetOpen(true);
+  };
+
+  const moveEditSheet = (delta: -1 | 1) => {
+    if (editingIndex === null) return;
+
+    const nextIndex = editingIndex + delta;
+    const nextPoint = points[nextIndex];
+    if (!nextPoint) return;
+
+    setEditingPoint(nextPoint);
+    setEditingIndex(nextIndex);
+    setPendingOutcome(nextPoint.outcome);
+  };
+
+  const handleGoToVideo = () => {
+    if (!editingPoint || typeof editingPoint.videoTimestamp !== 'number') return;
+
+    setPendingSeek(sessionId, editingPoint.videoTimestamp);
+    push(`/session/${sessionId}/video`);
+  };
+
   const handleCommit = (data: Omit<PointRecord, 'id' | 'sessionId' | 'timestamp'>) => {
+    if (editingPoint) {
+      updatePoint(sessionId, editingPoint.id, data);
+      setEditingPoint(undefined);
+      setEditingIndex(null);
+      setSheetOpen(false);
+      return;
+    }
+
     const record: PointRecord = {
       id: generateId(),
       sessionId,
@@ -99,6 +152,9 @@ export default function SessionLogScreen() {
       { text: '削除する', style: 'destructive', onPress: () => deletePoint(sessionId, point.id) },
     ]);
   };
+
+  const hasPrev = editingIndex !== null && editingIndex > 0;
+  const hasNext = editingIndex !== null && editingIndex < points.length - 1;
 
   if (!session) {
     return (
@@ -145,84 +201,154 @@ export default function SessionLogScreen() {
           </View>
         ) : (
           <View>
-            <Text style={[styles.listLabel, { color: colors.textMuted }]}>
-              ポイント履歴 ({points.length})
-            </Text>
             <View
               style={[
-                styles.listCard,
+                styles.filterPanel,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
-              {points.map((point, idx) => {
-                const cum = cumulativeScores.get(point.id);
-                const isWon = point.outcome === 'won';
-                const isLast = idx === points.length - 1;
-                return (
-                  <TouchableOpacity
-                    key={point.id}
-                    onLongPress={() => confirmDelete(point)}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${SHOT_TYPE_META[point.shotType].label}のポイント`}
-                  >
-                    <View
+              <Text style={[styles.filterSummary, { color: colors.text }]}>
+                詳細入力済み {points.length - quickPoints.length} / {points.length}
+              </Text>
+              <View style={styles.filterRow}>
+                {[
+                  { label: `すべて ${points.length}`, value: 'all' as const },
+                  { label: `未補完 ${quickPoints.length}`, value: 'quick' as const },
+                ].map((option) => {
+                  const active = filter === option.value;
+                  return (
+                    <TouchableOpacity
+                      accessibilityLabel={`${option.label}を表示`}
+                      accessibilityRole="button"
+                      activeOpacity={0.82}
+                      key={option.value}
+                      onPress={() => setFilter(option.value)}
                       style={[
-                        styles.listItem,
-                        !isLast && { borderBottomWidth: 0.5, borderBottomColor: colors.border },
+                        styles.filterButton,
+                        {
+                          backgroundColor: active ? colors.primaryLo : colors.surfaceAlt,
+                          borderColor: active ? colors.primary : colors.border,
+                        },
                       ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterButtonText,
+                          { color: active ? colors.primary : colors.textSub },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+            <Text style={[styles.listLabel, { color: colors.textMuted }]}>
+              ポイント履歴 ({visiblePoints.length})
+            </Text>
+            {visiblePoints.length === 0 ? (
+              <View
+                style={[
+                  styles.filteredEmpty,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <EmptyState
+                  description="すべてのポイントに詳細が入力されています"
+                  title="未補完はありません"
+                />
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.listCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                {visiblePoints.map((point, idx) => {
+                  const cum = cumulativeScores.get(point.id);
+                  const isWon = point.outcome === 'won';
+                  const isLast = idx === visiblePoints.length - 1;
+                  const allIndex = points.findIndex((candidate) => candidate.id === point.id);
+                  return (
+                    <TouchableOpacity
+                      key={point.id}
+                      onPress={() => openEditSheet(point, allIndex)}
+                      onLongPress={() => confirmDelete(point)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="ポイント詳細を編集"
                     >
                       <View
                         style={[
-                          styles.sidebar,
-                          { backgroundColor: isWon ? colors.success : colors.danger },
+                          styles.listItem,
+                          !isLast && { borderBottomWidth: 0.5, borderBottomColor: colors.border },
                         ]}
-                      />
-                      <View style={styles.itemScore}>
-                        <Text style={[styles.cumScore, { color: colors.textSub }]}>
-                          {cum ? `${cum.w}–${cum.l}` : '—'}
-                        </Text>
-                      </View>
-                      <View style={styles.itemBody}>
-                        <Text style={[styles.itemTitle, { color: colors.text }]}>
-                          {SHOT_TYPE_META[point.shotType].label}
-                          {'  '}
-                          <Text style={{ color: colors.textMuted, fontWeight: '500' }}>
-                            · {RESULT_REASON_LABELS[point.resultReason] ?? point.resultReason}
+                      >
+                        <View
+                          style={[
+                            styles.sidebar,
+                            { backgroundColor: isWon ? colors.success : colors.danger },
+                          ]}
+                        />
+                        <View style={styles.itemScore}>
+                          <Text style={[styles.cumScore, { color: colors.textSub }]}>
+                            {cum ? `${cum.w}–${cum.l}` : '—'}
                           </Text>
-                        </Text>
-                        <Text style={[styles.itemMeta, { color: colors.textMuted }]}>
-                          {point.serveResult
-                            ? `${SERVE_RESULT_META[point.serveResult].label} ・ `
-                            : ''}
-                          {point.rallyCount} 球 ・ {formatDateTime(point.timestamp)}
-                        </Text>
-                        {point.videoTimestamp !== undefined ? (
-                          <TouchableOpacity
-                            accessibilityLabel="動画で確認"
-                            accessibilityRole="button"
-                            onPress={() => {
-                              setPendingSeek(sessionId, point.videoTimestamp!);
-                              router.push(
-                                `/session/${sessionId}/video` as Parameters<typeof router.push>[0]
-                              );
-                            }}
-                            style={styles.videoJumpButton}
-                          >
-                            <Text style={[styles.videoJumpText, { color: colors.primary }]}>
-                              ▶ 動画で確認
+                        </View>
+                        <View style={styles.itemBody}>
+                          <Text style={[styles.itemTitle, { color: colors.text }]}>
+                            {point.shotType ? SHOT_TYPE_META[point.shotType].label : '詳細未入力'}
+                            {point.resultReason ? (
+                              <Text style={{ color: colors.textMuted, fontWeight: '500' }}>
+                                {'  '}·{' '}
+                                {RESULT_REASON_LABELS[point.resultReason] ?? point.resultReason}
+                              </Text>
+                            ) : null}
+                          </Text>
+                          <Text style={[styles.itemMeta, { color: colors.textMuted }]}>
+                            {point.serveResult
+                              ? `${SERVE_RESULT_META[point.serveResult].label} ・ `
+                              : ''}
+                            {typeof point.rallyCount === 'number'
+                              ? `${point.rallyCount} 球 ・ `
+                              : ''}
+                            {point.videoTimestamp !== undefined
+                              ? `${formatSeconds(point.videoTimestamp)} ・ `
+                              : ''}
+                            {formatDateTime(point.timestamp)}
+                          </Text>
+                          {getPointDetailStatus(point) === 'quick' ? (
+                            <Text style={[styles.quickDetailText, { color: colors.warning }]}>
+                              タップして詳細を入力
                             </Text>
-                          </TouchableOpacity>
-                        ) : null}
+                          ) : null}
+                          {point.videoTimestamp !== undefined ? (
+                            <TouchableOpacity
+                              accessibilityLabel="動画で確認"
+                              accessibilityRole="button"
+                              onPress={() => {
+                                setPendingSeek(sessionId, point.videoTimestamp!);
+                                push(`/session/${sessionId}/video`);
+                              }}
+                              style={styles.videoJumpButton}
+                            >
+                              <Text style={[styles.videoJumpText, { color: colors.primary }]}>
+                                ▶ 動画で確認
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
+                        <Text style={[styles.itemIndex, { color: colors.textMuted }]}>
+                          #{allIndex >= 0 ? points.length - allIndex : points.length - idx}
+                        </Text>
                       </View>
-                      <Text style={[styles.itemIndex, { color: colors.textMuted }]}>
-                        #{points.length - idx}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 
@@ -230,11 +356,22 @@ export default function SessionLogScreen() {
       </ScrollView>
 
       <PointLogSheet
+        initialPoint={editingPoint}
         open={sheetOpen}
         outcome={pendingOutcome}
+        sessionId={sessionId}
         sport={session.sport}
         onCommit={handleCommit}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => {
+          setEditingPoint(undefined);
+          setEditingIndex(null);
+          setSheetOpen(false);
+        }}
+        onGoToVideo={handleGoToVideo}
+        onPrev={() => moveEditSheet(-1)}
+        onNext={() => moveEditSheet(1)}
+        hasPrev={hasPrev}
+        hasNext={hasNext}
       />
     </SafeAreaView>
   );
@@ -293,6 +430,42 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   },
+  filterPanel: {
+    borderRadius: 12,
+    borderWidth: 0.5,
+    gap: 10,
+    marginBottom: 12,
+    padding: 12,
+  },
+  filterSummary: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 0.5,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 10,
+  },
+  filterButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  filteredEmpty: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 0.5,
+    minHeight: 180,
+    justifyContent: 'center',
+    padding: 16,
+  },
   listCard: {
     borderRadius: 14,
     borderWidth: 0.5,
@@ -337,6 +510,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
     fontVariant: ['tabular-nums'],
+  },
+  quickDetailText: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 6,
   },
   videoJumpButton: {
     alignSelf: 'flex-start',

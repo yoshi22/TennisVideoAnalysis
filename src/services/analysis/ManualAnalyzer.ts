@@ -5,6 +5,7 @@ import {
   type TennisSession,
   type WeaknessPattern,
 } from '@/types';
+import { isPointComplete } from '@/utils/pointDetails';
 
 import { generateCoachingTips } from './CoachingTipsGenerator';
 import { generatePracticeMenu } from './PracticeMenuGenerator';
@@ -66,14 +67,15 @@ function calculateServeStats(points: PointRecord[]): ServeStats {
 }
 
 function calculateRallyStats(points: PointRecord[]): RallyStats {
-  const totalPoints = points.length;
-  const rallyTotal = points.reduce((sum, point) => sum + point.rallyCount, 0);
+  const rallyPoints = points.filter((point) => typeof point.rallyCount === 'number');
+  const totalPoints = rallyPoints.length;
+  const rallyTotal = rallyPoints.reduce((sum, point) => sum + (point.rallyCount ?? 0), 0);
 
   return {
     totalPoints,
     averageRallyCount: divideOrZero(rallyTotal, totalPoints),
-    shortRallyCount: points.filter((point) => point.rallyCount <= 3).length,
-    longRallyCount: points.filter((point) => point.rallyCount >= 7).length,
+    shortRallyCount: rallyPoints.filter((point) => (point.rallyCount ?? 0) <= 3).length,
+    longRallyCount: rallyPoints.filter((point) => (point.rallyCount ?? 0) >= 7).length,
   };
 }
 
@@ -106,17 +108,17 @@ function findShotBreakdown(breakdowns: ShotBreakdown[], shotType: ShotType): Sho
 }
 
 function detectWeaknesses(
-  points: PointRecord[],
+  completePoints: PointRecord[],
   serveStats: ServeStats,
   rallyStats: RallyStats,
   shotBreakdowns: ShotBreakdown[],
   firstServeInRate: number
 ): WeaknessPattern[] {
-  const totalPoints = points.length;
+  const totalPoints = completePoints.length;
   const backhand = findShotBreakdown(shotBreakdowns, 'backhand');
   const volley = findShotBreakdown(shotBreakdowns, 'volley');
   const smash = findShotBreakdown(shotBreakdowns, 'smash');
-  const unforcedErrorCount = points.filter(
+  const unforcedErrorCount = completePoints.filter(
     (point) => point.resultReason === 'unforcedError'
   ).length;
   const weaknesses: WeaknessPattern[] = [];
@@ -183,10 +185,15 @@ export class ManualAnalyzer implements TennisAnalyzer {
   analyze(session: TennisSession): TennisAnalysisResult {
     // ソフトテニス固有の前衛/後衛コーチング（positionベースのTips）はPhase 4以降で実装予定
     const points = session.points;
+    const completePoints = points.filter(isPointComplete);
+
+    // serveStats / winRate は quick ポイントも含む全ポイントを対象（outcome / serveResult は quick でも記録される）
     const serveStats = calculateServeStats(points);
-    const rallyStats = calculateRallyStats(points);
-    const shotBreakdowns = calculateShotBreakdowns(points);
     const wonCount = points.filter((point) => point.outcome === 'won').length;
+
+    // 詳細入力済みポイントのみを対象にするラリー・ショット・弱点分析
+    const rallyStats = calculateRallyStats(completePoints);
+    const shotBreakdowns = calculateShotBreakdowns(completePoints);
 
     const firstServeInRate = divideOrZero(serveStats.firstServeIn, serveStats.totalServes);
     const secondServeDenominator = serveStats.secondServeIn + serveStats.doubleFaults;
@@ -194,7 +201,7 @@ export class ManualAnalyzer implements TennisAnalyzer {
     const winRate = divideOrZero(wonCount, points.length);
 
     const weaknesses = detectWeaknesses(
-      points,
+      completePoints,
       serveStats,
       rallyStats,
       shotBreakdowns,

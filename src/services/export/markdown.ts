@@ -2,6 +2,7 @@ import { type TennisAnalysisResult, type WeaknessPattern } from '@/types/analysi
 import { type MatchScore } from '@/types/matchScore';
 import { type TennisSession } from '@/types/session';
 import { formatSetScoreLine } from '@/services/scoring/matchState';
+import { isPointComplete } from '@/utils/pointDetails';
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   match: '試合',
@@ -84,6 +85,8 @@ export function buildSessionReport(
     const wonCount = session.points.filter((p) => p.outcome === 'won').length;
     const lostCount = session.points.length - wonCount;
     const winRate = ((wonCount / session.points.length) * 100).toFixed(1);
+    const completePoints = session.points.filter(isPointComplete);
+    const quickCount = session.points.length - completePoints.length;
 
     lines.push('');
     lines.push('## 統計');
@@ -91,9 +94,14 @@ export function buildSessionReport(
     lines.push(`- **得点**: ${wonCount}`);
     lines.push(`- **失点**: ${lostCount}`);
     lines.push(`- **得点率**: ${winRate}%`);
+    lines.push(`- **詳細入力済み**: ${completePoints.length}`);
+    if (quickCount > 0) {
+      lines.push(`- **詳細未入力**: ${quickCount}`);
+      lines.push('- **分析対象**: ショット別、ラリー傾向、弱点分析は詳細入力済みポイントのみ');
+    }
 
     const shotMap: Record<string, { won: number; lost: number }> = {};
-    for (const p of session.points) {
+    for (const p of completePoints) {
       if (!shotMap[p.shotType]) {
         shotMap[p.shotType] = { won: 0, lost: 0 };
       }
@@ -104,16 +112,18 @@ export function buildSessionReport(
       }
     }
 
-    lines.push('');
-    lines.push('### ショット別');
-    lines.push('');
-    lines.push('| ショット | 得点 | 失点 | 得点率 |');
-    lines.push('|---|---|---|---|');
-    for (const [shotType, counts] of Object.entries(shotMap)) {
-      const total = counts.won + counts.lost;
-      const rate = ((counts.won / total) * 100).toFixed(0);
-      const label = SHOT_TYPE_LABELS[shotType] ?? shotType;
-      lines.push(`| ${label} | ${counts.won} | ${counts.lost} | ${rate}% |`);
+    if (Object.keys(shotMap).length > 0) {
+      lines.push('');
+      lines.push('### ショット別');
+      lines.push('');
+      lines.push('| ショット | 得点 | 失点 | 得点率 |');
+      lines.push('|---|---|---|---|');
+      for (const [shotType, counts] of Object.entries(shotMap)) {
+        const total = counts.won + counts.lost;
+        const rate = ((counts.won / total) * 100).toFixed(0);
+        const label = SHOT_TYPE_LABELS[shotType] ?? shotType;
+        lines.push(`| ${label} | ${counts.won} | ${counts.lost} | ${rate}% |`);
+      }
     }
   }
 

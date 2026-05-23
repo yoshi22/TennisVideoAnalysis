@@ -2,6 +2,7 @@ export type ShotType = 'serve' | 'forehand' | 'backhand' | 'volley' | 'smash' | 
 export type ServeResult = 'firstIn' | 'secondIn' | 'doubleFault' | 'ace' | 'returnError';
 export type ResultReason = 'winner' | 'forcedError' | 'unforcedError' | 'net' | 'out';
 export type PointOutcome = 'won' | 'lost';
+export type PointDetailStatus = 'quick' | 'complete';
 
 export interface ShotLocation {
   // 0..1 正規化座標
@@ -17,10 +18,11 @@ export interface PointRecord {
   timestamp: string;
   outcome: PointOutcome;
   serveResult?: ServeResult;
-  shotType: ShotType;
-  resultReason: ResultReason;
+  shotType?: ShotType;
+  resultReason?: ResultReason;
   // 0以上
-  rallyCount: number;
+  rallyCount?: number;
+  detailStatus?: PointDetailStatus;
   // コート上の打球位置
   shotLocation?: ShotLocation;
   // 狙った位置
