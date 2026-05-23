@@ -28,5 +28,6 @@ export function proposeCandidates(
     serveAttempt: options.serveAttempt ?? 1,
   });
 
-  return candidate ? [candidate] : [];
+  if (!candidate) return [];
+  return [{ ...candidate, confidence: rally.windowConfidence }];
 }

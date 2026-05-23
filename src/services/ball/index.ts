@@ -28,6 +28,9 @@ export interface RallyAnalysis {
   /** Peak ball speed in km/h estimated from ball displacement + court homography.
    *  null when calibration is absent or too few detections. */
   peakSpeedKmh: number | null;
+  /** Rally-window detection confidence 0..1 propagated from the segmentation stage.
+   *  undefined when analyzed via single-window analyzeRally (no window context). */
+  windowConfidence?: number;
 }
 
 /**

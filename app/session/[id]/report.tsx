@@ -116,6 +116,7 @@ export default function ReportScreen() {
   const totalPoints = session.points.length;
   const completePointCount = session.points.filter(isPointComplete).length;
   const quickPointCount = totalPoints - completePointCount;
+  const draftCount = session.points.filter((p) => p.reviewStatus === 'draft').length;
   const sessionVideoUri = session.videoUri;
 
   const donutItems = shotBreakdown
@@ -212,7 +213,7 @@ export default function ReportScreen() {
         ) : null}
 
         {/* Shot breakdown with donut */}
-        <AnalysisConfidenceBanner completeCount={completePointCount} />
+        <AnalysisConfidenceBanner completeCount={completePointCount} draftCount={draftCount} />
         <View>
           <SectionHeader title="ショット内訳" />
           <View

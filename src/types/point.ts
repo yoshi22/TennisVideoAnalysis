@@ -3,6 +3,8 @@ export type ServeResult = 'firstIn' | 'secondIn' | 'doubleFault' | 'ace' | 'retu
 export type ResultReason = 'winner' | 'forcedError' | 'unforcedError' | 'net' | 'out';
 export type PointOutcome = 'won' | 'lost';
 export type PointDetailStatus = 'quick' | 'complete';
+export type PointSource = 'manual' | 'auto';
+export type PointReviewStatus = 'draft' | 'confirmed';
 
 export interface ShotLocation {
   // 0..1 正規化座標
@@ -23,6 +25,10 @@ export interface PointRecord {
   // 0以上
   rallyCount?: number;
   detailStatus?: PointDetailStatus;
+  source?: PointSource;
+  /** Auto-detection confidence 0..1 (set when source = 'auto') */
+  confidence?: number;
+  reviewStatus?: PointReviewStatus;
   // コート上の打球位置
   shotLocation?: ShotLocation;
   // 狙った位置

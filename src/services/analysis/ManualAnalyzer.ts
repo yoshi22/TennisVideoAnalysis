@@ -185,11 +185,13 @@ export class ManualAnalyzer implements TennisAnalyzer {
   analyze(session: TennisSession): TennisAnalysisResult {
     // ソフトテニス固有の前衛/後衛コーチング（positionベースのTips）はPhase 4以降で実装予定
     const points = session.points;
-    const completePoints = points.filter(isPointComplete);
+    // Draft auto-generated points are excluded from all analysis until confirmed by the user.
+    const confirmedPoints = points.filter((p) => p.reviewStatus !== 'draft');
+    const completePoints = confirmedPoints.filter(isPointComplete);
 
-    // serveStats / winRate は quick ポイントも含む全ポイントを対象（outcome / serveResult は quick でも記録される）
-    const serveStats = calculateServeStats(points);
-    const wonCount = points.filter((point) => point.outcome === 'won').length;
+    // serveStats / winRate は quick ポイントも含む確定済みポイントを対象
+    const serveStats = calculateServeStats(confirmedPoints);
+    const wonCount = confirmedPoints.filter((point) => point.outcome === 'won').length;
 
     // 詳細入力済みポイントのみを対象にするラリー・ショット・弱点分析
     const rallyStats = calculateRallyStats(completePoints);
@@ -198,7 +200,7 @@ export class ManualAnalyzer implements TennisAnalyzer {
     const firstServeInRate = divideOrZero(serveStats.firstServeIn, serveStats.totalServes);
     const secondServeDenominator = serveStats.secondServeIn + serveStats.doubleFaults;
     const secondServeInRate = divideOrZero(serveStats.secondServeIn, secondServeDenominator);
-    const winRate = divideOrZero(wonCount, points.length);
+    const winRate = divideOrZero(wonCount, confirmedPoints.length);
 
     const weaknesses = detectWeaknesses(
       completePoints,

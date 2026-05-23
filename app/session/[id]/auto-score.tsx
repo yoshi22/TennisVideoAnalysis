@@ -19,6 +19,7 @@ import {
   SectionHeader,
   SegmentedControl,
 } from '@/components/common';
+import { PointLogSheet } from '@/components/point';
 import { AutoPointCard } from '@/components/scoring';
 import { useSession } from '@/hooks';
 import { analyzeRally, analyzeRallyBatch, detectRallyWindows } from '@/services/ball';
@@ -26,6 +27,7 @@ import { proposeCandidates } from '@/services/scoring';
 import { useSessionStore } from '@/stores';
 import { useTheme } from '@/theme';
 import { type AutoPointCandidate, type PointRecord } from '@/types';
+import { generateId } from '@/utils/id';
 
 type PlayerSideValue = 'near' | 'far';
 type ServeMode = 'yes' | 'no';
@@ -50,18 +52,6 @@ const SERVE_ATTEMPT_OPTIONS: { label: string; value: ServeAttemptValue }[] = [
   { label: '2nd', value: '2' },
 ];
 
-function isPointRecord(point: Partial<PointRecord>): point is PointRecord {
-  return (
-    typeof point.id === 'string' &&
-    typeof point.sessionId === 'string' &&
-    typeof point.timestamp === 'string' &&
-    (point.outcome === 'won' || point.outcome === 'lost') &&
-    typeof point.shotType === 'string' &&
-    typeof point.resultReason === 'string' &&
-    typeof point.rallyCount === 'number'
-  );
-}
-
 export default function AutoScoreScreen() {
   const { colors } = useTheme();
   const router = useRouter();
@@ -77,6 +67,8 @@ export default function AutoScoreScreen() {
   const [progress, setProgress] = useState(0);
   const [candidates, setCandidates] = useState<AutoPointCandidate[]>([]);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [confirmingCandidate, setConfirmingCandidate] = useState<AutoPointCandidate | null>(null);
+  const [confirmSheetOpen, setConfirmSheetOpen] = useState(false);
 
   const resetCandidates = () => {
     setCandidates([]);
@@ -176,19 +168,59 @@ export default function AutoScoreScreen() {
     }
   };
 
-  const handleAcceptCandidate = (candidateId: string, point: Partial<PointRecord>) => {
-    if (!isPointRecord(point)) {
-      Alert.alert('保存に失敗しました', '採点候補の内容を確認してください。');
-      return;
-    }
-
+  const handleDraftCandidate = (candidateId: string, point: PointRecord) => {
     addPoint(sessionId, point);
-    setCandidates((current) => current.filter((candidate) => candidate.id !== candidateId));
+    setCandidates((current) => current.filter((c) => c.id !== candidateId));
+  };
+
+  const handleOpenConfirm = (candidate: AutoPointCandidate) => {
+    setConfirmingCandidate(candidate);
+    setConfirmSheetOpen(true);
+  };
+
+  const handleConfirmSheetClose = () => {
+    setConfirmSheetOpen(false);
+    setConfirmingCandidate(null);
+  };
+
+  const handleConfirmSheetCommit = (data: Omit<PointRecord, 'id' | 'sessionId' | 'timestamp'>) => {
+    if (!confirmingCandidate) return;
+    const point: PointRecord = {
+      id: generateId(),
+      sessionId,
+      timestamp: new Date().toISOString(),
+      ...data,
+      source: 'auto',
+      confidence: confirmingCandidate.confidence,
+      reviewStatus: 'confirmed',
+      videoTimestamp: confirmingCandidate.videoTimestamp,
+    };
+    addPoint(sessionId, point);
+    setCandidates((current) => current.filter((c) => c.id !== confirmingCandidate.id));
+    setConfirmingCandidate(null);
+    setConfirmSheetOpen(false);
   };
 
   const removeCandidate = (candidateId: string) => {
     setCandidates((current) => current.filter((candidate) => candidate.id !== candidateId));
   };
+
+  const confirmInitialPoint: PointRecord | undefined = confirmingCandidate
+    ? {
+        id: '',
+        sessionId,
+        timestamp: new Date().toISOString(),
+        outcome: confirmingCandidate.suggestedOutcome,
+        shotType: confirmingCandidate.suggestedShotType,
+        resultReason: confirmingCandidate.suggestedResultReason,
+        rallyCount: confirmingCandidate.suggestedRallyCount,
+        serveResult: confirmingCandidate.suggestedServeResult,
+        shotLocation: confirmingCandidate.suggestedShotLocation,
+        videoTimestamp: confirmingCandidate.videoTimestamp,
+        source: 'auto',
+        confidence: confirmingCandidate.confidence,
+      }
+    : undefined;
 
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -407,7 +439,8 @@ export default function AutoScoreScreen() {
                   <AutoPointCard
                     candidate={candidate}
                     key={candidate.id}
-                    onAccept={(point) => handleAcceptCandidate(candidate.id, point)}
+                    onSaveDraft={(point) => handleDraftCandidate(candidate.id, point)}
+                    onConfirm={() => handleOpenConfirm(candidate)}
                     onReject={() => removeCandidate(candidate.id)}
                     sessionId={sessionId}
                   />
@@ -417,6 +450,16 @@ export default function AutoScoreScreen() {
           ) : null}
         </ScrollView>
       )}
+      {session ? (
+        <PointLogSheet
+          open={confirmSheetOpen}
+          outcome={confirmingCandidate?.suggestedOutcome ?? 'won'}
+          initialPoint={confirmInitialPoint}
+          sport={session.sport}
+          onCommit={handleConfirmSheetCommit}
+          onClose={handleConfirmSheetClose}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

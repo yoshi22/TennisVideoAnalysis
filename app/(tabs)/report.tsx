@@ -72,6 +72,9 @@ export default function ReportTabScreen() {
       ? [...sessions].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
       : null;
   const totalCompleteCount = sessions.flatMap((s) => s.points).filter(isPointComplete).length;
+  const totalDraftCount = sessions
+    .flatMap((s) => s.points)
+    .filter((p) => p.reviewStatus === 'draft').length;
 
   const analysis = useMemo(
     () => (latestSession ? getAnalyzer().analyze(latestSession) : null),
@@ -194,7 +197,7 @@ export default function ReportTabScreen() {
         </View>
 
         {/* shot breakdown */}
-        <AnalysisConfidenceBanner completeCount={totalCompleteCount} />
+        <AnalysisConfidenceBanner completeCount={totalCompleteCount} draftCount={totalDraftCount} />
         <SectionHeader title="ショット内訳" />
         <View style={styles.padH}>
           <View

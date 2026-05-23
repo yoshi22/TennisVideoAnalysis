@@ -18,4 +18,6 @@ export interface AutoPointCandidate {
   videoTimestamp: number;
   /** Human-readable reasoning strings shown in the confirmation UI. */
   diagnostics: string[];
+  /** Detection confidence 0..1 derived from the source rally window. */
+  confidence?: number;
 }

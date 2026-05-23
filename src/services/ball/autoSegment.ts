@@ -91,7 +91,7 @@ export async function analyzeRallyBatch(
 
     const win = windows[i];
     try {
-      const result = await analyzeRally({
+      const rawResult = await analyzeRally({
         ...baseOpts,
         startSec: win.startSec,
         endSec: win.endSec,
@@ -99,6 +99,7 @@ export async function analyzeRallyBatch(
           baseOpts.onProgress?.((i + p) / windows.length);
         },
       });
+      const result = { ...rawResult, windowConfidence: win.confidence };
       results.push({ window: win, result });
     } catch {
       // Continue with next window on error

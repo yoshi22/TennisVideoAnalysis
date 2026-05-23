@@ -17,7 +17,8 @@ import { generateId } from '@/utils/id';
 interface AutoPointCardProps {
   sessionId: string;
   candidate: AutoPointCandidate;
-  onAccept: (point: Partial<PointRecord>) => void;
+  onSaveDraft: (point: PointRecord) => void;
+  onConfirm: () => void;
   onReject: () => void;
 }
 
@@ -56,12 +57,18 @@ function formatVideoTime(seconds: number): string {
   return `${seconds.toFixed(1)}秒`;
 }
 
-export function AutoPointCard({ sessionId, candidate, onAccept, onReject }: AutoPointCardProps) {
+export function AutoPointCard({
+  sessionId,
+  candidate,
+  onSaveDraft,
+  onConfirm,
+  onReject,
+}: AutoPointCardProps) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const isWon = candidate.suggestedOutcome === 'won';
 
-  const handleAccept = () => {
+  const handleSaveDraft = () => {
     const point: PointRecord = {
       id: generateId(),
       sessionId,
@@ -74,10 +81,21 @@ export function AutoPointCard({ sessionId, candidate, onAccept, onReject }: Auto
       detailStatus: 'complete',
       shotLocation: candidate.suggestedShotLocation,
       videoTimestamp: candidate.videoTimestamp,
+      source: 'auto',
+      reviewStatus: 'draft',
+      confidence: candidate.confidence,
     };
-
-    onAccept(point);
+    onSaveDraft(point);
   };
+
+  const confidenceColor =
+    candidate.confidence === undefined
+      ? undefined
+      : candidate.confidence >= 0.7
+        ? colors.success
+        : candidate.confidence >= 0.4
+          ? colors.warning
+          : colors.danger;
 
   return (
     <View
@@ -106,6 +124,18 @@ export function AutoPointCard({ sessionId, candidate, onAccept, onReject }: Auto
             ラリー {candidate.suggestedRallyCount} 球
           </Text>
         </View>
+        {confidenceColor !== undefined && candidate.confidence !== undefined ? (
+          <View style={styles.confidenceColumn}>
+            <View style={[styles.confidenceBadge, { backgroundColor: confidenceColor }]}>
+              <Text style={[styles.confidenceText, { color: colors.surface }]}>
+                {`信頼度 ${Math.round(candidate.confidence * 100)}%`}
+              </Text>
+            </View>
+            {candidate.confidence < 0.5 ? (
+              <Text style={[styles.requiresCheckText, { color: colors.warning }]}>要確認</Text>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       <View style={[styles.metaBox, { backgroundColor: colors.surfaceAlt }]}>
@@ -156,16 +186,25 @@ export function AutoPointCard({ sessionId, candidate, onAccept, onReject }: Auto
 
       <View style={styles.actions}>
         <Button
-          accessibilityLabel="採用して保存"
-          label="採用して保存"
-          onPress={handleAccept}
+          accessibilityLabel="下書きとして保存"
+          label="下書き保存"
+          onPress={handleSaveDraft}
           style={styles.actionButton}
         />
+        <Button
+          accessibilityLabel="内容を確認して確定"
+          label="確認して確定"
+          onPress={onConfirm}
+          style={styles.actionButton}
+          variant="secondary"
+        />
+      </View>
+      <View style={styles.rejectRow}>
         <Button
           accessibilityLabel="候補を棄却"
           label="棄却"
           onPress={onReject}
-          style={styles.actionButton}
+          style={styles.rejectButton}
           tone="danger"
           variant="ghost"
         />
@@ -251,11 +290,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
+  confidenceColumn: {
+    alignItems: 'flex-end',
+    gap: 4,
+    flexShrink: 0,
+  },
+  confidenceBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  confidenceText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  requiresCheckText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   actions: {
     flexDirection: 'row',
     gap: 10,
   },
   actionButton: {
     flex: 1,
+  },
+  rejectRow: {
+    alignItems: 'center',
+  },
+  rejectButton: {
+    alignSelf: 'center',
   },
 });

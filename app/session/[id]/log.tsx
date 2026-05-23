@@ -324,6 +324,13 @@ export default function SessionLogScreen() {
                               タップして詳細を入力
                             </Text>
                           ) : null}
+                          {point.reviewStatus === 'draft' ? (
+                            <View style={[styles.draftBadge, { backgroundColor: colors.warning }]}>
+                              <Text style={[styles.draftBadgeText, { color: colors.surface }]}>
+                                下書き
+                              </Text>
+                            </View>
+                          ) : null}
                           {point.videoTimestamp !== undefined ? (
                             <TouchableOpacity
                               accessibilityLabel="動画で確認"
@@ -515,6 +522,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     marginTop: 6,
+  },
+  draftBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    marginTop: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  draftBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   videoJumpButton: {
     alignSelf: 'flex-start',

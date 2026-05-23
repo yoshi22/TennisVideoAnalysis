@@ -140,6 +140,42 @@ describe('ManualAnalyzer', () => {
     expect(result.averageRallyCount).toBe(6);
   });
 
+  it('excludes draft (auto-generated) points from all analysis until confirmed', () => {
+    const points: PointRecord[] = [
+      // confirmed complete point
+      {
+        id: '1',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:00.000Z',
+        outcome: 'won',
+        shotType: 'forehand',
+        resultReason: 'winner',
+        rallyCount: 5,
+        source: 'manual',
+        reviewStatus: 'confirmed',
+      },
+      // draft auto point with full data — must NOT affect any stats
+      {
+        id: '2',
+        sessionId: 'test-session',
+        timestamp: '2026-05-14T00:00:01.000Z',
+        outcome: 'lost',
+        shotType: 'backhand',
+        resultReason: 'unforcedError',
+        rallyCount: 2,
+        source: 'auto',
+        reviewStatus: 'draft',
+        confidence: 0.4,
+      },
+    ];
+    const result = analyzer.analyze(makeSession(points));
+
+    // Only the confirmed point counts: 1 won / 1 total = 1.0
+    expect(result.winRate).toBe(1);
+    // averageRallyCount from confirmed complete point only: [5]
+    expect(result.averageRallyCount).toBe(5);
+  });
+
   it('excludes partial points (shotType+resultReason without rallyCount) from rally and weakness analysis', () => {
     // Regression: before fix, ManualAnalyzer.detectWeaknesses used its own inline filter
     // (shotType && resultReason only) while isPointComplete also requires rallyCount.
