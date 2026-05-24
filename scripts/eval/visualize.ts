@@ -37,7 +37,7 @@ function buildSVG(videoId: string, run: VideoRunResult, gt: GroundTruth, f1: num
   const toX = (s: number) => PAD + (s / duration) * (W - PAD * 2);
 
   const bars = (
-    intervals: Array<{ startSec: number; endSec: number }>,
+    intervals: { startSec: number; endSec: number }[],
     y: number,
     color: string,
     label: string

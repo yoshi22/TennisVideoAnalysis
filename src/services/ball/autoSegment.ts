@@ -7,7 +7,7 @@ import {
   type RallySegmentOptions,
   type RallyWindow,
 } from './core/rallySegment';
-import { analyzeRally, type AnalyzeRallyOptions, type RallyAnalysis } from './index';
+import { analyzeRally, type AnalyzeRallyOptions, type RallyAnalysis } from './analyzeRally';
 
 export type { RallyWindow, FrameWithTimestamp };
 export { detectRallyWindowsFromFrames };

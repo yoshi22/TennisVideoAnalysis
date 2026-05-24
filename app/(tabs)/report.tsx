@@ -23,6 +23,7 @@ import {
   type WeaknessPattern,
 } from '@/types';
 import { formatPercent } from '@/utils/format';
+import { pushRoute } from '@/utils/navigation';
 import { isPointComplete } from '@/utils/pointDetails';
 
 const WEAKNESS_LABELS: Record<WeaknessPattern, string> = {
@@ -97,11 +98,9 @@ export default function ReportTabScreen() {
           <EmptyState
             title="まだセッションがありません"
             description="新規ボタンからセッションを作成してレポートを確認しましょう"
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             action={{
               label: '新規セッションを開始',
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onPress: () => router.push('/session/new' as any),
+              onPress: () => pushRoute(router, '/session/new'),
             }}
           />
         </View>

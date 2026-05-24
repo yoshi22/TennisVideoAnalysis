@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -38,11 +38,13 @@ export default function SessionVideoScreen() {
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
   const deletePoint = useSessionStore((state) => state.deletePoint);
+  const setVideoDuration = useSessionStore((state) => state.setVideoDuration);
   const playerRef = useRef<VideoPlayerRef>(null);
   const requestedSeekRef = useRef<number | null>(null);
   const [durationSec, setDurationSec] = useState(0);
   const [initialSeekSec, setInitialSeekSec] = useState<number | null>(null);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [rallyStartMark, setRallyStartMark] = useState<number | null>(null);
   const [undoStack, setUndoStack] = useState<
     { id: string; outcome: PointOutcome; timeSec: number }[]
   >([]);
@@ -90,13 +92,22 @@ export default function SessionVideoScreen() {
 
   const handleDurationLoaded = (seconds: number) => {
     setDurationSec(seconds);
+    if (Number.isFinite(seconds) && seconds > 0) {
+      setVideoDuration(sessionId, seconds);
+    }
     if (requestedSeekRef.current !== null) {
       playerRef.current?.seekTo(requestedSeekRef.current);
     }
   };
 
+  const handleMarkRallyStart = () => {
+    const t = Math.max(0, playerRef.current?.getCurrentTime() ?? currentTimeSec ?? 0);
+    setRallyStartMark(t);
+  };
+
   const handleQuickLog = (outcome: PointOutcome) => {
     const videoTimestamp = Math.max(0, playerRef.current?.getCurrentTime() ?? currentTimeSec ?? 0);
+    const hasInterval = rallyStartMark !== null && rallyStartMark < videoTimestamp;
     const point: PointRecord = {
       id: generateId(),
       sessionId,
@@ -104,10 +115,15 @@ export default function SessionVideoScreen() {
       outcome,
       videoTimestamp,
       detailStatus: 'quick',
+      ...(hasInterval && {
+        rallyStartSec: rallyStartMark,
+        rallyEndSec: videoTimestamp,
+      }),
     };
 
     addPoint(sessionId, point);
     setUndoStack((prev) => [...prev, { id: point.id, outcome, timeSec: videoTimestamp }]);
+    setRallyStartMark(null);
   };
 
   const handleUndoLast = () => {
@@ -245,6 +261,31 @@ export default function SessionVideoScreen() {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity
+          accessibilityLabel="ラリー開始時刻をマーク"
+          accessibilityRole="button"
+          activeOpacity={0.82}
+          onPress={handleMarkRallyStart}
+          style={[
+            styles.rallyStartButton,
+            {
+              backgroundColor: rallyStartMark !== null ? colors.primaryLo : colors.surfaceAlt,
+              borderColor: rallyStartMark !== null ? colors.primary : colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.rallyStartText,
+              { color: rallyStartMark !== null ? colors.primary : colors.textSub },
+            ]}
+          >
+            {rallyStartMark !== null
+              ? `▶ ラリー開始 ${formatSeconds(rallyStartMark)}`
+              : '▶ ラリー開始をマーク'}
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.quickActionRow}>
           <TouchableOpacity
             accessibilityLabel="現在時刻を得点として記録"
@@ -284,22 +325,49 @@ export default function SessionVideoScreen() {
             {timestampedPoints.map((point) => {
               const ratio = Math.max(0, Math.min(1, point.videoTimestamp / durationSec));
               const isWon = point.outcome === 'won';
+              const hasInterval =
+                point.rallyStartSec !== undefined && point.rallyEndSec !== undefined;
+              const startRatio = hasInterval
+                ? Math.max(0, Math.min(1, point.rallyStartSec! / durationSec))
+                : ratio;
+              const endRatio = hasInterval
+                ? Math.max(0, Math.min(1, point.rallyEndSec! / durationSec))
+                : ratio;
               return (
-                <TouchableOpacity
-                  accessibilityLabel={`${formatSeconds(point.videoTimestamp)}へ移動`}
-                  accessibilityRole="button"
-                  activeOpacity={0.82}
-                  key={point.id}
-                  onPress={() => seekTo(point.videoTimestamp)}
-                  style={[styles.markerTouch, { left: `${ratio * 100}%` }]}
-                >
-                  <View
-                    style={[
-                      styles.marker,
-                      { borderBottomColor: isWon ? colors.primary : colors.danger },
-                    ]}
-                  />
-                </TouchableOpacity>
+                <Fragment key={point.id}>
+                  <TouchableOpacity
+                    accessibilityLabel={`${formatSeconds(point.videoTimestamp)}へ移動`}
+                    accessibilityRole="button"
+                    activeOpacity={0.82}
+                    onPress={() => seekTo(point.videoTimestamp)}
+                    style={[styles.markerTouch, { left: `${ratio * 100}%` }]}
+                  >
+                    <View
+                      style={[
+                        styles.marker,
+                        { borderBottomColor: isWon ? colors.primary : colors.danger },
+                      ]}
+                    />
+                  </TouchableOpacity>
+                  {hasInterval ? (
+                    <TouchableOpacity
+                      accessibilityLabel={`${formatSeconds(point.rallyStartSec!)}から${formatSeconds(
+                        point.rallyEndSec!
+                      )}へ移動`}
+                      accessibilityRole="button"
+                      activeOpacity={0.82}
+                      onPress={() => seekTo(point.rallyStartSec!)}
+                      style={[
+                        styles.intervalBar,
+                        {
+                          backgroundColor: isWon ? colors.primary : colors.danger,
+                          left: `${startRatio * 100}%`,
+                          width: `${Math.max(0.5, (endRatio - startRatio) * 100)}%`,
+                        },
+                      ]}
+                    />
+                  ) : null}
+                </Fragment>
               );
             })}
           </View>
@@ -385,6 +453,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  rallyStartButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: 12,
+  },
+  rallyStartText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
   quickActionRow: {
     flexDirection: 'row',
     gap: 10,
@@ -434,6 +514,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     width: 44,
+  },
+  intervalBar: {
+    borderRadius: 2,
+    height: 6,
+    opacity: 0.45,
+    position: 'absolute',
+    top: 14,
   },
   marker: {
     borderBottomWidth: 12,

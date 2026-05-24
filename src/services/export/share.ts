@@ -1,6 +1,18 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
+export function sanitizeExportFilename(filename: string): string {
+  const trimmed = filename.trim();
+  const sanitized = trimmed
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .replace(/^\.+/, '')
+    .replace(/^_+/, '')
+    .slice(0, 120);
+
+  return sanitized.length > 0 ? sanitized : 'export.txt';
+}
+
 /**
  * Writes content to a temp file and opens the system share sheet.
  */
@@ -10,9 +22,9 @@ export async function shareTextFile(content: string, filename: string): Promise<
     throw new Error('このデバイスでは共有がサポートされていません。');
   }
 
-  const filePath = `${Paths.cache}/${filename}`;
-  const file = new File(filePath);
-  await file.create();
+  const safeFilename = sanitizeExportFilename(filename);
+  const file = new File(Paths.cache, safeFilename);
+  await file.create({ overwrite: true });
   await file.write(content);
-  await Sharing.shareAsync(filePath, { UTI: 'public.plain-text' });
+  await Sharing.shareAsync(file.uri, { UTI: 'public.plain-text' });
 }

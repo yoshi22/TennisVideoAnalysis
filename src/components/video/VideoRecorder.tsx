@@ -5,7 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Button } from '@/components/common';
 import { spacing, typography, useTheme } from '@/theme';
-import { startRecording, stopRecording } from '@/services/video';
+import { startRecording, stopCameraRecording, stopRecording } from '@/services/video';
 
 interface VideoRecorderProps {
   onRecorded: (uri: string) => void;
@@ -36,11 +36,12 @@ export function VideoRecorder({ onRecorded, onCancel }: VideoRecorderProps) {
   ]);
 
   useEffect(() => {
+    const camera = cameraRef.current;
+
     return () => {
       mountedRef.current = false;
-      void stopRecording(cameraRef);
+      void stopCameraRecording(camera);
 
-      const camera = cameraRef.current;
       if (camera) {
         void camera.pausePreview().catch(() => undefined);
       }

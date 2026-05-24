@@ -18,6 +18,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { spacing, typography, useTheme, type ColorTokens } from '@/theme';
 import { type PlayerProfile, type PlayStyle, type SportType } from '@/types';
 import { generateId } from '@/utils/id';
+import { pushRoute } from '@/utils/navigation';
 
 const SPORT_OPTIONS: { label: string; value: SportType }[] = [
   { label: '硬式テニス', value: 'tennis' },
@@ -348,8 +349,6 @@ export default function SettingsScreen() {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <SettingsRow colors={colors} label="通知" value="オン" />
-            <SettingsRow colors={colors} label="単位 / 表示" value="日本語" />
             <SettingsRow
               colors={colors}
               label="テーマ"
@@ -359,8 +358,7 @@ export default function SettingsScreen() {
               colors={colors}
               label="使い方を見る"
               onPress={() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                router.push('/onboarding?replay=1' as any);
+                pushRoute(router, '/onboarding?replay=1');
               }}
               showChevron
             />

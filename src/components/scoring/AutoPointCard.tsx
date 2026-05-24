@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Button } from '@/components/common';
+import { buildDraftPointFromCandidate } from '@/services/scoring';
 import { useTheme } from '@/theme';
 import {
   type AutoPointCandidate,
@@ -12,7 +13,6 @@ import {
   type ServeResult,
   type ShotType,
 } from '@/types';
-import { generateId } from '@/utils/id';
 
 interface AutoPointCardProps {
   sessionId: string;
@@ -69,23 +69,7 @@ export function AutoPointCard({
   const isWon = candidate.suggestedOutcome === 'won';
 
   const handleSaveDraft = () => {
-    const point: PointRecord = {
-      id: generateId(),
-      sessionId,
-      timestamp: new Date().toISOString(),
-      outcome: candidate.suggestedOutcome,
-      serveResult: candidate.suggestedServeResult,
-      shotType: candidate.suggestedShotType,
-      resultReason: candidate.suggestedResultReason,
-      rallyCount: candidate.suggestedRallyCount,
-      detailStatus: 'complete',
-      shotLocation: candidate.suggestedShotLocation,
-      videoTimestamp: candidate.videoTimestamp,
-      source: 'auto',
-      reviewStatus: 'draft',
-      confidence: candidate.confidence,
-    };
-    onSaveDraft(point);
+    onSaveDraft(buildDraftPointFromCandidate(sessionId, candidate));
   };
 
   const confidenceColor =

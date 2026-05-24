@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Circle, G, Line, Path, Rect, Svg } from 'react-native-svg';
 
 import { useTheme } from '@/theme';
+import { pushRoute } from '@/utils/navigation';
 
 // Inline stroke icons (react-native-svg, no Ionicons dependency)
 function IcHome({ color, size }: { color: string; size: number }) {
@@ -171,8 +172,7 @@ export function CustomTabBar({ state }: BottomTabBarProps) {
             activeOpacity={0.7}
             style={styles.tab}
             onPress={() => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              router.push((isPrimary ? '/session/new' : tab.route) as any);
+              pushRoute(router, isPrimary ? '/session/new' : tab.route);
             }}
           >
             {isPrimary ? (

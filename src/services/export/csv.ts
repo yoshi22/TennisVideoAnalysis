@@ -15,6 +15,8 @@ const HEADERS = [
   'targetLocationX',
   'targetLocationY',
   'videoTimestamp',
+  'rallyStartSec',
+  'rallyEndSec',
   'detailStatus',
   'note',
 ] as const;
@@ -43,6 +45,8 @@ export function buildPointsCSV(session: TennisSession): string {
       p.targetLocation?.x ?? '',
       p.targetLocation?.y ?? '',
       p.videoTimestamp ?? '',
+      p.rallyStartSec ?? '',
+      p.rallyEndSec ?? '',
       getPointDetailStatus(p),
       p.note ?? '',
     ];

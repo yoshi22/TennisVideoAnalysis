@@ -1,7 +1,13 @@
+import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { buildPointsCSV, buildSessionReport, shareTextFile } from '@/services/export';
+import {
+  buildPointsCSV,
+  buildSessionReport,
+  buildTrainingLabelJson,
+  shareTextFile,
+} from '@/services/export';
 import { useTheme } from '@/theme';
 import { type MatchScore, type TennisAnalysisResult, type TennisSession } from '@/types';
 
@@ -14,7 +20,7 @@ interface ExportMenuProps {
   onClose: () => void;
 }
 
-type ExportKind = 'csv' | 'markdown';
+type ExportKind = 'csv' | 'markdown' | 'trainingLabel' | 'video';
 
 export function ExportMenu({ session, matchScore, analysis, onClose }: ExportMenuProps) {
   const { colors } = useTheme();
@@ -27,9 +33,27 @@ export function ExportMenu({ session, matchScore, analysis, onClose }: ExportMen
       if (kind === 'csv') {
         const csv = buildPointsCSV(session);
         await shareTextFile(csv, `${session.title}.csv`);
-      } else {
+      } else if (kind === 'markdown') {
         const markdown = buildSessionReport(session, analysis, matchScore);
         await shareTextFile(markdown, `${session.title}_report.md`);
+      } else if (kind === 'trainingLabel') {
+        const json = buildTrainingLabelJson(session);
+        if (!json) {
+          Alert.alert(
+            'ラベルがありません',
+            '動画とラリー区間が記録されたポイントが必要です。動画タブで「ラリー開始をマーク」してから得点/失点を記録してください。'
+          );
+          return;
+        }
+        await shareTextFile(json, `${session.id}_label.json`);
+      } else if (kind === 'video') {
+        if (!session.videoUri) return;
+        const available = await Sharing.isAvailableAsync();
+        if (!available) {
+          Alert.alert('このデバイスでは動画の共有がサポートされていません。');
+          return;
+        }
+        await Sharing.shareAsync(session.videoUri);
       }
 
       onClose();
@@ -42,6 +66,10 @@ export function ExportMenu({ session, matchScore, analysis, onClose }: ExportMen
       setLoading(null);
     }
   };
+
+  const hasTrainingData =
+    Boolean(session.videoUri) &&
+    session.points.some((p) => p.rallyStartSec !== undefined && p.rallyEndSec !== undefined);
 
   const isBusy = loading !== null;
 
@@ -82,6 +110,30 @@ export function ExportMenu({ session, matchScore, analysis, onClose }: ExportMen
               size="l"
               variant="secondary"
             />
+            {hasTrainingData && (
+              <Button
+                accessibilityLabel="ラリー区間ラベルをJSON形式でエクスポート"
+                disabled={isBusy && loading !== 'trainingLabel'}
+                full
+                label="ラリーラベル (JSON)"
+                loading={loading === 'trainingLabel'}
+                onPress={() => void handleExport('trainingLabel')}
+                size="l"
+                variant="secondary"
+              />
+            )}
+            {session.videoUri ? (
+              <Button
+                accessibilityLabel="動画を共有"
+                disabled={isBusy && loading !== 'video'}
+                full
+                label="動画を共有"
+                loading={loading === 'video'}
+                onPress={() => void handleExport('video')}
+                size="l"
+                variant="secondary"
+              />
+            ) : null}
             <Button
               accessibilityLabel="キャンセル"
               disabled={isBusy}

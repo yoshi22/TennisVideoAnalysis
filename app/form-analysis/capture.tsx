@@ -7,6 +7,7 @@ import { VideoRecorder } from '@/components/video/VideoRecorder';
 import { analyzeClip } from '@/services/pose';
 import { useFormAnalysisStore } from '@/stores';
 import { useTheme } from '@/theme';
+import { replaceRoute } from '@/utils/navigation';
 
 export default function CaptureFormAnalysisScreen() {
   const { colors, withAlpha } = useTheme();
@@ -44,8 +45,7 @@ export default function CaptureFormAnalysisScreen() {
         if (!mountedRef.current) return;
 
         useFormAnalysisStore.getState().addAnalysis(result);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        router.replace({ pathname: '/form-analysis/[id]', params: { id: result.id } } as any);
+        replaceRoute(router, { pathname: '/form-analysis/[id]', params: { id: result.id } });
       } catch {
         if (!mountedRef.current) return;
 

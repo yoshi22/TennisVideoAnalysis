@@ -19,6 +19,7 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type TennisSession } from '@/types';
+import { pushRoute } from '@/utils/navigation';
 
 function IcUser({ color, size }: { color: string; size: number }) {
   return (
@@ -105,9 +106,7 @@ export default function HomeScreen() {
 
   const greeting = profile?.name ? `こんにちは、${profile.name}さん` : 'こんにちは';
 
-  // expo-router push() is typed strictly; cast once here rather than per-callsite
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const push = (path: string) => router.push(path as any);
+  const push = (path: string) => pushRoute(router, path);
 
   const openSessionPicker = (
     title: string,

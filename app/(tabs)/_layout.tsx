@@ -2,13 +2,13 @@ import { Redirect, Tabs } from 'expo-router';
 
 import { CustomTabBar } from '@/components/common/CustomTabBar';
 import { useOnboardingStore } from '@/stores';
+import { asHref } from '@/utils/navigation';
 
 export default function TabLayout() {
   const hasCompletedOnboarding = useOnboardingStore((s) => s.hasCompletedOnboarding);
 
   if (!hasCompletedOnboarding) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return <Redirect href={'/onboarding' as any} />;
+    return <Redirect href={asHref('/onboarding')} />;
   }
 
   return (

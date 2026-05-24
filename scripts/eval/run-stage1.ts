@@ -3,7 +3,7 @@
  * run-stage1.ts — Run rally segmentation pipeline on all labeled clips in a dataset.
  *
  * Usage:
- *   npm run eval:run1 -- --dataset <name> [--run-id <id>] [--fps <n>]
+ *   npm run eval:run1 -- --dataset <name> [--run-id <id>] [--fps <n>] [--clip-id <id>]
  *
  * Reads:  eval/datasets/<name>/frames/<videoId>/  (pre-extracted JPEG frames)
  *         eval/datasets/<name>/labels/<videoId>.json  (ground truth, for duration)
@@ -42,6 +42,7 @@ function parseArgs() {
   const fps = parseFloat(get('--fps') ?? '3');
   const runId = get('--run-id') ?? new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const detector = (get('--detector') ?? 'blob') as 'blob' | 'trajectory';
+  const clipId = get('--clip-id');
   const rallyOptions: RallySegmentOptions = {
     minDurationSec: getNumber('--min-duration-sec'),
     maxDurationSec: getNumber('--max-duration-sec'),
@@ -62,11 +63,11 @@ function parseArgs() {
 
   if (!dataset) {
     console.error(
-      'Usage: npm run eval:run1 -- --dataset <name> [--run-id <id>] [--fps <n>] [--detector blob|trajectory]'
+      'Usage: npm run eval:run1 -- --dataset <name> [--run-id <id>] [--fps <n>] [--detector blob|trajectory] [--clip-id <id>]'
     );
     process.exit(1);
   }
-  return { dataset, fps, runId, detector, rallyOptions };
+  return { dataset, fps, runId, detector, rallyOptions, clipId };
 }
 
 function getGitSha(): string {
@@ -158,7 +159,7 @@ async function runOnVideo(
 }
 
 async function main() {
-  const { dataset, fps, runId, detector, rallyOptions } = parseArgs();
+  const { dataset, fps, runId, detector, rallyOptions, clipId } = parseArgs();
 
   const labelsDir = join('eval', 'datasets', dataset, 'labels');
   const framesBase = join('eval', 'datasets', dataset, 'frames');
@@ -168,17 +169,23 @@ async function main() {
   const labelFiles = existsSync(labelsDir)
     ? readdirSync(labelsDir).filter((f) => f.endsWith('.json'))
     : [];
+  const filteredFiles = clipId ? labelFiles.filter((f) => f === `${clipId}.json`) : labelFiles;
 
-  if (labelFiles.length === 0) {
+  if (clipId && filteredFiles.length === 0) {
+    console.error(`No label file found for clip-id: ${clipId} in ${labelsDir}`);
+    process.exit(1);
+  }
+
+  if (filteredFiles.length === 0) {
     console.error(`No label files found in ${labelsDir}`);
     console.error('Create a label JSON first, then run eval:run1.');
     process.exit(1);
   }
 
   console.log(`Run ID: ${runId}`);
-  console.log(`Dataset: ${dataset} (${labelFiles.length} videos)`);
+  console.log(`Dataset: ${dataset} (${filteredFiles.length} videos)`);
 
-  for (const labelFile of labelFiles) {
+  for (const labelFile of filteredFiles) {
     const videoId = labelFile.replace('.json', '');
     const labelPath = join(labelsDir, labelFile);
     const label = JSON.parse(readFileSync(labelPath, 'utf8')) as MinimalGroundTruth;

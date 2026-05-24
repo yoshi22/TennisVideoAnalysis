@@ -22,14 +22,38 @@ ignored by git.
 1. Add candidate video metadata to `candidates.json` before downloading media.
 2. Extract 8-12 minute fixed-camera singles clips that contain normal rally,
    walking, changeover, serve preparation, and dead-ball periods.
-3. Create labels from manual visual boundary review. Do not derive labels from
-   algorithm output.
+3. Create labels from manual visual boundary review. For **training clips**,
+   detector-assisted pre-fill is allowed: run the blob detector, convert its
+   output with `npm run eval:prefill`, then manually correct every boundary.
+   For **held-out test clips**, label from scratch without detector pre-fill so
+   the evaluation remains unbiased. The `_DRAFT` suffix marks files that have
+   not yet been human-verified; remove it only when every boundary is confirmed.
 4. Keep labels independent from score displays. Scoreboards may be used only as
    an optional audit clue when they are present; they must not become inference
    inputs or the only boundary source for new general-user clips.
 5. Validate new methods with leave-one-clip-out or holdout scoring. Do not
    accept a model if aggregate F1 improves by trading off a large held-out clip
    regression.
+
+### Detector-assisted labeling workflow (training clips only)
+
+```bash
+# 1. Prepare assets for a new clip
+python3.11 scripts/eval/prepare-fixed-camera-assets.py \
+  --dataset fixed-camera-v2 --include-candidate-clips --clip-id <clip-id>
+
+# 2. Run the blob detector to get pre-filled rally windows
+npm run eval:run1 -- --run-id draft-<clip-id> --dataset fixed-camera-v2
+
+# 3. Convert to a draft label file for human correction
+npm run eval:prefill -- --run-id draft-<clip-id> --clip-id <clip-id> --dataset fixed-camera-v2
+# → writes eval/datasets/fixed-camera-v2/labels/<clip-id>_DRAFT.json
+
+# 4. Watch the video and correct every boundary in the _DRAFT file
+# 5. Rename to <clip-id>.json when all boundaries are verified
+# 6. Validate
+python3.11 scripts/eval/validate-rally-labels.py --dataset fixed-camera-v2
+```
 
 Selected first expansion candidates:
 

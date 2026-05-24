@@ -29,6 +29,7 @@ import {
   type WeaknessPattern,
 } from '@/types';
 import { formatPercent } from '@/utils/format';
+import { pushRoute } from '@/utils/navigation';
 import { isPointComplete } from '@/utils/pointDetails';
 
 interface ShotBreakdownItem {
@@ -424,8 +425,7 @@ export default function ReportScreen() {
                   pathname: '/form-analysis/select',
                   params: { videoUri: sessionVideoUri, shotType: 'forehand' },
                 };
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                router.push(href as any);
+                pushRoute(router, href);
               }}
             />
           </View>
@@ -439,8 +439,7 @@ export default function ReportScreen() {
               badgeLabel={session.courtCalibration ? '設定済み' : undefined}
               iconName="analytics-outline"
               onPress={() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                router.push(`/session/${session.id}/calibration` as any);
+                pushRoute(router, `/session/${session.id}/calibration`);
               }}
               subtitle="動画からコートの座標を設定"
               title="コート較正"
@@ -455,8 +454,7 @@ export default function ReportScreen() {
               accessibilityLabel="自動採点を開く"
               iconName="trophy-outline"
               onPress={() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                router.push(`/session/${session.id}/auto-score` as any);
+                pushRoute(router, `/session/${session.id}/auto-score`);
               }}
               subtitle="動画からポイントを自動検出"
               title="自動採点（実験的）"

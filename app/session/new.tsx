@@ -10,6 +10,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type MatchFormat, type SessionType, type SportType, type TennisSession } from '@/types';
 import { generateId } from '@/utils/id';
+import { pushRoute, replaceRoute } from '@/utils/navigation';
 
 const SPORT_OPTIONS: { label: string; value: SportType }[] = [
   { label: '硬式テニス', value: 'tennis' },
@@ -89,8 +90,7 @@ export default function NewSessionScreen() {
                 if (router.canGoBack()) {
                   router.back();
                 } else {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  router.replace('/' as any);
+                  replaceRoute(router, '/');
                 }
               }}
               style={styles.backButton}
@@ -134,8 +134,7 @@ export default function NewSessionScreen() {
                 accessibilityLabel="撮影のコツを見る"
                 accessibilityRole="button"
                 onPress={() => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  router.push('/recording-guide' as any);
+                  pushRoute(router, '/recording-guide');
                 }}
                 style={styles.recordingGuideLink}
               >

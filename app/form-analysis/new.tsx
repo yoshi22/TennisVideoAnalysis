@@ -8,6 +8,7 @@ import { SectionHeader, SegmentedControl } from '@/components/common';
 import { FORM_ANALYSIS_SHOT_OPTIONS } from '@/components/pose';
 import { useTheme } from '@/theme';
 import { type ShotType } from '@/types';
+import { pushRoute } from '@/utils/navigation';
 
 interface SourceCardProps {
   icon: ComponentProps<typeof Ionicons>['name'];
@@ -48,13 +49,11 @@ export default function NewFormAnalysisScreen() {
   const [shotType, setShotType] = useState<ShotType>('forehand');
 
   const openCapture = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push({ pathname: '/form-analysis/capture', params: { shotType } } as any);
+    pushRoute(router, { pathname: '/form-analysis/capture', params: { shotType } });
   };
 
   const openSelect = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push({ pathname: '/form-analysis/select', params: { shotType } } as any);
+    pushRoute(router, { pathname: '/form-analysis/select', params: { shotType } });
   };
 
   return (

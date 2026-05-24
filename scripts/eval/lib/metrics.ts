@@ -17,17 +17,17 @@ export function computeIoU(
  * Returns matched pairs and unmatched indices.
  */
 export function matchRallies(
-  detected: Array<{ startSec: number; endSec: number }>,
-  gt: Array<{ startSec: number; endSec: number }>,
+  detected: { startSec: number; endSec: number }[],
+  gt: { startSec: number; endSec: number }[],
   iouThreshold = 0.5
 ): {
-  matches: Array<{ gtIdx: number; detIdx: number; iou: number }>;
+  matches: { gtIdx: number; detIdx: number; iou: number }[];
   unmatchedGt: number[];
   unmatchedDet: number[];
 } {
   const usedDet = new Set<number>();
   const usedGt = new Set<number>();
-  const matches: Array<{ gtIdx: number; detIdx: number; iou: number }> = [];
+  const matches: { gtIdx: number; detIdx: number; iou: number }[] = [];
 
   for (let g = 0; g < gt.length; g++) {
     let bestIou = iouThreshold;

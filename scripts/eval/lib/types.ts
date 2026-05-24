@@ -11,7 +11,7 @@ export interface RallyLabel {
   // Stage 3+
   winner?: 'near' | 'far';
   endReason?: 'winner' | 'forcedError' | 'unforcedError' | 'ace' | 'doubleFault';
-  shots?: Array<{ timeSec: number; player: 'near' | 'far'; type?: string }>;
+  shots?: { timeSec: number; player: 'near' | 'far'; type?: string }[];
 }
 
 export interface GroundTruth {

@@ -44,6 +44,7 @@ yarn-error.*
 
 # IDE / agent tools
 .serena/
+.claude/
 
 # Eval harness — raw videos and frames (large, may be copyrighted)
 eval/datasets/**/videos/
@@ -57,5 +58,6 @@ eval/datasets/**/motion-tracks/
 eval/datasets/**/screening/
 eval/results/
 scripts/eval/__pycache__/
+__pycache__/
 *.ipa
 *.pt

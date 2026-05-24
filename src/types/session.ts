@@ -17,6 +17,8 @@ interface BaseSession {
   opponentName?: string;
   // local URI
   videoUri?: string;
+  // seconds, populated after the app can inspect the local video
+  videoDurationSec?: number;
   courtCalibration?: CourtCalibration;
   points: PointRecord[];
   note?: string;

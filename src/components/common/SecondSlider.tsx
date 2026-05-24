@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   PanResponder,
   StyleSheet,
@@ -39,16 +39,19 @@ export function SecondSlider({
   const [trackWidth, setTrackWidth] = useState(0);
   const ratio = max > min ? (clamp(value, min, max) - min) / (max - min) : 0;
 
-  const updateFromEvent = (event: GestureResponderEvent) => {
-    if (trackWidth <= 0) {
-      return;
-    }
+  const updateFromEvent = useCallback(
+    (event: GestureResponderEvent) => {
+      if (trackWidth <= 0) {
+        return;
+      }
 
-    const locationX = clamp(event.nativeEvent.locationX, 0, trackWidth);
-    const raw = min + (locationX / trackWidth) * (max - min);
-    const stepped = min + Math.round((raw - min) / step) * step;
-    onChange(Number(clamp(stepped, min, max).toFixed(2)));
-  };
+      const locationX = clamp(event.nativeEvent.locationX, 0, trackWidth);
+      const raw = min + (locationX / trackWidth) * (max - min);
+      const stepped = min + Math.round((raw - min) / step) * step;
+      onChange(Number(clamp(stepped, min, max).toFixed(2)));
+    },
+    [max, min, onChange, step, trackWidth]
+  );
 
   const panResponder = useMemo(
     () =>
@@ -58,7 +61,7 @@ export function SecondSlider({
         onPanResponderGrant: updateFromEvent,
         onPanResponderMove: updateFromEvent,
       }),
-    [max, min, onChange, step, trackWidth, updateFromEvent]
+    [updateFromEvent]
   );
 
   const handleLayout = (event: LayoutChangeEvent) => {

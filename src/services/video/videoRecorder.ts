@@ -24,8 +24,10 @@ export async function startRecording(cameraRef: RefObject<CameraView | null>): P
 export async function stopRecording(
   cameraRef: RefObject<CameraView | null>
 ): Promise<string | null> {
-  const camera = cameraRef.current;
+  return stopCameraRecording(cameraRef.current);
+}
 
+export async function stopCameraRecording(camera: CameraView | null): Promise<string | null> {
   if (!camera) {
     return null;
   }

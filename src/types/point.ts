@@ -35,5 +35,8 @@ export interface PointRecord {
   targetLocation?: ShotLocation;
   // 動画内の秒数
   videoTimestamp?: number;
+  // ラリー区間（訓練データ用）
+  rallyStartSec?: number;
+  rallyEndSec?: number;
   note?: string;
 }

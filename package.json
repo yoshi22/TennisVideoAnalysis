@@ -16,7 +16,8 @@
     "eval:run1": "tsx scripts/eval/run-stage1.ts",
     "eval:score": "tsx scripts/eval/score-stage1.ts",
     "eval:viz": "tsx scripts/eval/visualize.ts",
-    "eval:stage1": "npm run eval:run1 -- $@ && npm run eval:score -- $@"
+    "eval:stage1": "npm run eval:run1 -- $@ && npm run eval:score -- $@",
+    "eval:prefill": "tsx scripts/eval/prefill-label.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

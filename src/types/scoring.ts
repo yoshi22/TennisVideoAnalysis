@@ -16,6 +16,9 @@ export interface AutoPointCandidate {
   suggestedServeResult?: ServeResult;
   /** Seconds into the source video where the rally ended. */
   videoTimestamp: number;
+  /** Rally interval from the source detection window. */
+  rallyStartSec?: number;
+  rallyEndSec?: number;
   /** Human-readable reasoning strings shown in the confirmation UI. */
   diagnostics: string[];
   /** Detection confidence 0..1 derived from the source rally window. */

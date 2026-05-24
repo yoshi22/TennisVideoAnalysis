@@ -16,6 +16,7 @@ import { useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
 import { formatSeconds } from '@/utils/formatTime';
 import { generateId } from '@/utils/id';
+import { pushRoute } from '@/utils/navigation';
 import { getPointDetailStatus } from '@/utils/pointDetails';
 
 const RESULT_REASON_LABELS: Record<string, string> = {
@@ -40,8 +41,6 @@ function formatDateTime(isoString: string): string {
 export default function SessionLogScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const push = (path: string) => router.push(path as any);
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
   const updatePoint = useSessionStore((state) => state.updatePoint);
@@ -124,7 +123,7 @@ export default function SessionLogScreen() {
     if (!editingPoint || typeof editingPoint.videoTimestamp !== 'number') return;
 
     setPendingSeek(sessionId, editingPoint.videoTimestamp);
-    push(`/session/${sessionId}/video`);
+    pushRoute(router, `/session/${sessionId}/video`);
   };
 
   const handleCommit = (data: Omit<PointRecord, 'id' | 'sessionId' | 'timestamp'>) => {
@@ -314,9 +313,11 @@ export default function SessionLogScreen() {
                             {typeof point.rallyCount === 'number'
                               ? `${point.rallyCount} 球 ・ `
                               : ''}
-                            {point.videoTimestamp !== undefined
-                              ? `${formatSeconds(point.videoTimestamp)} ・ `
-                              : ''}
+                            {point.rallyStartSec !== undefined && point.rallyEndSec !== undefined
+                              ? `${formatSeconds(point.rallyStartSec)}〜${formatSeconds(point.rallyEndSec)} ・ `
+                              : point.videoTimestamp !== undefined
+                                ? `${formatSeconds(point.videoTimestamp)} ・ `
+                                : ''}
                             {formatDateTime(point.timestamp)}
                           </Text>
                           {getPointDetailStatus(point) === 'quick' ? (
@@ -331,18 +332,22 @@ export default function SessionLogScreen() {
                               </Text>
                             </View>
                           ) : null}
-                          {point.videoTimestamp !== undefined ? (
+                          {point.videoTimestamp !== undefined ||
+                          point.rallyStartSec !== undefined ? (
                             <TouchableOpacity
                               accessibilityLabel="動画で確認"
                               accessibilityRole="button"
                               onPress={() => {
-                                setPendingSeek(sessionId, point.videoTimestamp!);
-                                push(`/session/${sessionId}/video`);
+                                const seekSec = point.rallyStartSec ?? point.videoTimestamp!;
+                                setPendingSeek(sessionId, seekSec);
+                                pushRoute(router, `/session/${sessionId}/video`);
                               }}
                               style={styles.videoJumpButton}
                             >
                               <Text style={[styles.videoJumpText, { color: colors.primary }]}>
-                                ▶ 動画で確認
+                                {point.rallyStartSec !== undefined
+                                  ? '▶ ラリー区間を確認'
+                                  : '▶ 動画で確認'}
                               </Text>
                             </TouchableOpacity>
                           ) : null}

@@ -25,6 +25,8 @@ describe('buildPointsCSV', () => {
     expect(lines[0]).toContain('outcome');
     expect(lines[0]).toContain('shotType');
     expect(lines[0]).toContain('videoTimestamp');
+    expect(lines[0]).toContain('rallyStartSec');
+    expect(lines[0]).toContain('rallyEndSec');
     expect(lines[0]).toContain('detailStatus');
     expect(lines.length).toBe(1); // header only (no data rows)
   });
@@ -115,6 +117,31 @@ describe('buildPointsCSV', () => {
     expect(fields[3]).toBe('');
     expect(fields[4]).toBe('');
     expect(fields[10]).toBe('42');
-    expect(fields[11]).toBe('quick');
+    expect(fields[11]).toBe('');
+    expect(fields[12]).toBe('');
+    expect(fields[13]).toBe('quick');
+  });
+
+  it('exports rally interval columns for labeled video points', () => {
+    const session = makeSession({
+      points: [
+        {
+          id: 'p5',
+          sessionId: 'sess1',
+          timestamp: '2026-05-17T10:05:00.000Z',
+          outcome: 'won',
+          videoTimestamp: 18,
+          rallyStartSec: 12.5,
+          rallyEndSec: 18,
+          detailStatus: 'quick',
+        },
+      ],
+    });
+    const csv = buildPointsCSV(session);
+    const fields = csv.split('\r\n')[1].split(',');
+
+    expect(fields[10]).toBe('18');
+    expect(fields[11]).toBe('12.5');
+    expect(fields[12]).toBe('18');
   });
 });

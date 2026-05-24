@@ -12,6 +12,7 @@ interface SessionStoreState {
   addPoint: (sessionId: string, point: PointRecord) => void;
   updatePoint: (sessionId: string, pointId: string, patch: Partial<PointRecord>) => void;
   deletePoint: (sessionId: string, pointId: string) => void;
+  setVideoDuration: (sessionId: string, videoDurationSec: number) => void;
   setCourtCalibration: (sessionId: string, calibration: CourtCalibration | undefined) => void;
   clearAll: () => void;
 }
@@ -82,6 +83,19 @@ export const useSessionStore = create<SessionStoreState>()(
               : session
           ),
         })),
+      setVideoDuration: (sessionId, videoDurationSec) =>
+        set((state) => {
+          const target = state.sessions.find((session) => session.id === sessionId);
+          if (!target || target.videoDurationSec === videoDurationSec) {
+            return state;
+          }
+
+          return {
+            sessions: state.sessions.map((session) =>
+              session.id === sessionId ? { ...session, videoDurationSec } : session
+            ),
+          };
+        }),
       setCourtCalibration: (sessionId, calibration) =>
         set((state) => ({
           sessions: state.sessions.map((session) =>

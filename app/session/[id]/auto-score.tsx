@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useEvent } from 'expo';
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useVideoPlayer } from 'expo-video';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -57,6 +59,7 @@ export default function AutoScoreScreen() {
   const router = useRouter();
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
+  const setVideoDuration = useSessionStore((state) => state.setVideoDuration);
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(10);
   const [playerSide, setPlayerSide] = useState<PlayerSideValue>('near');
@@ -69,6 +72,24 @@ export default function AutoScoreScreen() {
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [confirmingCandidate, setConfirmingCandidate] = useState<AutoPointCandidate | null>(null);
   const [confirmSheetOpen, setConfirmSheetOpen] = useState(false);
+
+  const videoPlayer = useVideoPlayer(session?.videoUri ?? null, (p) => {
+    p.muted = true;
+  });
+  const { status: videoStatus } = useEvent(videoPlayer, 'statusChange', {
+    status: videoPlayer.status,
+  });
+  const loadedVideoDurationSec = Number.isFinite(videoPlayer.duration) ? videoPlayer.duration : 0;
+  const videoDurationSec =
+    loadedVideoDurationSec > 0 ? loadedVideoDurationSec : (session?.videoDurationSec ?? 0);
+  const canAutoDetect =
+    videoStatus === 'readyToPlay' || (Number.isFinite(videoDurationSec) && videoDurationSec > 0);
+
+  useEffect(() => {
+    if (session && loadedVideoDurationSec > 0) {
+      setVideoDuration(session.id, loadedVideoDurationSec);
+    }
+  }, [loadedVideoDurationSec, session, setVideoDuration]);
 
   const resetCandidates = () => {
     setCandidates([]);
@@ -107,7 +128,11 @@ export default function AutoScoreScreen() {
         playerSide,
         isServe: serveMode === 'yes',
         serveAttempt: serveAttempt === '1' ? 1 : 2,
-      });
+      }).map((candidate) => ({
+        ...candidate,
+        rallyStartSec: startSec,
+        rallyEndSec: endSec,
+      }));
 
       setCandidates(proposed);
       setHasAnalyzed(true);
@@ -122,7 +147,13 @@ export default function AutoScoreScreen() {
   };
 
   const handleAutoDetectBatch = async () => {
-    if (!session?.videoUri || !session.courtCalibration || isAnalyzing) {
+    if (
+      !session?.videoUri ||
+      !session.courtCalibration ||
+      isAnalyzing ||
+      !Number.isFinite(videoDurationSec) ||
+      videoDurationSec <= 0
+    ) {
       return;
     }
 
@@ -135,7 +166,7 @@ export default function AutoScoreScreen() {
     try {
       const windows = await detectRallyWindows({
         videoUri: session.videoUri,
-        videoDurationSec: 60,
+        videoDurationSec,
         onProgress: (value) => setProgress(Math.max(0, Math.min(0.35, value * 0.35))),
         signal: controller.signal,
       });
@@ -147,12 +178,12 @@ export default function AutoScoreScreen() {
         signal: controller.signal,
       });
 
-      const allCandidates = results.flatMap(({ result }) =>
+      const allCandidates = results.flatMap(({ window: win, result }) =>
         proposeCandidates(result, {
           playerSide,
           isServe: serveMode === 'yes',
           serveAttempt: serveAttempt === '1' ? 1 : 2,
-        })
+        }).map((c) => ({ ...c, rallyStartSec: win.startSec, rallyEndSec: win.endSec }))
       );
 
       setProgress(1);
@@ -194,6 +225,8 @@ export default function AutoScoreScreen() {
       confidence: confirmingCandidate.confidence,
       reviewStatus: 'confirmed',
       videoTimestamp: confirmingCandidate.videoTimestamp,
+      rallyStartSec: confirmingCandidate.rallyStartSec,
+      rallyEndSec: confirmingCandidate.rallyEndSec,
     };
     addPoint(sessionId, point);
     setCandidates((current) => current.filter((c) => c.id !== confirmingCandidate.id));
@@ -219,6 +252,8 @@ export default function AutoScoreScreen() {
         videoTimestamp: confirmingCandidate.videoTimestamp,
         source: 'auto',
         confidence: confirmingCandidate.confidence,
+        rallyStartSec: confirmingCandidate.rallyStartSec,
+        rallyEndSec: confirmingCandidate.rallyEndSec,
       }
     : undefined;
 
@@ -370,7 +405,13 @@ export default function AutoScoreScreen() {
 
               <Button
                 accessibilityLabel="自動ラリー検出から一括採点"
-                disabled={isAnalyzing || isAutoDetecting || !session.courtCalibration}
+                disabled={
+                  isAnalyzing ||
+                  isAutoDetecting ||
+                  !session.courtCalibration ||
+                  !canAutoDetect ||
+                  videoDurationSec <= 0
+                }
                 label="自動ラリー検出 → 一括採点"
                 loading={isAutoDetecting}
                 onPress={() => void handleAutoDetectBatch()}

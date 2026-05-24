@@ -19,6 +19,7 @@ import { analyzeClip } from '@/services/pose';
 import { useFormAnalysisStore, useSessionStore } from '@/stores';
 import { useTheme } from '@/theme';
 import { type ShotType, type TennisSession } from '@/types';
+import { replaceRoute } from '@/utils/navigation';
 
 type SessionWithVideo = TennisSession & { videoUri: string };
 
@@ -92,8 +93,7 @@ export default function SelectFormAnalysisVideoScreen() {
         });
 
         useFormAnalysisStore.getState().addAnalysis(result);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        router.replace({ pathname: '/form-analysis/[id]', params: { id: result.id } } as any);
+        replaceRoute(router, { pathname: '/form-analysis/[id]', params: { id: result.id } });
       } catch {
         setIsAnalyzing(false);
         Alert.alert('解析に失敗しました', '範囲と動画を確認して、もう一度お試しください。', [
