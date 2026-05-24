@@ -8,14 +8,16 @@ import { MockAutoScoreCard } from '@/components/onboarding/MockAutoScoreCard';
 import { MockCalibrationCard } from '@/components/onboarding/MockCalibrationCard';
 import { MockNewSessionCard } from '@/components/onboarding/MockNewSessionCard';
 import { MockPointLogCard } from '@/components/onboarding/MockPointLogCard';
+import { MockRallyIntervalCard } from '@/components/onboarding/MockRallyIntervalCard';
 import { MockReportCard } from '@/components/onboarding/MockReportCard';
 import { useOnboardingStore, usePlayerStore } from '@/stores';
 import { radius, spacing, typography, useTheme } from '@/theme';
 import { type SportType } from '@/types';
 import { generateId } from '@/utils/id';
+import { replaceRoute } from '@/utils/navigation';
 
 const { width } = Dimensions.get('window');
-const LAST_STEP_INDEX = 6;
+const LAST_STEP_INDEX = 7;
 
 const SPORT_OPTIONS: { label: string; value: SportType }[] = [
   { label: '硬式テニス', value: 'tennis' },
@@ -46,6 +48,10 @@ const STEPS = [
   {
     title: '⑤ 自動採点（実験的）',
     body: '動画のラリーを解析して、採点候補を自動生成します。必ず確認してから保存してください。',
+  },
+  {
+    title: '⑥ ラリー区間を記録',
+    body: '動画タブで「▶ ラリー開始をマーク」→ ラリー終了時に得点/失点をタップすると区間が残ります。あとで区間を見返せるほか、ラベルや動画を書き出してモデル改善に貢献できます。',
   },
   {
     title: '競技を選んでください',
@@ -104,8 +110,7 @@ export default function OnboardingScreen() {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace('/session/new' as any);
+    replaceRoute(router, '/session/new');
   };
 
   const renderVisual = (index: number) => {
@@ -135,6 +140,10 @@ export default function OnboardingScreen() {
 
     if (index === 5) {
       return <MockAutoScoreCard />;
+    }
+
+    if (index === 6) {
+      return <MockRallyIntervalCard />;
     }
 
     return (
