@@ -117,13 +117,14 @@ describe('computeReportStats', () => {
     expect(stats.completePointCount).toBe(1);
   });
 
-  it('locations collects all shotLocations regardless of reviewStatus', () => {
+  it('locations excludes draft points shotLocation', () => {
     const session = makeSession([
       makePoint({ shotLocation: { x: 0.3, y: 0.4 } }),
       makePoint({ id: 'p2', shotLocation: { x: 0.6, y: 0.7 }, reviewStatus: 'draft' }),
       makePoint({ id: 'p3' }),
     ]);
     const stats = computeReportStats(session);
-    expect(stats.locations).toHaveLength(2);
+    expect(stats.locations).toHaveLength(1);
+    expect(stats.locations[0]).toEqual({ x: 0.3, y: 0.4 });
   });
 });

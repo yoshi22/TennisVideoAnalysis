@@ -26,6 +26,7 @@ import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/date';
 import { formatPercent } from '@/utils/format';
 import { pushRoute } from '@/utils/navigation';
+import { getConfirmedPoints } from '@/utils/pointDetails';
 import { REPORT_CHART_COLORS, computeReportStats } from '@/utils/reportStats';
 
 export default function ReportScreen() {
@@ -38,7 +39,7 @@ export default function ReportScreen() {
     () =>
       session && session.sessionType === 'match'
         ? computeMatchScore(
-            [...session.points].sort(
+            getConfirmedPoints(session.points).sort(
               (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
             ),
             session.sport

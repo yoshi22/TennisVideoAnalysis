@@ -63,6 +63,6 @@ export function computeReportStats(session: TennisSession): ReportStats {
     quickPointCount: confirmedPoints.length - completePoints.length,
     draftCount,
     shotBreakdown: calculateShotBreakdown(session),
-    locations: session.points.map((p) => p.shotLocation).filter(hasLocation),
+    locations: confirmedPoints.map((p) => p.shotLocation).filter(hasLocation),
   };
 }
