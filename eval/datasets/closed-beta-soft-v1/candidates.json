@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "dataset": "closed-beta-soft-v1",
+  "createdAt": "2026-05-26",
+  "purpose": "Soft-tennis closed-beta user submissions. Training data only — not used for held-out test evaluation.",
+  "candidateVideos": []
+}

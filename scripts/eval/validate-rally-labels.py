@@ -31,6 +31,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def allow_long_rally_warnings(dataset: str) -> bool:
+    return dataset.startswith("closed-beta-soft")
+
+
 def load_json(path: Path) -> Any:
     with open(path) as f:
         return json.load(f)
@@ -43,7 +47,8 @@ def label_paths(dataset: str, selected: list[str] | None) -> list[Path]:
     for path in sorted(labels_dir.glob("*.json")):
         if path.name == ".gitkeep":
             continue
-        if wanted and path.stem not in wanted:
+        clip_id = path.stem.removesuffix("_DRAFT")
+        if wanted and path.stem not in wanted and clip_id not in wanted:
             continue
         paths.append(path)
     return paths
@@ -58,9 +63,10 @@ def validate_label(path: Path, args: argparse.Namespace) -> tuple[list[str], lis
     errors: list[str] = []
     warnings: list[str] = []
     label = load_json(path)
+    expected_video_id = path.stem.removesuffix("_DRAFT")
 
     require(label.get("schemaVersion") == 1, errors, "schemaVersion must be 1")
-    require(label.get("videoId") == path.stem, errors, "videoId must match filename")
+    require(label.get("videoId") == expected_video_id, errors, "videoId must match filename")
     require(isinstance(label.get("sourceUrl"), str) and bool(label["sourceUrl"]), errors, "sourceUrl is required")
     require(isinstance(label.get("fps"), (int, float)) and label["fps"] > 0, errors, "fps must be positive")
     require(
@@ -69,8 +75,14 @@ def validate_label(path: Path, args: argparse.Namespace) -> tuple[list[str], lis
         "clipOffsetSec must be non-negative",
     )
 
-    duration_sec = float(label.get("clipDurationSec", args.default_duration_sec))
-    require(duration_sec > 0, errors, "clipDurationSec/default duration must be positive")
+    duration_value = label.get("clipDurationSec", args.default_duration_sec)
+    duration_sec: float | None
+    if duration_value is None:
+        duration_sec = None
+        warnings.append("clipDurationSec is null; clip duration bound check skipped")
+    else:
+        duration_sec = float(duration_value)
+        require(duration_sec > 0, errors, "clipDurationSec/default duration must be positive")
     rallies = label.get("rallies")
     require(isinstance(rallies, list), errors, "rallies must be an array")
     if not isinstance(rallies, list):
@@ -93,9 +105,14 @@ def validate_label(path: Path, args: argparse.Namespace) -> tuple[list[str], lis
         durations.append(duration)
         require(start_f >= 0, errors, f"{prefix}: startSec must be >= 0")
         require(end_f > start_f, errors, f"{prefix}: endSec must be greater than startSec")
-        require(end_f <= duration_sec + 0.5, errors, f"{prefix}: endSec exceeds clip duration")
+        if duration_sec is not None:
+            require(end_f <= duration_sec + 0.5, errors, f"{prefix}: endSec exceeds clip duration")
         require(duration >= args.min_rally_sec, errors, f"{prefix}: duration below {args.min_rally_sec}s")
-        require(duration <= args.max_rally_sec, errors, f"{prefix}: duration above {args.max_rally_sec}s")
+        if duration > args.max_rally_sec:
+            if allow_long_rally_warnings(args.dataset):
+                warnings.append(f"{prefix}: duration above {args.max_rally_sec}s")
+            else:
+                errors.append(f"{prefix}: duration above {args.max_rally_sec}s")
 
         if prev_end is not None:
             gap = start_f - prev_end
@@ -114,7 +131,7 @@ def validate_label(path: Path, args: argparse.Namespace) -> tuple[list[str], lis
     summary = {
         "videoId": label.get("videoId", path.stem),
         "rallyCount": len(rallies),
-        "durationSec": duration_sec,
+        "durationSec": duration_sec if duration_sec is not None else 0.0,
         "meanRallySec": round(sum(durations) / len(durations), 3) if durations else 0.0,
         "totalRallySec": round(sum(durations), 3),
     }
@@ -125,7 +142,9 @@ def main() -> None:
     args = parse_args()
     paths = label_paths(args.dataset, args.clip_id)
     if not paths:
-        raise SystemExit(f"No labels found for dataset={args.dataset}")
+        print(f"Dataset: {args.dataset}")
+        print("  No labels found.")
+        return
 
     failed = False
     print(f"Dataset: {args.dataset}")

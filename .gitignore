@@ -61,3 +61,12 @@ scripts/eval/__pycache__/
 __pycache__/
 *.ipa
 *.pt
+
+# Closed beta soft-tennis dataset assets; keep placeholder directories tracked.
+!eval/datasets/closed-beta-soft-v1/videos/
+eval/datasets/closed-beta-soft-v1/videos/*
+!eval/datasets/closed-beta-soft-v1/videos/.gitkeep
+!eval/datasets/closed-beta-soft-v1/clips/
+eval/datasets/closed-beta-soft-v1/clips/*
+!eval/datasets/closed-beta-soft-v1/clips/.gitkeep
+eval/datasets/closed-beta-soft-v1/frames/
