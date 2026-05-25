@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -12,42 +12,16 @@ import {
   Tag,
 } from '@/components/common';
 import { CourtHeatmap } from '@/components/court';
-import { SHOT_TYPE_META, SHOT_TYPES } from '@/constants/shotTypes';
+import { ReportDrillList, ReportInsightList, ReportTipList } from '@/components/report';
 import { WEAKNESS_LABELS } from '@/constants/labels';
 import { getAnalyzer } from '@/services/analysis';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
-import { type ShotLocation, type ShotType, type TennisSession } from '@/types';
+import { formatDate } from '@/utils/date';
 import { formatPercent } from '@/utils/format';
 import { pushRoute } from '@/utils/navigation';
-import { isPointComplete } from '@/utils/pointDetails';
-
-interface ShotBreakdownItem {
-  shotType: ShotType;
-  label: string;
-  total: number;
-  wonCount: number;
-  lostCount: number;
-}
-
-function hasLocation(loc: ShotLocation | undefined): loc is ShotLocation {
-  return loc !== undefined;
-}
-
-function calculateShotBreakdown(session: TennisSession): ShotBreakdownItem[] {
-  return SHOT_TYPES.map((shotType) => {
-    const pts = session.points.filter((p) => p.shotType === shotType);
-    return {
-      shotType,
-      label: SHOT_TYPE_META[shotType].label,
-      total: pts.length,
-      wonCount: pts.filter((p) => p.outcome === 'won').length,
-      lostCount: pts.filter((p) => p.outcome === 'lost').length,
-    };
-  }).filter((it) => it.total > 0);
-}
-
-const CHART_COLORS = ['#1F6F4A', '#0F2B5B', '#C97A12', '#1F8A5B', '#C4453E', '#94A097'];
+import { isConfirmed, isPointComplete } from '@/utils/pointDetails';
+import { REPORT_CHART_COLORS, computeReportStats } from '@/utils/reportStats';
 
 export default function ReportTabScreen() {
   const { colors } = useTheme();
@@ -58,26 +32,27 @@ export default function ReportTabScreen() {
     sessions.length > 0
       ? [...sessions].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
       : null;
-  const totalCompleteCount = sessions.flatMap((s) => s.points).filter(isPointComplete).length;
-  const totalDraftCount = sessions
-    .flatMap((s) => s.points)
-    .filter((p) => p.reviewStatus === 'draft').length;
+
+  const allPoints = useMemo(() => sessions.flatMap((s) => s.points), [sessions]);
+  const totalCompleteCount = useMemo(
+    () => allPoints.filter((p) => isConfirmed(p) && isPointComplete(p)).length,
+    [allPoints]
+  );
+  const totalDraftCount = useMemo(
+    () => allPoints.filter((p) => !isConfirmed(p)).length,
+    [allPoints]
+  );
 
   const analysis = useMemo(
     () => (latestSession ? getAnalyzer().analyze(latestSession) : null),
     [latestSession]
   );
-  const shotBreakdown = useMemo(
-    () => (latestSession ? calculateShotBreakdown(latestSession) : []),
-    [latestSession]
-  );
-  const locations = useMemo(
-    () =>
-      latestSession ? latestSession.points.map((p) => p.shotLocation).filter(hasLocation) : [],
+  const stats = useMemo(
+    () => (latestSession ? computeReportStats(latestSession) : null),
     [latestSession]
   );
 
-  if (!latestSession || !analysis) {
+  if (!latestSession || !analysis || !stats) {
     return (
       <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]}>
         <View style={styles.emptyCenter}>
@@ -95,17 +70,15 @@ export default function ReportTabScreen() {
   }
 
   const s = latestSession;
-  const wonCount = s.points.filter((p) => p.outcome === 'won').length;
-  const lostCount = s.points.filter((p) => p.outcome === 'lost').length;
-  const completePointCount = s.points.filter(isPointComplete).length;
-  const quickPointCount = s.points.length - completePointCount;
-  const date = new Date(s.startedAt);
-  const dateStr = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+  const { wonCount, lostCount, completePointCount, quickPointCount, shotBreakdown, locations } =
+    stats;
 
-  const donutItems = shotBreakdown.map((it, i) => ({
-    value: it.total,
-    color: CHART_COLORS[i % CHART_COLORS.length],
-  }));
+  const donutItems = shotBreakdown
+    .filter((it) => it.total > 0)
+    .map((it, i) => ({
+      value: it.total,
+      color: REPORT_CHART_COLORS[i % REPORT_CHART_COLORS.length],
+    }));
 
   const keyStats = [
     { l: 'ポイント', v: `${s.points.length}`, c: colors.text },
@@ -131,7 +104,9 @@ export default function ReportTabScreen() {
                 {s.matchFormat === 'singles' ? 'シングルス' : 'ダブルス'}
               </Tag>
               <View style={{ flex: 1 }} />
-              <Text style={[styles.heroDate, { color: colors.surface }]}>{dateStr}</Text>
+              <Text style={[styles.heroDate, { color: colors.surface }]}>
+                {formatDate(s.startedAt)}
+              </Text>
             </View>
             <Text style={[styles.heroTitle, { color: colors.surface }]}>{s.title}</Text>
             <Text style={[styles.heroScore, { color: colors.surface }]}>
@@ -191,18 +166,20 @@ export default function ReportTabScreen() {
             <View style={styles.donutRow}>
               <Donut items={donutItems} size={108} stroke={14} />
               <View style={styles.donutLegend}>
-                {shotBreakdown.map((it, i) => (
-                  <View key={it.shotType} style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.dot,
-                        { backgroundColor: CHART_COLORS[i % CHART_COLORS.length] },
-                      ]}
-                    />
-                    <Text style={[styles.legendLabel, { color: colors.text }]}>{it.label}</Text>
-                    <Text style={[styles.legendVal, { color: colors.textSub }]}>{it.total}</Text>
-                  </View>
-                ))}
+                {shotBreakdown
+                  .filter((it) => it.total > 0)
+                  .map((it, i) => (
+                    <View key={it.shotType} style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.dot,
+                          { backgroundColor: REPORT_CHART_COLORS[i % REPORT_CHART_COLORS.length] },
+                        ]}
+                      />
+                      <Text style={[styles.legendLabel, { color: colors.text }]}>{it.label}</Text>
+                      <Text style={[styles.legendVal, { color: colors.textSub }]}>{it.total}</Text>
+                    </View>
+                  ))}
               </View>
             </View>
           </View>
@@ -229,122 +206,36 @@ export default function ReportTabScreen() {
 
         {/* strengths */}
         <SectionHeader title="強み" />
-        <View style={[styles.padH, styles.cardGap]}>
-          {analysis.strengths.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              まだ強みを判定できません
-            </Text>
-          ) : (
-            analysis.strengths.map((str) => (
-              <View
-                key={str}
-                style={[
-                  styles.insightCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                ]}
-              >
-                <View style={[styles.insightBar, { backgroundColor: colors.success }]} />
-                <View style={[styles.insightBadge, { backgroundColor: `${colors.success}1A` }]}>
-                  <Text style={{ fontSize: 16, color: colors.success }}>↑</Text>
-                </View>
-                <Text style={[styles.insightText, { color: colors.text }]}>{str}</Text>
-              </View>
-            ))
-          )}
+        <View style={styles.padH}>
+          <ReportInsightList
+            items={analysis.strengths}
+            icon="↑"
+            tone="success"
+            emptyText="まだ強みを判定できません"
+          />
         </View>
 
         {/* weaknesses */}
         <SectionHeader title="改善ポイント" />
-        <View style={[styles.padH, styles.cardGap]}>
-          {analysis.weaknesses.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              目立った弱点はまだありません
-            </Text>
-          ) : (
-            analysis.weaknesses.map((w) => (
-              <View
-                key={w}
-                style={[
-                  styles.insightCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                ]}
-              >
-                <View style={[styles.insightBar, { backgroundColor: colors.danger }]} />
-                <View style={[styles.insightBadge, { backgroundColor: `${colors.danger}1A` }]}>
-                  <Text style={{ fontSize: 16, color: colors.danger }}>↓</Text>
-                </View>
-                <Text style={[styles.insightText, { color: colors.text }]}>
-                  {WEAKNESS_LABELS[w]}
-                </Text>
-              </View>
-            ))
-          )}
+        <View style={styles.padH}>
+          <ReportInsightList
+            items={analysis.weaknesses.map((w) => WEAKNESS_LABELS[w])}
+            icon="↓"
+            tone="danger"
+            emptyText="目立った弱点はまだありません"
+          />
         </View>
 
         {/* coaching tips */}
         <SectionHeader title="改善コメント" />
-        <View style={[styles.padH, styles.cardGap]}>
-          {analysis.tips.map((tip) => {
-            const tone =
-              tip.priority === 'high'
-                ? colors.danger
-                : tip.priority === 'medium'
-                  ? colors.warning
-                  : colors.textSub;
-            const label =
-              tip.priority === 'high'
-                ? '優先 高'
-                : tip.priority === 'medium'
-                  ? '優先 中'
-                  : '優先 低';
-            return (
-              <View
-                key={tip.id}
-                style={[
-                  styles.commentCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                ]}
-              >
-                <View style={styles.commentHeader}>
-                  <Tag color={tone} bg={`${tone}1A`}>
-                    ● {label}
-                  </Tag>
-                  <Text style={[styles.commentTitle, { color: colors.text }]}>{tip.title}</Text>
-                </View>
-                <Text style={[styles.commentBody, { color: colors.textSub }]}>
-                  {tip.description}
-                </Text>
-              </View>
-            );
-          })}
+        <View style={styles.padH}>
+          <ReportTipList tips={analysis.tips} />
         </View>
 
         {/* drills */}
         <SectionHeader title="練習メニュー" />
-        <View style={[styles.padH, { gap: 8, paddingBottom: 80 }]}>
-          {analysis.drills.map((drill) => (
-            <TouchableOpacity
-              key={drill.id}
-              activeOpacity={0.88}
-              style={[
-                styles.drillCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <View style={[styles.drillBadge, { backgroundColor: colors.primaryLo }]}>
-                <Text style={[styles.drillMin, { color: colors.primary }]}>
-                  {drill.durationMin}
-                </Text>
-                <Text style={[styles.drillMinLabel, { color: colors.primary }]}>分</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.drillName, { color: colors.text }]}>{drill.name}</Text>
-                <Text style={[styles.drillDesc, { color: colors.textSub }]} numberOfLines={2}>
-                  {drill.description}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+        <View style={[styles.padH, { paddingBottom: 80 }]}>
+          <ReportDrillList drills={analysis.drills} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -460,89 +351,4 @@ const styles = StyleSheet.create({
   legendVal: { fontSize: 12, fontWeight: '600' },
   heatmapHint: { fontSize: 11, marginBottom: 8 },
   emptyText: { fontSize: 13, textAlign: 'center', padding: 12 },
-  cardGap: { gap: 8 },
-  insightCard: {
-    borderRadius: 14,
-    borderWidth: 0.5,
-    padding: 12,
-    paddingLeft: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    overflow: 'hidden',
-    position: 'relative',
-    shadowColor: '#0F281C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  insightBar: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-  },
-  insightBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  insightText: { flex: 1, fontSize: 13, fontWeight: '600' },
-  commentCard: {
-    borderRadius: 14,
-    borderWidth: 0.5,
-    padding: 14,
-    shadowColor: '#0F281C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  commentTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  commentBody: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  drillCard: {
-    borderRadius: 14,
-    borderWidth: 0.5,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#0F281C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  drillBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  drillMin: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 16,
-    letterSpacing: -0.3,
-  },
-  drillMinLabel: { fontSize: 8, fontWeight: '600' },
-  drillName: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
-  drillDesc: { fontSize: 11, lineHeight: 16 },
 });
