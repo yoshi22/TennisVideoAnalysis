@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/common';
 import { VideoPlayer, type VideoPlayerRef } from '@/components/video';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { OUTCOME_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { consumePendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -23,11 +24,6 @@ import { generateId } from '@/utils/id';
 import { getPointDetailStatus } from '@/utils/pointDetails';
 
 type TimestampedPoint = PointRecord & { videoTimestamp: number };
-
-const OUTCOME_LABELS: Record<PointRecord['outcome'], string> = {
-  won: '得点',
-  lost: '失点',
-};
 
 function hasVideoTimestamp(point: PointRecord): point is TimestampedPoint {
   return point.videoTimestamp !== undefined;

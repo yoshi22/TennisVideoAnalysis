@@ -3,16 +3,12 @@ import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Button } from '@/components/common';
+import { SERVE_RESULT_META } from '@/constants/serveResults';
+import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { OUTCOME_LABELS, RESULT_REASON_LABELS } from '@/constants/labels';
 import { buildDraftPointFromCandidate } from '@/services/scoring';
 import { useTheme } from '@/theme';
-import {
-  type AutoPointCandidate,
-  type PointOutcome,
-  type PointRecord,
-  type ResultReason,
-  type ServeResult,
-  type ShotType,
-} from '@/types';
+import { type AutoPointCandidate, type PointRecord } from '@/types';
 
 interface AutoPointCardProps {
   sessionId: string;
@@ -21,37 +17,6 @@ interface AutoPointCardProps {
   onConfirm: () => void;
   onReject: () => void;
 }
-
-const OUTCOME_LABELS: Record<PointOutcome, string> = {
-  won: '得点',
-  lost: '失点',
-};
-
-const SHOT_TYPE_LABELS: Record<ShotType, string> = {
-  serve: 'サーブ',
-  forehand: 'フォアハンド',
-  backhand: 'バックハンド',
-  volley: 'ボレー',
-  smash: 'スマッシュ',
-  lob: 'ロブ',
-  drop: 'ドロップ',
-};
-
-const RESULT_REASON_LABELS: Record<ResultReason, string> = {
-  winner: 'ウィナー',
-  forcedError: '誘ったミス',
-  unforcedError: '凡ミス',
-  net: 'ネット',
-  out: 'アウト',
-};
-
-const SERVE_RESULT_LABELS: Record<ServeResult, string> = {
-  firstIn: '1stイン',
-  secondIn: '2ndイン',
-  doubleFault: 'ダブルフォルト',
-  ace: 'エース',
-  returnError: 'リターンエラー',
-};
 
 function formatVideoTime(seconds: number): string {
   return `${seconds.toFixed(1)}秒`;
@@ -102,7 +67,7 @@ export function AutoPointCard({
         </View>
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: colors.text }]}>
-            {SHOT_TYPE_LABELS[candidate.suggestedShotType]}
+            {SHOT_TYPE_META[candidate.suggestedShotType].label}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             ラリー {candidate.suggestedRallyCount} 球
@@ -129,7 +94,7 @@ export function AutoPointCard({
         </Text>
         {candidate.suggestedServeResult ? (
           <Text style={[styles.metaSubText, { color: colors.textMuted }]}>
-            {SERVE_RESULT_LABELS[candidate.suggestedServeResult]}
+            {SERVE_RESULT_META[candidate.suggestedServeResult].label}
           </Text>
         ) : null}
       </View>

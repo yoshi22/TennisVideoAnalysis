@@ -1,4 +1,5 @@
 import { type ShotType } from '@/types';
+import { SHOT_TYPE_META } from '@/constants/shotTypes';
 import {
   type FormAnalysisResult,
   type Keypoint,
@@ -331,16 +332,7 @@ function computeScore(metrics: SwingMetric[]): number {
 }
 
 function buildSummary(score: number, shotType: ShotType): string {
-  const shotLabel: Record<ShotType, string> = {
-    serve: 'サーブ',
-    forehand: 'フォアハンド',
-    backhand: 'バックハンド',
-    volley: 'ボレー',
-    smash: 'スマッシュ',
-    lob: 'ロブ',
-    drop: 'ドロップショット',
-  };
-  const label = shotLabel[shotType];
+  const label = SHOT_TYPE_META[shotType].label;
   if (score >= 75)
     return `${label}のフォームは全体的に良好です。強みを活かしながら細部を磨きましょう。`;
   if (score >= 50)

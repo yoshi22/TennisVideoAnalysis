@@ -18,16 +18,12 @@ import {
 import { CourtHeatmap } from '@/components/court';
 import { FormAnalysisEntryCard } from '@/components/pose';
 import { SHOT_TYPE_META, SHOT_TYPES } from '@/constants/shotTypes';
+import { WEAKNESS_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { getAnalyzer } from '@/services/analysis';
 import { computeMatchScore } from '@/services/scoring';
 import { useTheme } from '@/theme';
-import {
-  type ShotLocation,
-  type ShotType,
-  type TennisSession,
-  type WeaknessPattern,
-} from '@/types';
+import { type ShotLocation, type ShotType, type TennisSession } from '@/types';
 import { formatPercent } from '@/utils/format';
 import { pushRoute } from '@/utils/navigation';
 import { isPointComplete } from '@/utils/pointDetails';
@@ -38,16 +34,6 @@ interface ShotBreakdownItem {
   wonCount: number;
   lostCount: number;
 }
-
-const WEAKNESS_LABELS: Record<WeaknessPattern, string> = {
-  highDoubleFault: 'ダブルフォルトが多い',
-  lowFirstServeIn: 'ファーストサーブ成功率が低い',
-  shortRally: 'ラリーが短く終わりやすい',
-  weakBackhand: 'バックハンドで失点が多い',
-  weakVolley: 'ボレーで失点が多い',
-  frequentUnforcedError: '凡ミスの割合が高い',
-  poorNetApproach: 'ネットプレーの展開が少ない',
-};
 
 const PRIORITY_LABELS = { high: '優先 高', medium: '優先 中', low: '優先 低' } as const;
 const PRIORITY_TONE = { high: 'danger', medium: 'warning', low: 'muted' } as const;

@@ -13,6 +13,14 @@ export function formatRelative(isoString: string): string {
   return formatDistanceToNow(parseISO(isoString), { locale: ja, addSuffix: true });
 }
 
+export function formatDateTime(isoString: string): string {
+  return format(parseISO(isoString), 'M月d日 HH:mm', { locale: ja });
+}
+
+export function formatDateTimeLong(isoString: string): string {
+  return format(parseISO(isoString), 'yyyy年M月d日 HH:mm', { locale: ja });
+}
+
 export function toISODate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }

@@ -1,46 +1,12 @@
-import { type TennisAnalysisResult, type WeaknessPattern } from '@/types/analysis';
+import { type TennisAnalysisResult } from '@/types/analysis';
 import { type MatchScore } from '@/types/matchScore';
+import { type ShotType } from '@/types/point';
 import { type TennisSession } from '@/types/session';
+import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { SESSION_TYPE_LABELS, WEAKNESS_LABELS } from '@/constants/labels';
 import { formatSetScoreLine } from '@/services/scoring/matchState';
+import { formatDateTimeLong } from '@/utils/date';
 import { isPointComplete } from '@/utils/pointDetails';
-
-const SESSION_TYPE_LABELS: Record<string, string> = {
-  match: '試合',
-  serveTraining: 'サーブ練習',
-  strokeTraining: 'ストローク練習',
-  volleyTraining: 'ボレー練習',
-  freeTraining: '自由練習',
-};
-
-const SHOT_TYPE_LABELS: Record<string, string> = {
-  serve: 'サーブ',
-  forehand: 'フォアハンド',
-  backhand: 'バックハンド',
-  volley: 'ボレー',
-  smash: 'スマッシュ',
-  lob: 'ロブ',
-  drop: 'ドロップ',
-};
-
-const WEAKNESS_LABELS: Record<WeaknessPattern, string> = {
-  highDoubleFault: 'ダブルフォルト多発',
-  lowFirstServeIn: 'ファーストサーブ成功率低下',
-  shortRally: 'ラリーが短い',
-  weakBackhand: 'バックハンドの弱さ',
-  weakVolley: 'ボレーの弱さ',
-  frequentUnforcedError: 'アンフォースドエラー多発',
-  poorNetApproach: 'ネットアプローチの課題',
-};
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export function buildSessionReport(
   session: TennisSession,
@@ -49,7 +15,7 @@ export function buildSessionReport(
 ): string {
   const lines: string[] = [];
   const sport = session.sport === 'softTennis' ? 'ソフトテニス' : '硬式テニス';
-  const sessionType = SESSION_TYPE_LABELS[session.sessionType] ?? session.sessionType;
+  const sessionType = SESSION_TYPE_LABELS[session.sessionType];
 
   lines.push('# CourtLens セッションレポート');
   lines.push('');
@@ -61,9 +27,9 @@ export function buildSessionReport(
   if (session.opponentName) {
     lines.push(`- **対戦相手**: ${session.opponentName}`);
   }
-  lines.push(`- **開始**: ${formatDate(session.startedAt)}`);
+  lines.push(`- **開始**: ${formatDateTimeLong(session.startedAt)}`);
   if (session.endedAt) {
-    lines.push(`- **終了**: ${formatDate(session.endedAt)}`);
+    lines.push(`- **終了**: ${formatDateTimeLong(session.endedAt)}`);
   }
   lines.push(`- **ポイント数**: ${session.points.length}`);
 
@@ -123,7 +89,7 @@ export function buildSessionReport(
       for (const [shotType, counts] of Object.entries(shotMap)) {
         const total = counts.won + counts.lost;
         const rate = ((counts.won / total) * 100).toFixed(0);
-        const label = SHOT_TYPE_LABELS[shotType] ?? shotType;
+        const label = SHOT_TYPE_META[shotType as ShotType]?.label ?? shotType;
         lines.push(`| ${label} | ${counts.won} | ${counts.lost} | ${rate}% |`);
       }
     }
@@ -134,7 +100,7 @@ export function buildSessionReport(
     lines.push('## 弱点分析');
     lines.push('');
     for (const weakness of analysis.weaknesses) {
-      const label = WEAKNESS_LABELS[weakness] ?? weakness;
+      const label = WEAKNESS_LABELS[weakness];
       lines.push(`- ${label}`);
     }
   }
@@ -160,7 +126,7 @@ export function buildSessionReport(
 
   lines.push('---');
   lines.push('');
-  lines.push(`*CourtLens で生成 — ${formatDate(new Date().toISOString())}*`);
+  lines.push(`*CourtLens で生成 — ${formatDateTimeLong(new Date().toISOString())}*`);
 
   return lines.join('\n');
 }

@@ -8,35 +8,20 @@ import { PointLogSheet, PointScoreboard } from '@/components/point';
 import { MatchScoreboard } from '@/components/scoring';
 import { SERVE_RESULT_META } from '@/constants/serveResults';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
+import { RESULT_REASON_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { computeMatchScore } from '@/services/scoring';
 import { setPendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
+import { formatDateTime } from '@/utils/date';
 import { formatSeconds } from '@/utils/formatTime';
 import { generateId } from '@/utils/id';
 import { pushRoute } from '@/utils/navigation';
 import { getPointDetailStatus } from '@/utils/pointDetails';
 
-const RESULT_REASON_LABELS: Record<string, string> = {
-  winner: 'ウィナー',
-  forcedError: '誘ったミス',
-  unforcedError: '凡ミス',
-  net: 'ネット',
-  out: 'アウト',
-};
-
 type LogFilter = 'all' | 'quick';
-
-function formatDateTime(isoString: string): string {
-  return new Date(isoString).toLocaleString('ja-JP', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export default function SessionLogScreen() {
   const { colors } = useTheme();
