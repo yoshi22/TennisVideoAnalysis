@@ -18,6 +18,7 @@ import {
 import { CourtHeatmap } from '@/components/court';
 import { FormAnalysisEntryCard } from '@/components/pose';
 import { ReportDrillList, ReportInsightList, ReportTipList } from '@/components/report';
+import { SubmissionSheet } from '@/components/submission/SubmissionSheet';
 import { WEAKNESS_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { getAnalyzer } from '@/services/analysis';
@@ -34,6 +35,7 @@ export default function ReportScreen() {
   const router = useRouter();
   const { session } = useSession();
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [submissionSheetOpen, setSubmissionSheetOpen] = useState(false);
   const analysis = useMemo(() => (session ? getAnalyzer().analyze(session) : null), [session]);
   const matchScore = useMemo(
     () =>
@@ -84,14 +86,24 @@ export default function ReportScreen() {
       <Tabs.Screen
         options={{
           headerRight: () => (
-            <TouchableOpacity
-              accessibilityLabel="エクスポート"
-              accessibilityRole="button"
-              onPress={() => setExportMenuOpen(true)}
-              style={styles.headerButton}
-            >
-              <Ionicons color={colors.surface} name="share-outline" size={23} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                accessibilityLabel="ベータに提供"
+                accessibilityRole="button"
+                onPress={() => setSubmissionSheetOpen(true)}
+                style={styles.headerButton}
+              >
+                <Ionicons color={colors.surface} name="cloud-upload-outline" size={22} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityLabel="エクスポート"
+                accessibilityRole="button"
+                onPress={() => setExportMenuOpen(true)}
+                style={styles.headerButton}
+              >
+                <Ionicons color={colors.surface} name="share-outline" size={23} />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
@@ -360,6 +372,13 @@ export default function ReportScreen() {
           session={session}
         />
       ) : null}
+      {submissionSheetOpen ? (
+        <SubmissionSheet
+          onClose={() => setSubmissionSheetOpen(false)}
+          router={router}
+          session={session}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -371,6 +390,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+  },
+  headerButtons: {
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   headerButton: {
     alignItems: 'center',

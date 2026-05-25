@@ -68,6 +68,12 @@
       "router": {},
       "eas": {
         "projectId": "a9495214-cd2f-40ae-a32e-ba7e8d517b58"
+      },
+      "submission": {
+        "provider": "supabase",
+        "url": "",
+        "anonKey": "",
+        "bucket": "beta-submissions"
       }
     },
     "owner": "yoshi22"
