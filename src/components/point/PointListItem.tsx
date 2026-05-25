@@ -48,7 +48,6 @@ export function PointListItem({
       accessibilityLabel="ポイント詳細を編集"
       accessibilityRole="button"
       activeOpacity={0.8}
-      key={point.id}
       onLongPress={onLongPress}
       onPress={onPress}
     >

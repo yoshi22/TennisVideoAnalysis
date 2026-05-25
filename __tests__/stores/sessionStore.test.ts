@@ -19,6 +19,46 @@ function makeSession(): TennisSession {
   };
 }
 
+describe('useSessionStore setVideoDuration', () => {
+  afterEach(() => {
+    useSessionStore.getState().clearAll();
+  });
+
+  it('updates videoDurationSec and bumps updatedAt', () => {
+    const session = makeSession();
+    useSessionStore.getState().addSession(session);
+    const before = useSessionStore.getState().sessions[0].updatedAt;
+
+    useSessionStore.getState().setVideoDuration(session.id, 120);
+
+    const after = useSessionStore.getState().sessions[0];
+    expect(after.videoDurationSec).toBe(120);
+    expect(after.updatedAt).not.toBe(before);
+  });
+
+  it('returns early when value is unchanged', () => {
+    const session = makeSession();
+    useSessionStore.getState().addSession(session);
+    useSessionStore.getState().setVideoDuration(session.id, 60);
+    const stateAfterFirst = useSessionStore.getState().sessions[0];
+
+    useSessionStore.getState().setVideoDuration(session.id, 60);
+    const stateAfterSecond = useSessionStore.getState().sessions[0];
+
+    expect(stateAfterSecond.updatedAt).toBe(stateAfterFirst.updatedAt);
+  });
+
+  it('returns early for unknown session id', () => {
+    const session = makeSession();
+    useSessionStore.getState().addSession(session);
+    const before = useSessionStore.getState().sessions;
+
+    useSessionStore.getState().setVideoDuration('non-existent', 60);
+
+    expect(useSessionStore.getState().sessions).toBe(before);
+  });
+});
+
 describe('useSessionStore point updates', () => {
   afterEach(() => {
     useSessionStore.getState().clearAll();
