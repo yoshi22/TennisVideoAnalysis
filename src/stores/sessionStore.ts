@@ -21,6 +21,14 @@ function nowISO(): string {
   return new Date().toISOString();
 }
 
+function mapSession(
+  sessions: TennisSession[],
+  id: string,
+  updater: (s: TennisSession) => TennisSession
+): TennisSession[] {
+  return sessions.map((s) => (s.id === id ? updater(s) : s));
+}
+
 export const useSessionStore = create<SessionStoreState>()(
   persist(
     (set) => ({
@@ -31,15 +39,11 @@ export const useSessionStore = create<SessionStoreState>()(
         })),
       updateSession: (id, patch) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === id
-              ? {
-                  ...session,
-                  ...patch,
-                  updatedAt: patch.updatedAt ?? nowISO(),
-                }
-              : session
-          ),
+          sessions: mapSession(state.sessions, id, (s) => ({
+            ...s,
+            ...patch,
+            updatedAt: patch.updatedAt ?? nowISO(),
+          })),
         })),
       deleteSession: (id) =>
         set((state) => ({
@@ -47,62 +51,47 @@ export const useSessionStore = create<SessionStoreState>()(
         })),
       addPoint: (sessionId, point) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === sessionId
-              ? {
-                  ...session,
-                  points: [...session.points, point],
-                  updatedAt: nowISO(),
-                }
-              : session
-          ),
+          sessions: mapSession(state.sessions, sessionId, (s) => ({
+            ...s,
+            points: [...s.points, point],
+            updatedAt: nowISO(),
+          })),
         })),
       updatePoint: (sessionId, pointId, patch) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === sessionId
-              ? {
-                  ...session,
-                  points: session.points.map((point) =>
-                    point.id === pointId ? { ...point, ...patch } : point
-                  ),
-                  updatedAt: nowISO(),
-                }
-              : session
-          ),
+          sessions: mapSession(state.sessions, sessionId, (s) => ({
+            ...s,
+            points: s.points.map((p) => (p.id === pointId ? { ...p, ...patch } : p)),
+            updatedAt: nowISO(),
+          })),
         })),
       deletePoint: (sessionId, pointId) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === sessionId
-              ? {
-                  ...session,
-                  points: session.points.filter((point) => point.id !== pointId),
-                  updatedAt: nowISO(),
-                }
-              : session
-          ),
+          sessions: mapSession(state.sessions, sessionId, (s) => ({
+            ...s,
+            points: s.points.filter((p) => p.id !== pointId),
+            updatedAt: nowISO(),
+          })),
         })),
       setVideoDuration: (sessionId, videoDurationSec) =>
         set((state) => {
-          const target = state.sessions.find((session) => session.id === sessionId);
-          if (!target || target.videoDurationSec === videoDurationSec) {
-            return state;
-          }
-
+          const target = state.sessions.find((s) => s.id === sessionId);
+          if (!target || target.videoDurationSec === videoDurationSec) return state;
           return {
-            sessions: state.sessions.map((session) =>
-              session.id === sessionId ? { ...session, videoDurationSec } : session
-            ),
+            sessions: mapSession(state.sessions, sessionId, (s) => ({
+              ...s,
+              videoDurationSec,
+              updatedAt: nowISO(),
+            })),
           };
         }),
       setCourtCalibration: (sessionId, calibration) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === sessionId
-              ? { ...session, courtCalibration: calibration, updatedAt: nowISO() }
-              : session
-          ),
+          sessions: mapSession(state.sessions, sessionId, (s) => ({
+            ...s,
+            courtCalibration: calibration,
+            updatedAt: nowISO(),
+          })),
         })),
       clearAll: () => set({ sessions: [] }),
     }),

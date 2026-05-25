@@ -37,8 +37,8 @@ function makeInitialCorners(): CalibrationCorners {
 }
 
 function getVideoDurationSec(session: TennisSession | undefined): number {
-  const duration = (session as { videoDuration?: unknown } | undefined)?.videoDuration;
-  return typeof duration === 'number' && Number.isFinite(duration) && duration > 0 ? duration : 10;
+  const d = session?.videoDurationSec;
+  return typeof d === 'number' && Number.isFinite(d) && d > 0 ? d : 10;
 }
 
 export default function CourtCalibrationScreen() {

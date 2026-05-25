@@ -4,22 +4,18 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/common';
-import { PointLogSheet, PointScoreboard } from '@/components/point';
+import { PointListItem, PointLogSheet, PointScoreboard } from '@/components/point';
 import { MatchScoreboard } from '@/components/scoring';
-import { SERVE_RESULT_META } from '@/constants/serveResults';
-import { SHOT_TYPE_META } from '@/constants/shotTypes';
-import { RESULT_REASON_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { computeMatchScore } from '@/services/scoring';
 import { setPendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
-import { formatDateTime } from '@/utils/date';
-import { formatSeconds } from '@/utils/formatTime';
+import { computeCumulativeScores } from '@/utils/cumulativeScore';
 import { generateId } from '@/utils/id';
 import { pushRoute } from '@/utils/navigation';
-import { getPointDetailStatus } from '@/utils/pointDetails';
+import { getPointDetailStatus, isConfirmed } from '@/utils/pointDetails';
 
 type LogFilter = 'all' | 'quick';
 
@@ -54,7 +50,7 @@ export default function SessionLogScreen() {
   const visiblePoints = filter === 'quick' ? quickPoints : points;
 
   const confirmedChronologicalPoints = useMemo(
-    () => chronologicalPoints.filter((p) => p.reviewStatus !== 'draft'),
+    () => chronologicalPoints.filter(isConfirmed),
     [chronologicalPoints]
   );
 
@@ -74,18 +70,10 @@ export default function SessionLogScreen() {
     return computeMatchScore(confirmedChronologicalPoints, session.sport);
   }, [confirmedChronologicalPoints, session]);
 
-  // Cumulative score per point (chronological)
-  const cumulativeScores = useMemo(() => {
-    let w = 0;
-    let l = 0;
-    return new Map(
-      chronologicalPoints.map((p) => {
-        if (p.outcome === 'won') w++;
-        else l++;
-        return [p.id, { w, l }];
-      })
-    );
-  }, [chronologicalPoints]);
+  const cumulativeScores = useMemo(
+    () => computeCumulativeScores(chronologicalPoints),
+    [chronologicalPoints]
+  );
 
   const openSheet = (outcome: PointOutcome) => {
     setEditingPoint(undefined);
@@ -266,97 +254,19 @@ export default function SessionLogScreen() {
                 ]}
               >
                 {visiblePoints.map((point, idx) => {
-                  const cum = cumulativeScores.get(point.id);
-                  const isWon = point.outcome === 'won';
-                  const isLast = idx === visiblePoints.length - 1;
                   const allIndex = points.findIndex((candidate) => candidate.id === point.id);
                   return (
-                    <TouchableOpacity
+                    <PointListItem
                       key={point.id}
-                      onPress={() => openEditSheet(point, allIndex)}
+                      allIndex={allIndex}
+                      cumulativeScore={cumulativeScores.get(point.id)}
+                      isLast={idx === visiblePoints.length - 1}
                       onLongPress={() => confirmDelete(point)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="ポイント詳細を編集"
-                    >
-                      <View
-                        style={[
-                          styles.listItem,
-                          !isLast && { borderBottomWidth: 0.5, borderBottomColor: colors.border },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.sidebar,
-                            { backgroundColor: isWon ? colors.success : colors.danger },
-                          ]}
-                        />
-                        <View style={styles.itemScore}>
-                          <Text style={[styles.cumScore, { color: colors.textSub }]}>
-                            {cum ? `${cum.w}–${cum.l}` : '—'}
-                          </Text>
-                        </View>
-                        <View style={styles.itemBody}>
-                          <Text style={[styles.itemTitle, { color: colors.text }]}>
-                            {point.shotType ? SHOT_TYPE_META[point.shotType].label : '詳細未入力'}
-                            {point.resultReason ? (
-                              <Text style={{ color: colors.textMuted, fontWeight: '500' }}>
-                                {'  '}·{' '}
-                                {RESULT_REASON_LABELS[point.resultReason] ?? point.resultReason}
-                              </Text>
-                            ) : null}
-                          </Text>
-                          <Text style={[styles.itemMeta, { color: colors.textMuted }]}>
-                            {point.serveResult
-                              ? `${SERVE_RESULT_META[point.serveResult].label} ・ `
-                              : ''}
-                            {typeof point.rallyCount === 'number'
-                              ? `${point.rallyCount} 球 ・ `
-                              : ''}
-                            {point.rallyStartSec !== undefined && point.rallyEndSec !== undefined
-                              ? `${formatSeconds(point.rallyStartSec)}〜${formatSeconds(point.rallyEndSec)} ・ `
-                              : point.videoTimestamp !== undefined
-                                ? `${formatSeconds(point.videoTimestamp)} ・ `
-                                : ''}
-                            {formatDateTime(point.timestamp)}
-                          </Text>
-                          {getPointDetailStatus(point) === 'quick' ? (
-                            <Text style={[styles.quickDetailText, { color: colors.warning }]}>
-                              タップして詳細を入力
-                            </Text>
-                          ) : null}
-                          {point.reviewStatus === 'draft' ? (
-                            <View style={[styles.draftBadge, { backgroundColor: colors.warning }]}>
-                              <Text style={[styles.draftBadgeText, { color: colors.surface }]}>
-                                下書き
-                              </Text>
-                            </View>
-                          ) : null}
-                          {point.videoTimestamp !== undefined ||
-                          point.rallyStartSec !== undefined ? (
-                            <TouchableOpacity
-                              accessibilityLabel="動画で確認"
-                              accessibilityRole="button"
-                              onPress={() => {
-                                const seekSec = point.rallyStartSec ?? point.videoTimestamp!;
-                                setPendingSeek(sessionId, seekSec);
-                                pushRoute(router, `/session/${sessionId}/video`);
-                              }}
-                              style={styles.videoJumpButton}
-                            >
-                              <Text style={[styles.videoJumpText, { color: colors.primary }]}>
-                                {point.rallyStartSec !== undefined
-                                  ? '▶ ラリー区間を確認'
-                                  : '▶ 動画で確認'}
-                              </Text>
-                            </TouchableOpacity>
-                          ) : null}
-                        </View>
-                        <Text style={[styles.itemIndex, { color: colors.textMuted }]}>
-                          #{allIndex >= 0 ? points.length - allIndex : points.length - idx}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
+                      onPress={() => openEditSheet(point, allIndex)}
+                      point={point}
+                      sessionId={sessionId}
+                      totalPoints={points.length}
+                    />
                   );
                 })}
               </View>
@@ -487,70 +397,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 1,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    paddingRight: 14,
-  },
-  sidebar: {
-    width: 4,
-    height: 28,
-    borderRadius: 2,
-    marginLeft: 0,
-    flexShrink: 0,
-  },
-  itemScore: {
-    width: 38,
-  },
-  cumScore: {
-    fontSize: 11,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  itemBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  itemTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  itemMeta: {
-    fontSize: 11,
-    marginTop: 2,
-    fontVariant: ['tabular-nums'],
-  },
-  quickDetailText: {
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 6,
-  },
-  draftBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    marginTop: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  draftBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  videoJumpButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    minHeight: 28,
-    justifyContent: 'center',
-  },
-  videoJumpText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  itemIndex: {
-    fontSize: 11,
-    fontWeight: '600',
   },
 });

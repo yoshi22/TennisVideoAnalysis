@@ -18,6 +18,15 @@ export interface RulesOptions {
   serveAttempt?: 1 | 2;
 }
 
+type ClassifiedBounce = Bounce & { side: PlayerSide };
+
+export function classifyBounces(bounces: Bounce[]): ClassifiedBounce[] {
+  return bounces.map((b) => ({
+    ...b,
+    side: (b.courtPoint.y > 0.5 ? 'near' : 'far') as PlayerSide,
+  }));
+}
+
 /**
  * Applies deterministic tennis rules to a sequence of bounce events.
  * Returns an AutoPointCandidate representing the point outcome.
@@ -35,12 +44,7 @@ export function applyRules(
   const diagnostics: string[] = [];
   let rallyCount = 0;
 
-  // Assign each bounce to a court side based on courtY
-  // near side = courtY > 0.5, far side = courtY < 0.5
-  const classified = bounces.map((b) => ({
-    ...b,
-    side: (b.courtPoint.y > 0.5 ? 'near' : 'far') as PlayerSide,
-  }));
+  const classified = classifyBounces(bounces);
 
   // Serve handling
   if (isServe) {
@@ -71,7 +75,6 @@ export function applyRules(
   let lastSide: PlayerSide | null = null;
   let winnerSide: PlayerSide | null = null;
   let pointTimeSec = endTimeSec;
-  type ClassifiedBounce = Bounce & { side: PlayerSide };
   let lastOutOfBounds: ClassifiedBounce | null = null;
 
   for (const bounce of classified) {
