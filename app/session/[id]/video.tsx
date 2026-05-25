@@ -159,13 +159,13 @@ export default function SessionVideoScreen() {
   );
 
   const handlePrevPoint = useCallback(() => {
-    if (selectedPointIndex > 0) {
+    if (selectedPointIndex > 0 && selectedPointIndex !== -1) {
       handleSelectPoint(timestampedPoints[selectedPointIndex - 1]);
     }
   }, [selectedPointIndex, timestampedPoints, handleSelectPoint]);
 
   const handleNextPoint = useCallback(() => {
-    if (selectedPointIndex < timestampedPoints.length - 1) {
+    if (selectedPointIndex !== -1 && selectedPointIndex < timestampedPoints.length - 1) {
       handleSelectPoint(timestampedPoints[selectedPointIndex + 1]);
     }
   }, [selectedPointIndex, timestampedPoints, handleSelectPoint]);
@@ -362,7 +362,9 @@ export default function SessionVideoScreen() {
         >
           <View style={styles.detailHeader}>
             <View>
-              <Text style={[styles.detailScoreLabel, { color: colors.textMuted }]}>累積スコア</Text>
+              <Text style={[styles.detailScoreLabel, { color: colors.textMuted }]}>
+                動画内スコア
+              </Text>
               <Text style={[styles.detailScore, { color: colors.text }]}>
                 {(() => {
                   const s = cumulativeScores.get(selectedPoint.id);
@@ -371,6 +373,26 @@ export default function SessionVideoScreen() {
               </Text>
             </View>
             <View style={styles.detailMeta}>
+              <View style={styles.detailOutcomeRow}>
+                <View
+                  style={[
+                    styles.detailOutcomeChip,
+                    {
+                      backgroundColor:
+                        selectedPoint.outcome === 'won' ? colors.primary : colors.danger,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.detailOutcomeText, { color: colors.surface }]}>
+                    {OUTCOME_LABELS[selectedPoint.outcome]}
+                  </Text>
+                </View>
+                {selectedPoint.reviewStatus === 'draft' ? (
+                  <View style={[styles.detailDraftChip, { backgroundColor: colors.surfaceAlt }]}>
+                    <Text style={[styles.detailDraftText, { color: colors.textMuted }]}>draft</Text>
+                  </View>
+                ) : null}
+              </View>
               <Text style={[styles.detailMetaText, { color: colors.text }]} numberOfLines={1}>
                 {selectedPoint.shotType
                   ? SHOT_TYPE_META[selectedPoint.shotType].label
@@ -474,6 +496,7 @@ export default function SessionVideoScreen() {
             {timestampedPoints.map((point) => {
               const ratio = Math.max(0, Math.min(1, point.videoTimestamp / durationSec));
               const isWon = point.outcome === 'won';
+              const isDraft = point.reviewStatus === 'draft';
               const hasInterval =
                 point.rallyStartSec !== undefined && point.rallyEndSec !== undefined;
               const startRatio = hasInterval
@@ -489,7 +512,10 @@ export default function SessionVideoScreen() {
                     accessibilityRole="button"
                     activeOpacity={0.82}
                     onPress={() => handleSelectPoint(point)}
-                    style={[styles.markerTouch, { left: `${ratio * 100}%` }]}
+                    style={[
+                      styles.markerTouch,
+                      { left: `${ratio * 100}%`, opacity: isDraft ? 0.4 : 1 },
+                    ]}
                   >
                     <View
                       style={[
@@ -804,5 +830,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontVariant: ['tabular-nums'],
     fontWeight: '600',
+  },
+  detailOutcomeRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 4,
+  },
+  detailOutcomeChip: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  detailOutcomeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  detailDraftChip: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  detailDraftText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
 });
