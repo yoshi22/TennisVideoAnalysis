@@ -13,6 +13,7 @@ import { Path, Svg } from 'react-native-svg';
 import { CourtChart } from '@/components/court';
 import { SERVE_RESULTS, SERVE_RESULT_META } from '@/constants/serveResults';
 import { SHOT_TYPES, SHOT_TYPE_META } from '@/constants/shotTypes';
+import { RESULT_REASON_LABELS } from '@/constants/labels';
 import { useTheme } from '@/theme';
 import {
   type PointOutcome,
@@ -51,11 +52,11 @@ type Draft = {
 type ReasonOption = { value: ResultReason; label: string; color: 'success' | 'warning' | 'danger' };
 
 const REASON_OPTIONS: ReasonOption[] = [
-  { value: 'winner', label: 'ウィナー', color: 'success' },
-  { value: 'forcedError', label: '誘ったミス', color: 'success' },
-  { value: 'unforcedError', label: '凡ミス', color: 'warning' },
-  { value: 'net', label: 'ネット', color: 'danger' },
-  { value: 'out', label: 'アウト', color: 'danger' },
+  { value: 'winner', label: RESULT_REASON_LABELS.winner, color: 'success' },
+  { value: 'forcedError', label: RESULT_REASON_LABELS.forcedError, color: 'success' },
+  { value: 'unforcedError', label: RESULT_REASON_LABELS.unforcedError, color: 'warning' },
+  { value: 'net', label: RESULT_REASON_LABELS.net, color: 'danger' },
+  { value: 'out', label: RESULT_REASON_LABELS.out, color: 'danger' },
 ];
 
 const RALLY_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, '10+'] as const;

@@ -1,4 +1,4 @@
-import { type PointRecord, type TennisSession } from '@/types';
+import { type PointRecord } from '@/types';
 
 export type CompletePointRecord = PointRecord &
   Required<Pick<PointRecord, 'shotType' | 'resultReason' | 'rallyCount'>>;
@@ -19,6 +19,6 @@ export function isConfirmed(point: PointRecord): boolean {
   return point.reviewStatus !== 'draft';
 }
 
-export function getConfirmedPoints(session: TennisSession): PointRecord[] {
-  return session.points.filter(isConfirmed);
+export function getConfirmedPoints(points: readonly PointRecord[]): PointRecord[] {
+  return points.filter(isConfirmed);
 }

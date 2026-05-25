@@ -6,7 +6,7 @@ import { SHOT_TYPE_META } from '@/constants/shotTypes';
 import { SESSION_TYPE_LABELS, WEAKNESS_LABELS } from '@/constants/labels';
 import { formatSetScoreLine } from '@/services/scoring/matchState';
 import { formatDateTimeLong } from '@/utils/date';
-import { isPointComplete } from '@/utils/pointDetails';
+import { isConfirmed, isPointComplete } from '@/utils/pointDetails';
 
 export function buildSessionReport(
   session: TennisSession,
@@ -15,7 +15,7 @@ export function buildSessionReport(
 ): string {
   const lines: string[] = [];
   const sport = session.sport === 'softTennis' ? 'ソフトテニス' : '硬式テニス';
-  const sessionType = SESSION_TYPE_LABELS[session.sessionType];
+  const sessionType = SESSION_TYPE_LABELS[session.sessionType] ?? session.sessionType;
 
   lines.push('# CourtLens セッションレポート');
   lines.push('');
@@ -48,7 +48,7 @@ export function buildSessionReport(
   }
 
   if (session.points.length > 0) {
-    const confirmedPoints = session.points.filter((p) => p.reviewStatus !== 'draft');
+    const confirmedPoints = session.points.filter(isConfirmed);
     const wonCount = confirmedPoints.filter((p) => p.outcome === 'won').length;
     const lostCount = confirmedPoints.length - wonCount;
     const winRate =
@@ -100,7 +100,7 @@ export function buildSessionReport(
     lines.push('## 弱点分析');
     lines.push('');
     for (const weakness of analysis.weaknesses) {
-      const label = WEAKNESS_LABELS[weakness];
+      const label = WEAKNESS_LABELS[weakness] ?? weakness;
       lines.push(`- ${label}`);
     }
   }

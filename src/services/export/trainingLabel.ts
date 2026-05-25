@@ -1,4 +1,5 @@
 import { type TennisSession } from '@/types/session';
+import { isConfirmed } from '@/utils/pointDetails';
 
 const DEFAULT_EXPORT_FPS = 30;
 
@@ -47,7 +48,7 @@ export function buildTrainingLabel(session: TennisSession): TrainingLabel | null
   if (!session.videoUri) return null;
 
   const rallies: TrainingRally[] = session.points
-    .filter((p) => p.reviewStatus !== 'draft')
+    .filter(isConfirmed)
     .filter(isValidRallyInterval)
     .sort((a, b) => a.rallyStartSec - b.rallyStartSec)
     .map((p) => ({

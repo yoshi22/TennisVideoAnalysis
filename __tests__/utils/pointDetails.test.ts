@@ -28,26 +28,18 @@ describe('isConfirmed', () => {
 
 describe('getConfirmedPoints', () => {
   it('filters out draft points', () => {
-    const session = {
-      id: 's1',
-      points: [
-        makePoint({ id: 'p1' }),
-        makePoint({ id: 'p2', reviewStatus: 'draft' }),
-        makePoint({ id: 'p3', reviewStatus: 'confirmed' }),
-      ],
-    } as Parameters<typeof getConfirmedPoints>[0];
-
-    const result = getConfirmedPoints(session);
+    const points = [
+      makePoint({ id: 'p1' }),
+      makePoint({ id: 'p2', reviewStatus: 'draft' }),
+      makePoint({ id: 'p3', reviewStatus: 'confirmed' }),
+    ];
+    const result = getConfirmedPoints(points);
     expect(result.map((p) => p.id)).toEqual(['p1', 'p3']);
   });
 
   it('returns all points when none are draft', () => {
-    const session = {
-      id: 's1',
-      points: [makePoint({ id: 'p1' }), makePoint({ id: 'p2', reviewStatus: 'confirmed' })],
-    } as Parameters<typeof getConfirmedPoints>[0];
-
-    expect(getConfirmedPoints(session)).toHaveLength(2);
+    const points = [makePoint({ id: 'p1' }), makePoint({ id: 'p2', reviewStatus: 'confirmed' })];
+    expect(getConfirmedPoints(points)).toHaveLength(2);
   });
 });
 

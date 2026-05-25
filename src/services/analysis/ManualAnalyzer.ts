@@ -5,7 +5,7 @@ import {
   type TennisSession,
   type WeaknessPattern,
 } from '@/types';
-import { isPointComplete } from '@/utils/pointDetails';
+import { isConfirmed, isPointComplete } from '@/utils/pointDetails';
 
 import { generateCoachingTips } from './CoachingTipsGenerator';
 import { generatePracticeMenu } from './PracticeMenuGenerator';
@@ -186,7 +186,7 @@ export class ManualAnalyzer implements TennisAnalyzer {
     // ソフトテニス固有の前衛/後衛コーチング（positionベースのTips）はPhase 4以降で実装予定
     const points = session.points;
     // Draft auto-generated points are excluded from all analysis until confirmed by the user.
-    const confirmedPoints = points.filter((p) => p.reviewStatus !== 'draft');
+    const confirmedPoints = points.filter(isConfirmed);
     const completePoints = confirmedPoints.filter(isPointComplete);
 
     // serveStats / winRate は quick ポイントも含む確定済みポイントを対象
