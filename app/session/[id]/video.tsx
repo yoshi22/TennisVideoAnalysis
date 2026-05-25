@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -11,17 +12,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/common';
+import { CourtChart } from '@/components/court';
 import { VideoPlayer, type VideoPlayerRef } from '@/components/video';
+import { OUTCOME_LABELS, RESULT_REASON_LABELS } from '@/constants/labels';
+import { SERVE_RESULT_META } from '@/constants/serveResults';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
-import { OUTCOME_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { consumePendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
-import { useTheme } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
 import { formatSeconds } from '@/utils/formatTime';
 import { generateId } from '@/utils/id';
-import { getPointDetailStatus } from '@/utils/pointDetails';
+import { computeCumulativeScores } from '@/utils/cumulativeScore';
+import { getPointDetailStatus, isConfirmed } from '@/utils/pointDetails';
 
 type TimestampedPoint = PointRecord & { videoTimestamp: number };
 
@@ -44,6 +48,7 @@ export default function SessionVideoScreen() {
   const [undoStack, setUndoStack] = useState<
     { id: string; outcome: PointOutcome; timeSec: number }[]
   >([]);
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
 
   const timestampedPoints = useMemo(
     () =>
@@ -56,12 +61,28 @@ export default function SessionVideoScreen() {
   );
 
   const score = useMemo(() => {
-    const points = session?.points ?? [];
+    const confirmed = (session?.points ?? []).filter(isConfirmed);
     return {
-      won: points.filter((point) => point.outcome === 'won').length,
-      lost: points.filter((point) => point.outcome === 'lost').length,
+      won: confirmed.filter((p) => p.outcome === 'won').length,
+      lost: confirmed.filter((p) => p.outcome === 'lost').length,
     };
   }, [session]);
+
+  const cumulativeScores = useMemo(
+    () => computeCumulativeScores(timestampedPoints.filter(isConfirmed)),
+    [timestampedPoints]
+  );
+
+  const selectedPoint = useMemo(
+    () =>
+      selectedPointId ? (session?.points.find((p) => p.id === selectedPointId) ?? null) : null,
+    [selectedPointId, session]
+  );
+
+  const selectedPointIndex = useMemo(
+    () => (selectedPointId ? timestampedPoints.findIndex((p) => p.id === selectedPointId) : -1),
+    [selectedPointId, timestampedPoints]
+  );
 
   const seekTo = useCallback((seconds: number) => {
     requestedSeekRef.current = seconds;
@@ -129,20 +150,41 @@ export default function SessionVideoScreen() {
     setUndoStack((prev) => prev.slice(0, -1));
   };
 
+  const handleSelectPoint = useCallback(
+    (point: TimestampedPoint) => {
+      setSelectedPointId(point.id);
+      seekTo(point.rallyStartSec ?? point.videoTimestamp);
+    },
+    [seekTo]
+  );
+
+  const handlePrevPoint = useCallback(() => {
+    if (selectedPointIndex > 0) {
+      handleSelectPoint(timestampedPoints[selectedPointIndex - 1]);
+    }
+  }, [selectedPointIndex, timestampedPoints, handleSelectPoint]);
+
+  const handleNextPoint = useCallback(() => {
+    if (selectedPointIndex < timestampedPoints.length - 1) {
+      handleSelectPoint(timestampedPoints[selectedPointIndex + 1]);
+    }
+  }, [selectedPointIndex, timestampedPoints, handleSelectPoint]);
+
   const latestUndoEntry = undoStack[undoStack.length - 1];
 
   const renderPoint = ({ item, index }: ListRenderItemInfo<TimestampedPoint>) => {
     const isWon = item.outcome === 'won';
+    const isSelected = item.id === selectedPointId;
     return (
       <TouchableOpacity
         accessibilityLabel={`${formatSeconds(item.videoTimestamp)}のポイントを動画で確認`}
         accessibilityRole="button"
         activeOpacity={0.82}
-        onPress={() => seekTo(item.videoTimestamp)}
+        onPress={() => handleSelectPoint(item)}
         style={[
           styles.pointRow,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: isSelected ? colors.primaryLo : colors.surface,
             borderBottomColor: colors.border,
             borderBottomWidth:
               index === timestampedPoints.length - 1 ? 0 : StyleSheet.hairlineWidth,
@@ -311,6 +353,117 @@ export default function SessionVideoScreen() {
         ) : null}
       </View>
 
+      {selectedPoint ? (
+        <View
+          style={[
+            styles.detailCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.detailHeader}>
+            <View>
+              <Text style={[styles.detailScoreLabel, { color: colors.textMuted }]}>累積スコア</Text>
+              <Text style={[styles.detailScore, { color: colors.text }]}>
+                {(() => {
+                  const s = cumulativeScores.get(selectedPoint.id);
+                  return s ? `${s.w}–${s.l}` : '–';
+                })()}
+              </Text>
+            </View>
+            <View style={styles.detailMeta}>
+              <Text style={[styles.detailMetaText, { color: colors.text }]} numberOfLines={1}>
+                {selectedPoint.shotType
+                  ? SHOT_TYPE_META[selectedPoint.shotType].label
+                  : '詳細未入力'}
+              </Text>
+              {selectedPoint.resultReason ? (
+                <Text style={[styles.detailMetaSub, { color: colors.textSub }]}>
+                  {RESULT_REASON_LABELS[selectedPoint.resultReason]}
+                </Text>
+              ) : null}
+              {selectedPoint.serveResult ? (
+                <Text style={[styles.detailMetaSub, { color: colors.textSub }]}>
+                  {SERVE_RESULT_META[selectedPoint.serveResult].label}
+                </Text>
+              ) : null}
+            </View>
+            <TouchableOpacity
+              accessibilityLabel="詳細を閉じる"
+              accessibilityRole="button"
+              onPress={() => setSelectedPointId(null)}
+              style={styles.detailClose}
+            >
+              <Ionicons color={colors.textMuted} name="close" size={20} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.detailBody}>
+            {selectedPoint.shotLocation ? (
+              <CourtChart
+                height={160}
+                shotLocations={[selectedPoint.shotLocation]}
+                sport={session.sport}
+                width={100}
+              />
+            ) : (
+              <View style={[styles.detailNoShot, { backgroundColor: colors.bg }]}>
+                <Text style={[styles.detailNoShotText, { color: colors.textMuted }]}>配球なし</Text>
+              </View>
+            )}
+            <View style={styles.detailNav}>
+              <TouchableOpacity
+                accessibilityLabel="前のラリーへ"
+                accessibilityRole="button"
+                disabled={selectedPointIndex <= 0}
+                onPress={handlePrevPoint}
+                style={[
+                  styles.navButton,
+                  {
+                    backgroundColor: selectedPointIndex > 0 ? colors.surfaceAlt : colors.bg,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  color={selectedPointIndex > 0 ? colors.text : colors.textMuted}
+                  name="chevron-back"
+                  size={20}
+                />
+              </TouchableOpacity>
+              <Text style={[styles.detailNavLabel, { color: colors.textMuted }]}>
+                {selectedPointIndex + 1} / {timestampedPoints.length}
+              </Text>
+              <TouchableOpacity
+                accessibilityLabel="次のラリーへ"
+                accessibilityRole="button"
+                disabled={selectedPointIndex >= timestampedPoints.length - 1}
+                onPress={handleNextPoint}
+                style={[
+                  styles.navButton,
+                  {
+                    backgroundColor:
+                      selectedPointIndex < timestampedPoints.length - 1
+                        ? colors.surfaceAlt
+                        : colors.bg,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  color={
+                    selectedPointIndex < timestampedPoints.length - 1
+                      ? colors.text
+                      : colors.textMuted
+                  }
+                  name="chevron-forward"
+                  size={20}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
       {durationSec > 0 ? (
         <View style={styles.timelineSection}>
           <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
@@ -335,7 +488,7 @@ export default function SessionVideoScreen() {
                     accessibilityLabel={`${formatSeconds(point.videoTimestamp)}へ移動`}
                     accessibilityRole="button"
                     activeOpacity={0.82}
-                    onPress={() => seekTo(point.videoTimestamp)}
+                    onPress={() => handleSelectPoint(point)}
                     style={[styles.markerTouch, { left: `${ratio * 100}%` }]}
                   >
                     <View
@@ -352,7 +505,7 @@ export default function SessionVideoScreen() {
                       )}へ移動`}
                       accessibilityRole="button"
                       activeOpacity={0.82}
-                      onPress={() => seekTo(point.rallyStartSec!)}
+                      onPress={() => handleSelectPoint(point)}
                       style={[
                         styles.intervalBar,
                         {
@@ -575,5 +728,81 @@ const styles = StyleSheet.create({
   pointOutcome: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  detailCard: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  detailHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  detailScoreLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  detailScore: {
+    fontSize: 20,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  detailMeta: {
+    flex: 1,
+  },
+  detailMetaText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  detailMetaSub: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  detailClose: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 36,
+    minWidth: 36,
+  },
+  detailBody: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  detailNoShot: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 160,
+    justifyContent: 'center',
+    width: 100,
+  },
+  detailNoShotText: {
+    fontSize: 11,
+  },
+  detailNav: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  navButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
+  },
+  detailNavLabel: {
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '600',
   },
 });
