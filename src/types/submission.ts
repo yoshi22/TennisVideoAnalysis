@@ -27,8 +27,17 @@ export interface SubmissionPointLabel {
 
 /**
  * Closed-beta submission manifest — one per session upload.
- * sha256 is intentionally left empty ('') by the client; the eval ingestion
- * script computes it from the uploaded video file.
+ *
+ * Ingestion transformation (scripts/eval/ingest-user-submission.py):
+ *   submissionId          → videoId  (prefixed as "user-{submissionId}")
+ *   Storage path          → sourceUrl
+ *   video.sha256 ('')     → sourceSha256 (computed via hashlib)
+ *   video.durationSec     → clipDurationSec
+ *   clipOffsetSec = 0     (fixed default)
+ *   rallies               → TrainingRally[] (server/winner/endReason = null)
+ *   points                → tactical/<clipId>.json (training only)
+ *
+ * sha256 is intentionally empty from the client; the ingestion script fills it.
  */
 export interface SubmissionManifest {
   schemaVersion: 1;

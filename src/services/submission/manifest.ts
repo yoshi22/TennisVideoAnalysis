@@ -20,6 +20,7 @@ function isValidRallyInterval(
     Number.isFinite(point.rallyEndSec) &&
     point.rallyStartSec !== undefined &&
     point.rallyEndSec !== undefined &&
+    point.rallyStartSec >= 0 &&
     point.rallyEndSec > point.rallyStartSec
   );
 }

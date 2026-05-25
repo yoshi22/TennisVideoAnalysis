@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Button } from '@/components/common/Button';
@@ -31,7 +31,11 @@ export function SubmissionSheet({ session, onClose, router }: SubmissionSheetPro
   const consented = hasValidConsent(betaState);
 
   const uploader = createUploader();
-  const manifest = consented ? buildSubmissionManifest(session, betaState) : null;
+  // Compute manifest once at mount so submissionId is stable across retries.
+  // If video upload succeeds but manifest upload fails, retry reuses the same
+  // submissionId so the orphan video can be overwritten.
+  const manifestRef = useRef(consented ? buildSubmissionManifest(session, betaState) : null);
+  const manifest = manifestRef.current;
 
   const confirmedPointCount = getConfirmedPoints(session.points).length;
   const rallyCount = manifest?.rallies.length ?? 0;
