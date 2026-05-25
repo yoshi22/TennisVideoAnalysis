@@ -68,15 +68,26 @@ export default function SessionLogScreen() {
   );
   const visiblePoints = filter === 'quick' ? quickPoints : points;
 
-  const ourScore = useMemo(() => points.filter((p) => p.outcome === 'won').length, [points]);
-  const oppScore = useMemo(() => points.filter((p) => p.outcome === 'lost').length, [points]);
+  const confirmedChronologicalPoints = useMemo(
+    () => chronologicalPoints.filter((p) => p.reviewStatus !== 'draft'),
+    [chronologicalPoints]
+  );
+
+  const ourScore = useMemo(
+    () => confirmedChronologicalPoints.filter((p) => p.outcome === 'won').length,
+    [confirmedChronologicalPoints]
+  );
+  const oppScore = useMemo(
+    () => confirmedChronologicalPoints.filter((p) => p.outcome === 'lost').length,
+    [confirmedChronologicalPoints]
+  );
   const matchScore = useMemo(() => {
     if (!session || session.sessionType !== 'match') {
       return null;
     }
 
-    return computeMatchScore(chronologicalPoints, session.sport);
-  }, [chronologicalPoints, session]);
+    return computeMatchScore(confirmedChronologicalPoints, session.sport);
+  }, [confirmedChronologicalPoints, session]);
 
   // Cumulative score per point (chronological)
   const cumulativeScores = useMemo(() => {
@@ -128,7 +139,11 @@ export default function SessionLogScreen() {
 
   const handleCommit = (data: Omit<PointRecord, 'id' | 'sessionId' | 'timestamp'>) => {
     if (editingPoint) {
-      updatePoint(sessionId, editingPoint.id, data);
+      updatePoint(sessionId, editingPoint.id, {
+        ...data,
+        reviewStatus:
+          editingPoint.reviewStatus === 'draft' ? 'confirmed' : editingPoint.reviewStatus,
+      });
       setEditingPoint(undefined);
       setEditingIndex(null);
       setSheetOpen(false);

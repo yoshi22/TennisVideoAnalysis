@@ -59,8 +59,9 @@ function hasLocation(location: ShotLocation | undefined): location is ShotLocati
 }
 
 function calculateShotBreakdown(session: TennisSession): ShotBreakdownItem[] {
+  const confirmedPoints = session.points.filter((p) => p.reviewStatus !== 'draft');
   return SHOT_TYPES.map((shotType) => {
-    const pts = session.points.filter((p) => p.shotType === shotType);
+    const pts = confirmedPoints.filter((p) => p.shotType === shotType);
     return {
       shotType,
       total: pts.length,

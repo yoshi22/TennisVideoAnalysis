@@ -47,6 +47,7 @@ export function buildTrainingLabel(session: TennisSession): TrainingLabel | null
   if (!session.videoUri) return null;
 
   const rallies: TrainingRally[] = session.points
+    .filter((p) => p.reviewStatus !== 'draft')
     .filter(isValidRallyInterval)
     .sort((a, b) => a.rallyStartSec - b.rallyStartSec)
     .map((p) => ({

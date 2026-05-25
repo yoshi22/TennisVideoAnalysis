@@ -80,7 +80,16 @@ export default function CourtCalibrationScreen() {
       return;
     }
 
-    const calibration = buildCalibration(corners, referenceFrame.timeSec, referenceFrame.uri);
+    let calibration;
+    try {
+      calibration = buildCalibration(corners, referenceFrame.timeSec, referenceFrame.uri);
+    } catch {
+      Alert.alert(
+        '較正を確認してください',
+        '四隅の配置が不正です。コーナーが重なっていないか確認してください。'
+      );
+      return;
+    }
     const validationError = validateCalibration(calibration);
 
     if (validationError) {

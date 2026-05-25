@@ -98,11 +98,18 @@ export default function HomeScreen() {
 
   const recent5 = sorted.slice(0, 5);
   const wins = recent5.filter((s) => {
-    const won = s.points.filter((p) => p.outcome === 'won').length;
-    const lost = s.points.filter((p) => p.outcome === 'lost').length;
-    return won > lost;
+    const pts = s.points.filter((p) => p.reviewStatus !== 'draft');
+    if (pts.length === 0) return false;
+    return (
+      pts.filter((p) => p.outcome === 'won').length > pts.filter((p) => p.outcome === 'lost').length
+    );
   }).length;
-  const losses = recent5.length - wins;
+  const losses = recent5.filter((s) => {
+    const pts = s.points.filter((p) => p.reviewStatus !== 'draft');
+    if (pts.length === 0) return false;
+    const won = pts.filter((p) => p.outcome === 'won').length;
+    return pts.filter((p) => p.outcome === 'lost').length > won;
+  }).length;
 
   const greeting = profile?.name ? `こんにちは、${profile.name}さん` : 'こんにちは';
 

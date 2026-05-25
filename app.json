@@ -24,7 +24,7 @@
         "NSPhotoLibraryUsageDescription": "撮影済みの動画をライブラリから選択するために使用します",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "2"
+      "buildNumber": "3"
     },
     "android": {
       "adaptiveIcon": {

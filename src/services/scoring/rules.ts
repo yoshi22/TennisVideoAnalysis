@@ -129,13 +129,7 @@ export function applyRules(
     suggestedShotType: isServe ? 'serve' : 'forehand',
     suggestedResultReason: resultReason,
     suggestedRallyCount: Math.max(0, rallyCount - 1),
-    suggestedServeResult: isServe
-      ? outcome === 'won'
-        ? serveAttempt === 1
-          ? 'firstIn'
-          : 'secondIn'
-        : 'doubleFault'
-      : undefined,
+    suggestedServeResult: isServe ? (serveAttempt === 1 ? 'firstIn' : 'secondIn') : undefined,
     videoTimestamp: pointTimeSec,
     diagnostics,
   };

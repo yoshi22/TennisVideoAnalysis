@@ -78,4 +78,48 @@ describe('applyRules', () => {
     });
     expect(result).toBeNull();
   });
+
+  it('1st serve in, player wins rally → serveResult is firstIn (not doubleFault)', () => {
+    const bounces = [
+      makeBounce(0.5, 0.2, 0.5), // serve lands in opponent's box
+      makeBounce(0.5, 0.2, 1.0), // opponent's side again → won
+    ];
+    const result = applyRules(bounces, 2.0, {
+      playerSide: PLAYER_SIDE,
+      isServe: true,
+      serveAttempt: 1,
+    });
+    expect(result?.suggestedOutcome).toBe('won');
+    expect(result?.suggestedServeResult).toBe('firstIn');
+  });
+
+  it('1st serve in, player loses rally → serveResult is firstIn (not doubleFault)', () => {
+    const bounces = [
+      makeBounce(0.5, 0.2, 0.5), // serve in
+      makeBounce(0.5, 0.8, 1.0), // player's side
+      makeBounce(0.5, 0.75, 1.5), // player's side again → lost
+    ];
+    const result = applyRules(bounces, 2.0, {
+      playerSide: PLAYER_SIDE,
+      isServe: true,
+      serveAttempt: 1,
+    });
+    expect(result?.suggestedOutcome).toBe('lost');
+    expect(result?.suggestedServeResult).toBe('firstIn');
+  });
+
+  it('2nd serve in, player loses rally → serveResult is secondIn (not doubleFault)', () => {
+    const bounces = [
+      makeBounce(0.5, 0.2, 0.5), // 2nd serve in
+      makeBounce(0.5, 0.8, 1.0), // player's side
+      makeBounce(0.5, 0.75, 1.5), // player's side again → lost
+    ];
+    const result = applyRules(bounces, 2.0, {
+      playerSide: PLAYER_SIDE,
+      isServe: true,
+      serveAttempt: 2,
+    });
+    expect(result?.suggestedOutcome).toBe('lost');
+    expect(result?.suggestedServeResult).toBe('secondIn');
+  });
 });

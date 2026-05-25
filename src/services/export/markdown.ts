@@ -82,10 +82,12 @@ export function buildSessionReport(
   }
 
   if (session.points.length > 0) {
-    const wonCount = session.points.filter((p) => p.outcome === 'won').length;
-    const lostCount = session.points.length - wonCount;
-    const winRate = ((wonCount / session.points.length) * 100).toFixed(1);
-    const completePoints = session.points.filter(isPointComplete);
+    const confirmedPoints = session.points.filter((p) => p.reviewStatus !== 'draft');
+    const wonCount = confirmedPoints.filter((p) => p.outcome === 'won').length;
+    const lostCount = confirmedPoints.length - wonCount;
+    const winRate =
+      confirmedPoints.length > 0 ? ((wonCount / confirmedPoints.length) * 100).toFixed(1) : '0.0';
+    const completePoints = confirmedPoints.filter(isPointComplete);
     const quickCount = session.points.length - completePoints.length;
 
     lines.push('');
