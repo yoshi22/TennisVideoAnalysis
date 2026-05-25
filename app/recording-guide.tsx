@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { type ComponentProps } from 'react';
+import { type ComponentProps, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Line, Rect, Svg } from 'react-native-svg';
@@ -12,6 +12,46 @@ interface TipItem {
   title: string;
   desc: string;
 }
+
+type CategoryKey = 'match' | 'serve';
+
+const CATEGORY_OPTIONS: { key: CategoryKey; label: string }[] = [
+  { key: 'match', label: '試合（固定カメラ）' },
+  { key: 'serve', label: 'サーブ練習' },
+];
+
+const SERVE_TIPS: TipItem[] = [
+  {
+    icon: 'person-outline',
+    title: 'サーバーの後方やや高め',
+    desc: 'フォーム全体（頭上のトス〜インパクト〜フォロースルー）と着地点（サービスコート）が両方画角に収まる位置から撮影します。',
+  },
+  {
+    icon: 'arrow-up-circle-outline',
+    title: '高さを確保する',
+    desc: '三脚 2〜3m 程度の高さが目安。サービスコート全体とボールの軌跡が見えるようにしてください。',
+  },
+  {
+    icon: 'timer-outline',
+    title: '1 本ごとに間を空ける',
+    desc: '各サーブの動作が分離して録画されるよう、次のサーブまで 2〜3 秒の間隔を空けてください。',
+  },
+  {
+    icon: 'flag-outline',
+    title: '的・ターゲットを明示',
+    desc: '左右や奥手前の狙いを区別するため、コーン・マーカーなどで目標を置くとラベル品質が向上します。',
+  },
+  {
+    icon: 'phone-landscape-outline',
+    title: '横向きで撮影',
+    desc: '縦向きはコート幅が収まりにくいため推奨しません。',
+  },
+  {
+    icon: 'speedometer-outline',
+    title: '60fps・1080p 以上推奨',
+    desc: 'ボールの追跡精度が向上します。',
+  },
+];
 
 const TIPS: TipItem[] = [
   {
@@ -74,9 +114,43 @@ const CV_TIPS: TipItem[] = [
   },
 ];
 
+function TipGroup({
+  tips,
+  colors,
+}: {
+  tips: TipItem[];
+  colors: ReturnType<typeof useTheme>['colors'];
+}) {
+  return (
+    <View
+      style={[styles.tipGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}
+    >
+      {tips.map((tip, index) => (
+        <View
+          key={tip.title}
+          style={[
+            styles.tipRow,
+            {
+              borderBottomColor: colors.border,
+              borderBottomWidth: index === tips.length - 1 ? 0 : StyleSheet.hairlineWidth,
+            },
+          ]}
+        >
+          <Ionicons color={colors.primary} name={tip.icon} size={22} style={styles.tipIcon} />
+          <View style={styles.tipTextWrap}>
+            <Text style={[styles.tipTitle, { color: colors.text }]}>{tip.title}</Text>
+            <Text style={[styles.tipDesc, { color: colors.textSub }]}>{tip.desc}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function RecordingGuideScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const [category, setCategory] = useState<CategoryKey>('match');
 
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -102,90 +176,83 @@ export default function RecordingGuideScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.diagramWrap}>
-          <Svg height={140} viewBox="0 0 220 140" width={220}>
-            <Rect
-              fill={colors.primaryLo}
-              height={100}
-              stroke={colors.primary}
-              strokeWidth={2}
-              width={200}
-              x={10}
-              y={20}
-            />
-            <Line stroke={colors.primary} strokeWidth={2} x1={10} x2={210} y1={70} y2={70} />
-            <Line stroke={colors.primary} strokeWidth={1} x1={85} x2={85} y1={20} y2={120} />
-            <Line stroke={colors.primary} strokeWidth={1} x1={135} x2={135} y1={20} y2={120} />
-            <Rect fill={colors.primary} height={12} rx={3} width={30} x={95} y={128} />
-          </Svg>
-          <Text style={[styles.diagramLabel, { color: colors.textMuted }]}>カメラ位置</Text>
+        {/* Category selector */}
+        <View style={[styles.categoryRow, { borderColor: colors.border }]}>
+          {CATEGORY_OPTIONS.map((opt) => {
+            const active = category === opt.key;
+            return (
+              <TouchableOpacity
+                accessibilityLabel={opt.label}
+                accessibilityRole="button"
+                activeOpacity={0.82}
+                key={opt.key}
+                onPress={() => setCategory(opt.key)}
+                style={[
+                  styles.categoryTab,
+                  {
+                    backgroundColor: active ? colors.primary : colors.surface,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.categoryTabText,
+                    { color: active ? colors.surface : colors.textSub },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        <Text style={[styles.groupLabel, { color: colors.textMuted }]}>基本撮影条件</Text>
-        <View
-          style={[
-            styles.tipGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          {TIPS.map((tip, index) => (
-            <View
-              key={tip.title}
-              style={[
-                styles.tipRow,
-                {
-                  borderBottomColor: colors.border,
-                  borderBottomWidth: index === TIPS.length - 1 ? 0 : StyleSheet.hairlineWidth,
-                },
-              ]}
-            >
-              <Ionicons color={colors.primary} name={tip.icon} size={22} style={styles.tipIcon} />
-              <View style={styles.tipTextWrap}>
-                <Text style={[styles.tipTitle, { color: colors.text }]}>{tip.title}</Text>
-                <Text style={[styles.tipDesc, { color: colors.textSub }]}>{tip.desc}</Text>
-              </View>
+        {category === 'match' ? (
+          <>
+            <View style={styles.diagramWrap}>
+              <Svg height={140} viewBox="0 0 220 140" width={220}>
+                <Rect
+                  fill={colors.primaryLo}
+                  height={100}
+                  stroke={colors.primary}
+                  strokeWidth={2}
+                  width={200}
+                  x={10}
+                  y={20}
+                />
+                <Line stroke={colors.primary} strokeWidth={2} x1={10} x2={210} y1={70} y2={70} />
+                <Line stroke={colors.primary} strokeWidth={1} x1={85} x2={85} y1={20} y2={120} />
+                <Line stroke={colors.primary} strokeWidth={1} x1={135} x2={135} y1={20} y2={120} />
+                <Rect fill={colors.primary} height={12} rx={3} width={30} x={95} y={128} />
+              </Svg>
+              <Text style={[styles.diagramLabel, { color: colors.textMuted }]}>
+                カメラ位置（ベースライン後方中央）
+              </Text>
             </View>
-          ))}
-        </View>
 
-        <Text style={[styles.groupLabel, { color: colors.textMuted }]}>
-          CV 機能（コート較正・ボール追跡・速度推定）
-        </Text>
-        <View
-          style={[
-            styles.tipGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          {CV_TIPS.map((tip, index) => (
-            <View
-              key={tip.title}
-              style={[
-                styles.tipRow,
-                {
-                  borderBottomColor: colors.border,
-                  borderBottomWidth: index === CV_TIPS.length - 1 ? 0 : StyleSheet.hairlineWidth,
-                },
-              ]}
-            >
-              <Ionicons color={colors.primary} name={tip.icon} size={22} style={styles.tipIcon} />
-              <View style={styles.tipTextWrap}>
-                <Text style={[styles.tipTitle, { color: colors.text }]}>{tip.title}</Text>
-                <Text style={[styles.tipDesc, { color: colors.textSub }]}>{tip.desc}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+            <Text style={[styles.groupLabel, { color: colors.textMuted }]}>基本撮影条件</Text>
+            <TipGroup colors={colors} tips={TIPS} />
+
+            <Text style={[styles.groupLabel, { color: colors.textMuted }]}>
+              CV 機能（コート較正・ボール追跡・速度推定）
+            </Text>
+            <TipGroup colors={colors} tips={CV_TIPS} />
+          </>
+        ) : (
+          <>
+            <Text style={[styles.groupLabel, { color: colors.textMuted }]}>
+              サーブ練習の撮影条件
+            </Text>
+            <TipGroup colors={colors} tips={SERVE_TIPS} />
+          </>
+        )}
 
         <View style={[styles.noteBox, { backgroundColor: colors.primaryLo }]}>
           <Text style={[styles.noteText, { color: colors.primary }]}>
-            これらの撮影条件は、自動ボール追跡・コート較正・速度推定・自動採点の分析精度に直結します。初回セッションは較正から始めてください。
+            {category === 'match'
+              ? 'これらの撮影条件は、自動ボール追跡・コート較正・速度推定・自動採点の分析精度に直結します。初回セッションは較正から始めてください。'
+              : 'サーブ練習の動画は、各サーブの区間を個別に記録することでラベル品質が向上します。得失点記録時に「動画時刻」を設定してください。'}
           </Text>
         </View>
       </ScrollView>
@@ -263,5 +330,27 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 12,
     lineHeight: 20,
+  },
+  categoryRow: {
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: spacing.md,
+    padding: 4,
+  },
+  categoryTab: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 40,
+    paddingHorizontal: 8,
+  },
+  categoryTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, SegmentedControl, Tag } from '@/components/common';
+import { hasValidConsent, useBetaStore } from '@/stores/betaStore';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { spacing, typography, useTheme, type ColorTokens } from '@/theme';
@@ -175,6 +176,12 @@ export default function SettingsScreen() {
   const setProfile = usePlayerStore((state) => state.setProfile);
   const updateProfile = usePlayerStore((state) => state.updateProfile);
   const clearAll = useSessionStore((state) => state.clearAll);
+  const betaState = useBetaStore((s) => ({
+    participantId: s.participantId,
+    consentVersion: s.consentVersion,
+  }));
+  const revokeConsent = useBetaStore((s) => s.revokeConsent);
+  const betaConsented = hasValidConsent(betaState);
   const [name, setName] = useState(profile?.name ?? '');
   const [sport, setSport] = useState<SportType>(profile?.sport ?? 'tennis');
   const [dominantHand, setDominantHand] = useState<PlayerProfile['dominantHand']>(
@@ -417,6 +424,71 @@ export default function SettingsScreen() {
               }}
               showChevron
             />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionLabel colors={colors}>クローズドベータ</SectionLabel>
+          <View
+            style={[
+              styles.groupCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            {betaConsented ? (
+              <>
+                <SettingsRow
+                  colors={colors}
+                  label="参加中"
+                  showChevron={false}
+                  value={`ID: ${betaState.participantId.slice(0, 8)}…`}
+                />
+                <SettingsRow
+                  colors={colors}
+                  label="撮影のコツ"
+                  onPress={() => {
+                    pushRoute(router, '/recording-guide');
+                  }}
+                  showChevron
+                />
+                <SettingsRow
+                  colors={colors}
+                  danger
+                  isLast
+                  label="参加をやめる"
+                  onPress={() => {
+                    Alert.alert(
+                      '参加をやめますか？',
+                      '同意を取り消します。データは端末に残ります。',
+                      [
+                        { text: 'キャンセル', style: 'cancel' },
+                        { text: 'やめる', style: 'destructive', onPress: revokeConsent },
+                      ]
+                    );
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <SettingsRow
+                  colors={colors}
+                  label="ベータに参加して貢献する"
+                  onPress={() => {
+                    pushRoute(router, '/beta-consent');
+                  }}
+                  showChevron
+                />
+                <SettingsRow
+                  colors={colors}
+                  isLast
+                  label="撮影のコツ"
+                  onPress={() => {
+                    pushRoute(router, '/recording-guide');
+                  }}
+                  showChevron
+                />
+              </>
+            )}
           </View>
         </View>
 
