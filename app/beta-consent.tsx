@@ -32,7 +32,7 @@ const COLLECTION_ITEMS: CollectionItem[] = [
   {
     icon: 'phone-portrait-outline',
     title: '匿名 ID・アプリ情報',
-    desc: 'ランダム生成された匿名 UUID とアプリバージョン。氏名・位置情報・連絡先は収集しません。',
+    desc: 'ランダム生成された参加者 ID（端末識別不可）とアプリバージョン。氏名・連絡先は収集しません。',
   },
 ];
 
@@ -110,7 +110,7 @@ export default function BetaConsentScreen() {
         <View style={[styles.noteBox, { backgroundColor: colors.primaryLo }]}>
           <Text style={[styles.noteText, { color: colors.primary }]}>
             収集したデータは解析モデルの改善にのみ使用します。第三者への提供・販売は行いません。
-            参加はいつでも設定画面からやめることができます。
+            参加をやめると以降のデータ提供が停止されます。過去に提出したデータはモデル改善のため保持されます。
           </Text>
         </View>
 

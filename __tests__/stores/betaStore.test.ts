@@ -41,9 +41,22 @@ describe('useBetaStore', () => {
     expect(state.participantId).toBe(idBefore);
   });
 
-  it('hasValidConsent returns true only when consentVersion matches CONSENT_VERSION', () => {
-    expect(hasValidConsent({ consentVersion: undefined })).toBe(false);
-    expect(hasValidConsent({ consentVersion: CONSENT_VERSION - 1 })).toBe(false);
-    expect(hasValidConsent({ consentVersion: CONSENT_VERSION })).toBe(true);
+  it('hasValidConsent requires matching version AND valid acceptedAt', () => {
+    const validAt = new Date().toISOString();
+    expect(hasValidConsent({ consentVersion: undefined, consentAcceptedAt: undefined })).toBe(
+      false
+    );
+    expect(
+      hasValidConsent({ consentVersion: CONSENT_VERSION - 1, consentAcceptedAt: validAt })
+    ).toBe(false);
+    expect(hasValidConsent({ consentVersion: CONSENT_VERSION, consentAcceptedAt: undefined })).toBe(
+      false
+    );
+    expect(
+      hasValidConsent({ consentVersion: CONSENT_VERSION, consentAcceptedAt: 'not-a-date' })
+    ).toBe(false);
+    expect(hasValidConsent({ consentVersion: CONSENT_VERSION, consentAcceptedAt: validAt })).toBe(
+      true
+    );
   });
 });

@@ -33,7 +33,7 @@ export interface SubmissionPointLabel {
 export interface SubmissionManifest {
   schemaVersion: 1;
   submissionId: string;
-  /** Anonymized participant UUID generated once and persisted. */
+  /** Anonymous participant ID (NanoID-compatible random string) generated once and persisted. */
   participantId: string;
   /** App version string from Constants.expoConfig.version. */
   appVersion: string;

@@ -179,6 +179,7 @@ export default function SettingsScreen() {
   const betaState = useBetaStore((s) => ({
     participantId: s.participantId,
     consentVersion: s.consentVersion,
+    consentAcceptedAt: s.consentAcceptedAt,
   }));
   const revokeConsent = useBetaStore((s) => s.revokeConsent);
   const betaConsented = hasValidConsent(betaState);
@@ -459,7 +460,7 @@ export default function SettingsScreen() {
                   onPress={() => {
                     Alert.alert(
                       '参加をやめますか？',
-                      '同意を取り消します。データは端末に残ります。',
+                      '同意を取り消します。過去に提出したデータはモデル改善のため保持されます。',
                       [
                         { text: 'キャンセル', style: 'cancel' },
                         { text: 'やめる', style: 'destructive', onPress: revokeConsent },

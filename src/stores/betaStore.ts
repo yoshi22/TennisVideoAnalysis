@@ -38,6 +38,12 @@ export const useBetaStore = create<BetaState>()(
   )
 );
 
-export function hasValidConsent(state: Pick<BetaState, 'consentVersion'>): boolean {
-  return state.consentVersion === CONSENT_VERSION;
+export function hasValidConsent(
+  state: Pick<BetaState, 'consentVersion' | 'consentAcceptedAt'>
+): boolean {
+  return (
+    state.consentVersion === CONSENT_VERSION &&
+    typeof state.consentAcceptedAt === 'string' &&
+    !Number.isNaN(new Date(state.consentAcceptedAt).getTime())
+  );
 }
