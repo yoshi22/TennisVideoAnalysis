@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "videoId": "yt-ymlqebptzgo-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=YMlqeBptZgo",
+  "sourceSha256": "",
+  "fps": 30,
+  "clipOffsetSec": 0,
+  "clipDurationSec": 600,
+  "note": "DETECTOR-ASSISTED DRAFT — generated from run \"draft-yt-ymlqebptzgo-clip1\" (blob detector, confidence≥0). This file must be manually reviewed and corrected before use as ground truth. Adjust rally boundaries to ±1–2s accuracy by watching the source video. Remove _DRAFT from the filename when the labels are accurate. TRAINING USE ONLY: held-out test clips must be labeled without detector pre-fill.",
+  "rallies": [
+    {
+      "startSec": 7.5,
+      "endSec": 20,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 31.5,
+      "endSec": 44,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 51.2,
+      "endSec": 63,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 80.2,
+      "endSec": 102.4,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 111.6,
+      "endSec": 133.1,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 150.9,
+      "endSec": 162.8,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 172.6,
+      "endSec": 189.8,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 191.6,
+      "endSec": 218.8,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 224.7,
+      "endSec": 254.2,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 273.4,
+      "endSec": 288.9,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 291,
+      "endSec": 320.5,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 327.1,
+      "endSec": 356.6,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 361.7,
+      "endSec": 391.2,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 397.1,
+      "endSec": 424.9,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 442.8,
+      "endSec": 472.3,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 504.8,
+      "endSec": 529.4,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 531.2,
+      "endSec": 547.7,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 552.2,
+      "endSec": 576.4,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 581.9,
+      "endSec": 600,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    }
+  ]
+}
