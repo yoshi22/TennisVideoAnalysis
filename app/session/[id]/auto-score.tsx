@@ -36,8 +36,9 @@ type ServeMode = 'yes' | 'no';
 type ServeAttemptValue = '1' | '2';
 
 const SLIDER_MIN = 0;
-const SLIDER_MAX = 60;
 const SLIDER_STEP = 0.5;
+/** Low-confidence threshold — windows below this are marked 要確認 in the draft summary */
+const DRAFT_LOW_CONFIDENCE_THRESHOLD = 0.5;
 
 const PLAYER_SIDE_OPTIONS: { label: string; value: PlayerSideValue }[] = [
   { label: '手前', value: 'near' },
@@ -70,6 +71,8 @@ export default function AutoScoreScreen() {
   const [progress, setProgress] = useState(0);
   const [candidates, setCandidates] = useState<AutoPointCandidate[]>([]);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  /** Number of rally windows added as drafts when running without court calibration. null = not in draft-only mode */
+  const [draftCount, setDraftCount] = useState<number | null>(null);
   const [confirmingCandidate, setConfirmingCandidate] = useState<AutoPointCandidate | null>(null);
   const [confirmSheetOpen, setConfirmSheetOpen] = useState(false);
 
@@ -84,6 +87,8 @@ export default function AutoScoreScreen() {
     loadedVideoDurationSec > 0 ? loadedVideoDurationSec : (session?.videoDurationSec ?? 0);
   const canAutoDetect =
     videoStatus === 'readyToPlay' || (Number.isFinite(videoDurationSec) && videoDurationSec > 0);
+  // Dynamic slider max: full video duration (floor to 0.5s grid), minimum 60s fallback
+  const sliderMax = Math.max(60, Math.ceil(videoDurationSec / SLIDER_STEP) * SLIDER_STEP);
 
   useEffect(() => {
     if (session && loadedVideoDurationSec > 0) {
@@ -94,6 +99,7 @@ export default function AutoScoreScreen() {
   const resetCandidates = () => {
     setCandidates([]);
     setHasAnalyzed(false);
+    setDraftCount(null);
   };
 
   const handleStartChange = (value: number) => {
@@ -149,7 +155,6 @@ export default function AutoScoreScreen() {
   const handleAutoDetectBatch = async () => {
     if (
       !session?.videoUri ||
-      !session.courtCalibration ||
       isAnalyzing ||
       !Number.isFinite(videoDurationSec) ||
       videoDurationSec <= 0
@@ -162,6 +167,7 @@ export default function AutoScoreScreen() {
     setProgress(0);
     setCandidates([]);
     setHasAnalyzed(false);
+    setDraftCount(null);
 
     try {
       const windows = await detectRallyWindows({
@@ -170,6 +176,32 @@ export default function AutoScoreScreen() {
         onProgress: (value) => setProgress(Math.max(0, Math.min(0.35, value * 0.35))),
         signal: controller.signal,
       });
+
+      if (!session.courtCalibration) {
+        // No calibration — add rally windows as draft PointRecords directly.
+        // Outcome is a placeholder ('won'); user must correct each draft in the Video tab.
+        for (const win of windows) {
+          const midSec = Math.round(((win.startSec + win.endSec) / 2) * 10) / 10;
+          const point: PointRecord = {
+            id: generateId(),
+            sessionId,
+            timestamp: new Date().toISOString(),
+            outcome: 'won',
+            videoTimestamp: midSec,
+            source: 'auto',
+            confidence: win.confidence,
+            reviewStatus: 'draft',
+            detailStatus: 'quick',
+            rallyStartSec: win.startSec,
+            rallyEndSec: win.endSec,
+          };
+          addPoint(sessionId, point);
+        }
+        setProgress(1);
+        setDraftCount(windows.length);
+        setHasAnalyzed(true);
+        return;
+      }
 
       const results = await analyzeRallyBatch(windows, {
         videoUri: session.videoUri,
@@ -190,10 +222,7 @@ export default function AutoScoreScreen() {
       setCandidates(allCandidates);
       setHasAnalyzed(true);
     } catch {
-      Alert.alert(
-        '一括採点に失敗しました',
-        '動画、撮影範囲、コート較正を確認して、もう一度お試しください。'
-      );
+      Alert.alert('一括採点に失敗しました', '動画、撮影範囲を確認して、もう一度お試しください。');
     } finally {
       setIsAutoDetecting(false);
     }
@@ -316,14 +345,14 @@ export default function AutoScoreScreen() {
               ]}
             >
               <Text style={[styles.calibrationTitle, { color: colors.text }]}>
-                コート較正が必要です
+                コート較正でさらに精度が上がります
               </Text>
               <Text style={[styles.calibrationText, { color: colors.textMuted }]}>
-                動画からポイント候補を生成する前にコート座標を設定してください。
+                較正なしでもラリー区間の下書き生成ができます。較正を設定するとバウンド位置・採点候補も生成されます。
               </Text>
               <Button
                 accessibilityLabel="コート較正を開く"
-                label="コート較正を開く"
+                label="コート較正を設定する（任意）"
                 onPress={() => {
                   router.push(
                     `/session/${session.id}/calibration` as Parameters<typeof router.push>[0]
@@ -345,7 +374,7 @@ export default function AutoScoreScreen() {
             >
               <SecondSlider
                 label="開始"
-                max={SLIDER_MAX}
+                max={sliderMax}
                 min={SLIDER_MIN}
                 onChange={handleStartChange}
                 step={SLIDER_STEP}
@@ -353,7 +382,7 @@ export default function AutoScoreScreen() {
               />
               <SecondSlider
                 label="終了"
-                max={SLIDER_MAX}
+                max={sliderMax}
                 min={SLIDER_MIN}
                 onChange={handleEndChange}
                 step={SLIDER_STEP}
@@ -404,15 +433,13 @@ export default function AutoScoreScreen() {
               ) : null}
 
               <Button
-                accessibilityLabel="自動ラリー検出から一括採点"
-                disabled={
-                  isAnalyzing ||
-                  isAutoDetecting ||
-                  !session.courtCalibration ||
-                  !canAutoDetect ||
-                  videoDurationSec <= 0
+                accessibilityLabel="自動ラリー検出"
+                disabled={isAnalyzing || isAutoDetecting || !canAutoDetect || videoDurationSec <= 0}
+                label={
+                  session.courtCalibration
+                    ? '自動ラリー検出 → 採点候補を生成'
+                    : '自動ラリー検出 → 下書きを追加'
                 }
-                label="自動ラリー検出 → 一括採点"
                 loading={isAutoDetecting}
                 onPress={() => void handleAutoDetectBatch()}
                 size="l"
@@ -420,11 +447,11 @@ export default function AutoScoreScreen() {
               />
 
               <Button
-                accessibilityLabel="解析して採点候補を生成"
+                accessibilityLabel="解析して採点候補を生成（コート較正必須）"
                 disabled={
                   isAnalyzing || isAutoDetecting || !session.courtCalibration || endSec <= startSec
                 }
-                label="解析して採点候補を生成"
+                label="範囲を指定して採点候補を生成（較正必須）"
                 loading={isAnalyzing}
                 onPress={() => void handleAnalyze()}
                 size="l"
@@ -459,17 +486,52 @@ export default function AutoScoreScreen() {
           ) : null}
 
           {hasAnalyzed && candidates.length === 0 && !isAnalyzing && !isAutoDetecting ? (
-            <View
-              style={[
-                styles.card,
-                styles.emptyCandidateCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.emptyCandidateText, { color: colors.textMuted }]}>
-                採点候補がありません。バウンドが検出できませんでした。
-              </Text>
-            </View>
+            draftCount !== null ? (
+              <View
+                style={[
+                  styles.card,
+                  styles.draftSuccessCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                {draftCount > 0 ? (
+                  <>
+                    <Text style={[styles.draftSuccessTitle, { color: colors.text }]}>
+                      {draftCount} 件のラリー区間を下書きとして追加しました
+                    </Text>
+                    <Text style={[styles.draftSuccessText, { color: colors.textMuted }]}>
+                      Video
+                      タブのタイムラインに半透明マーカーで表示されます。各マーカーをタップして得点・失点を確定してください。
+                      {draftCount > 0 &&
+                      session.points.some(
+                        (p) =>
+                          p.source === 'auto' &&
+                          p.reviewStatus === 'draft' &&
+                          (p.confidence ?? 1) < DRAFT_LOW_CONFIDENCE_THRESHOLD
+                      )
+                        ? '\n\n要確認マーカーが含まれています。信頼度が低い区間は慎重に確認してください。'
+                        : ''}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={[styles.emptyCandidateText, { color: colors.textMuted }]}>
+                    ラリー区間が検出できませんでした。動画が固定カメラで撮影されているか確認してください。
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.card,
+                  styles.emptyCandidateCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.emptyCandidateText, { color: colors.textMuted }]}>
+                  採点候補がありません。バウンドが検出できませんでした。
+                </Text>
+              </View>
+            )
           ) : null}
 
           {candidates.length > 0 ? (
@@ -588,6 +650,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  draftSuccessCard: {
+    gap: 10,
+  },
+  draftSuccessTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  draftSuccessText: {
+    fontSize: 13,
+    lineHeight: 20,
   },
   candidateList: {
     gap: 10,

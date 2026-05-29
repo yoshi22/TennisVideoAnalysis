@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -35,6 +35,9 @@ function hasVideoTimestamp(point: PointRecord): point is TimestampedPoint {
 
 export default function SessionVideoScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const push = (path: string) => router.push(path as any);
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
   const deletePoint = useSessionStore((state) => state.deletePoint);
@@ -559,7 +562,22 @@ export default function SessionVideoScreen() {
           </View>
         }
         ListHeaderComponent={
-          <Text style={[styles.listLabel, { color: colors.textMuted }]}>マーカー一覧</Text>
+          <View style={styles.listHeaderRow}>
+            <Text style={[styles.listLabel, { color: colors.textMuted }]}>マーカー一覧</Text>
+            <TouchableOpacity
+              accessibilityLabel="自動ラリー検出で下書きを生成"
+              accessibilityRole="button"
+              activeOpacity={0.82}
+              onPress={() => push(`/session/${sessionId}/auto-score`)}
+              style={[
+                styles.autoDetectButton,
+                { backgroundColor: colors.primaryLo, borderColor: colors.primary },
+              ]}
+            >
+              <Ionicons color={colors.primary} name="sparkles-outline" size={14} />
+              <Text style={[styles.autoDetectText, { color: colors.primary }]}>自動ラリー検出</Text>
+            </TouchableOpacity>
+          </View>
         }
         contentContainerStyle={styles.listContent}
         data={timestampedPoints}
@@ -710,11 +728,29 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     paddingHorizontal: 20,
   },
+  listHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   listLabel: {
     fontSize: 11,
     fontWeight: '700',
-    marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  autoDetectButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  autoDetectText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   emptyPoints: {
     minHeight: 220,
