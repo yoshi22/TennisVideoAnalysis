@@ -40,6 +40,7 @@ export default function SessionVideoScreen() {
   const push = (path: string) => router.push(path as any);
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
+  const updatePoint = useSessionStore((state) => state.updatePoint);
   const deletePoint = useSessionStore((state) => state.deletePoint);
   const setVideoDuration = useSessionStore((state) => state.setVideoDuration);
   const playerRef = useRef<VideoPlayerRef>(null);
@@ -396,6 +397,63 @@ export default function SessionVideoScreen() {
                   </View>
                 ) : null}
               </View>
+              {/* Outcome toggle for auto-drafted points — lets user correct the placeholder 'won' */}
+              {selectedPoint.source === 'auto' && selectedPoint.reviewStatus === 'draft' ? (
+                <View style={styles.draftOutcomeToggleRow}>
+                  <TouchableOpacity
+                    accessibilityLabel="得点に変更"
+                    accessibilityRole="button"
+                    activeOpacity={0.82}
+                    onPress={() => updatePoint(sessionId, selectedPoint.id, { outcome: 'won' })}
+                    style={[
+                      styles.draftOutcomeToggleBtn,
+                      {
+                        backgroundColor:
+                          selectedPoint.outcome === 'won' ? colors.primary : colors.surfaceAlt,
+                        borderColor:
+                          selectedPoint.outcome === 'won' ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.draftOutcomeToggleText,
+                        {
+                          color: selectedPoint.outcome === 'won' ? colors.surface : colors.textSub,
+                        },
+                      ]}
+                    >
+                      得点
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityLabel="失点に変更"
+                    accessibilityRole="button"
+                    activeOpacity={0.82}
+                    onPress={() => updatePoint(sessionId, selectedPoint.id, { outcome: 'lost' })}
+                    style={[
+                      styles.draftOutcomeToggleBtn,
+                      {
+                        backgroundColor:
+                          selectedPoint.outcome === 'lost' ? colors.danger : colors.surfaceAlt,
+                        borderColor:
+                          selectedPoint.outcome === 'lost' ? colors.danger : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.draftOutcomeToggleText,
+                        {
+                          color: selectedPoint.outcome === 'lost' ? colors.surface : colors.textSub,
+                        },
+                      ]}
+                    >
+                      失点
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <Text style={[styles.detailMetaText, { color: colors.text }]} numberOfLines={1}>
                 {selectedPoint.shotType
                   ? SHOT_TYPE_META[selectedPoint.shotType].label
@@ -891,5 +949,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
+  },
+  draftOutcomeToggleRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  draftOutcomeToggleBtn: {
+    alignItems: 'center',
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    minHeight: 32,
+    paddingHorizontal: 12,
+  },
+  draftOutcomeToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
