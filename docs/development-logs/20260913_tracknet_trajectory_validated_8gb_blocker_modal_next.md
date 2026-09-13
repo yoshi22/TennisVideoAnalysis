@@ -212,3 +212,25 @@ cloud 解析APIは完成。次はアプリ側: ショットJSON→`PointRecord`(
 
 **残る幾何限界(正直に明記)**: 打点速度の 160-200km/h 帯(約2割)は**単発ジッタではなく系統誤差**。地面平面ホモグラフィは**空中のボールを実際より遠くに射影**(カメラ手前ほど大)→ 空中球の絶対速度を過大評価する。統計では消せない。→ 出力 JSON の caveats に明記し、アプリ診断も「速度(目安)」表記に変更。**根本解は (a) 各ユーザーの精密較正 +(b) 将来のボール高さ(3D)推定**。現状は相対指標として提示するのが誠実。
 - 変更をボリュームへ反映済(cloud endpoint も改善版 pipeline を使用)。type-check/lint/self-test 通過。
+
+## 追記14(2026-09-14): 動画解析→ラリー履歴(コース)永続化 + スコア自動下書き(確認式)
+
+「手動でなく動画からスコア/ラリー履歴(コース等)を記録したい」への実装。**解析は既存クラウド基盤で生成済み**なので、不足していた「永続化・閲覧・勝敗の扱い」を追加。コミット `51aff3e`。
+
+**設計判断**:
+- ラリー履歴(コース/速度/FH-BH/バウンド)は動画から**確実に記録可能** → 型+保存+閲覧UIを追加。
+- スコア**完全自動**は単眼・近似較正では勝敗判定(イン/アウト・返球可否)の信頼度が低い → **「自動推定→1タップ確認」**を採用(補正フライホイールと同思想。確認データ蓄積で将来自動化)。
+
+**実装**:
+- 型 `src/types/rallyAnalysis.ts`:`RallyAnalysis/RallyRecord/ShotRecord`。`session.rallyAnalyses[]` に永続化(`BaseSession` へ追加)。ショット毎に stroke(FH/BH/serve)・コース(zone+コート正規化座標)・速度(目安)・バウンド位置。
+- ロジック `src/services/analysis/rallyHistory.ts`:`cloudResultToRallyAnalysis`(shot-events→履歴)、`inferRallyOutcome`(最後のバウンドのイン/アウト×プレイヤー側→低信頼の勝敗推定, confidence≤0.45)。
+- ストア `sessionStore`:`addRallyAnalysis` + `confirmRallyOutcome`(確認で**確認済み自動 `PointRecord` を upsert / unknown で削除** → 既存スコア・スタッツ計算に合流)。
+- 画面 `app/session/[id]/rally-history.tsx`:サマリ + バウンドのコースマップ(`CourtHeatmap`)+ ラリー別カード(ショット一覧・コース・速度・勝ち/負け/未定トグル)。auto-score のクラウド経路は解析後にこの画面へ遷移。
+- `cloudAnalyze.ts` に `CloudBounce` 型を追加(bounces を型付け)。
+
+**検証**:
+- ユニット:`rallyHistory`(マッパー+勝敗推定)、`sessionStore.rallyAnalysis`(確認→ポイント生成/更新/削除)。**全体 147 テスト通過**、type-check/lint OK。
+- 実機シミュレーター(Appium/testID 自動操作):s001 にサンプル `rallyAnalyses` を注入 → rally-history 描画(コースマップ+ラリーカード)確認 → 「負け」タップ → ラリー1が「確認済/負け」に更新 → AsyncStorage に確認済みポイント(outcome:lost, rallyCount:3)生成を実証。
+- 検証用の一時 Redirect は revert 済(コミットに未混入)。
+
+**残り**:実機E2E(実 Supabase 設定+実動画)。実ラリーが検出される動画では ラリー検出→クラウド解析→本履歴画面→確認→スコア化 まで一気通貫。
