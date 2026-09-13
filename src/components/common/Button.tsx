@@ -24,6 +24,7 @@ interface ButtonProps {
   full?: boolean;
   style?: ViewStyle;
   accessibilityLabel?: string;
+  testID?: string;
   tone?: Tone;
 }
 
@@ -38,6 +39,7 @@ export function Button({
   full,
   style,
   accessibilityLabel,
+  testID,
   tone = 'default',
 }: ButtonProps) {
   const { colors } = useTheme();
@@ -75,6 +77,7 @@ export function Button({
 
   return (
     <TouchableOpacity
+      testID={testID}
       accessibilityLabel={accessibilityLabel ?? (typeof label === 'string' ? label : undefined)}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading === true }}

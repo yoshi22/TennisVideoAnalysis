@@ -525,6 +525,7 @@ export default function AutoScoreScreen() {
               ) : null}
 
               <Button
+                testID="autoscore-detect-batch"
                 accessibilityLabel="自動ラリー検出"
                 disabled={
                   isAnalyzing ||
@@ -545,6 +546,7 @@ export default function AutoScoreScreen() {
               />
 
               <Button
+                testID="autoscore-analyze-range"
                 accessibilityLabel="解析して採点候補を生成（コート較正必須）"
                 disabled={
                   isAnalyzing ||
@@ -561,6 +563,7 @@ export default function AutoScoreScreen() {
 
               {CLOUD_ANALYSIS_AVAILABLE ? (
                 <Button
+                  testID="autoscore-cloud-analyze"
                   accessibilityLabel="クラウドでショット解析（較正必須）"
                   disabled={
                     isAnalyzing ||
