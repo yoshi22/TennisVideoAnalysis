@@ -1,6 +1,7 @@
 import { type CourtCalibration } from './court';
 import { type MatchFormat, type SoftTennisPosition } from './player';
 import { type PointRecord } from './point';
+import { type RallyAnalysis } from './rallyAnalysis';
 
 export type SessionType =
   | 'match'
@@ -21,6 +22,8 @@ interface BaseSession {
   videoDurationSec?: number;
   courtCalibration?: CourtCalibration;
   points: PointRecord[];
+  /** Rally histories extracted from video analysis (newest last). */
+  rallyAnalyses?: RallyAnalysis[];
   note?: string;
   // ISO 8601
   startedAt: string;

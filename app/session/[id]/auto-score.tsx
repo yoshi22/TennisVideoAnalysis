@@ -29,10 +29,10 @@ import {
   runCloudAnalysis,
   type CourtCornersNormalized,
 } from '@/services/analysis/cloudAnalyze';
+import { cloudResultToRallyAnalysis } from '@/services/analysis/rallyHistory';
 import { isVideoUploadConfigured, uploadVideoForAnalysis } from '@/services/analysis/videoUpload';
 import { analyzeRally, analyzeRallyBatch, detectRallyWindows } from '@/services/ball';
 import { proposeCandidates } from '@/services/scoring';
-import { cloudResultToCandidates } from '@/services/scoring/cloudCandidates';
 import { useSessionStore } from '@/stores';
 import { useTheme } from '@/theme';
 import { type AutoPointCandidate, type PointRecord } from '@/types';
@@ -69,6 +69,7 @@ export default function AutoScoreScreen() {
   const router = useRouter();
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
+  const addRallyAnalysis = useSessionStore((state) => state.addRallyAnalysis);
   const setVideoDuration = useSessionStore((state) => state.setVideoDuration);
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(10);
@@ -306,9 +307,15 @@ export default function AutoScoreScreen() {
         }
       );
 
+      const analysis = cloudResultToRallyAnalysis(result, { playerSide });
+      addRallyAnalysis(sessionId, analysis);
       setProgress(1);
-      setCandidates(cloudResultToCandidates(result));
       setHasAnalyzed(true);
+      if (analysis.rallies.length > 0) {
+        router.push(`/session/${sessionId}/rally-history` as never);
+      } else {
+        Alert.alert('解析結果が空でした', 'ラリーが検出できませんでした。動画を確認してください。');
+      }
     } catch (error) {
       Alert.alert(
         'クラウド解析に失敗しました',

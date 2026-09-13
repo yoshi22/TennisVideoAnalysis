@@ -59,10 +59,20 @@ export interface CloudContact {
   speed_kmh?: number | null;
 }
 
+export interface CloudBounce {
+  type?: 'bounce';
+  rally: number;
+  frameIdx: number;
+  timeSec: number;
+  court_xy_m?: [number, number];
+  zone?: CloudShotZone;
+  speed_kmh?: number | null;
+}
+
 export interface CloudRally {
   rally: number;
   n_points: number;
-  bounces: unknown[];
+  bounces: CloudBounce[];
   contacts: CloudContact[];
   p95_kmh?: number | null;
   median_kmh?: number | null;
