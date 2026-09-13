@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import urllib.request
 from collections import deque
 from dataclasses import dataclass
@@ -353,15 +354,45 @@ def write_frame_dir_tracks(
 def video_stats(path: Path) -> tuple[float, int | None]:
     cap = cv2.VideoCapture(str(path))
     try:
-        if not cap.isOpened():
-            raise FileNotFoundError(f"Could not open video: {path}")
-        fps = float(cap.get(cv2.CAP_PROP_FPS))
-        if fps <= 0:
-            fps = 30.0
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        return fps, frame_count if frame_count > 0 else None
+        if cap.isOpened():
+            fps = float(cap.get(cv2.CAP_PROP_FPS))
+            if fps <= 0:
+                fps = 30.0
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            return fps, frame_count if frame_count > 0 else None
     finally:
         cap.release()
+
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=avg_frame_rate,nb_frames,duration",
+        "-of",
+        "json",
+        str(path),
+    ]
+    completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if completed.returncode != 0:
+        raise FileNotFoundError(f"Could not open video: {path}\n{completed.stderr.strip()}")
+    data = json.loads(completed.stdout)
+    stream = data.get("streams", [{}])[0]
+    fps_text = str(stream.get("avg_frame_rate", "30/1"))
+    if "/" in fps_text:
+        numerator, denominator = fps_text.split("/", 1)
+        fps = float(numerator) / float(denominator or 1)
+    else:
+        fps = float(fps_text)
+    if fps <= 0:
+        fps = 30.0
+    frame_count_raw = stream.get("nb_frames")
+    frame_count = int(frame_count_raw) if str(frame_count_raw).isdigit() else None
+    if frame_count is None and stream.get("duration") is not None:
+        frame_count = int(round(float(stream["duration"]) * fps))
+    return fps, frame_count
 
 
 def expected_video_outputs(total_source_frames: int | None, stride: int, max_frames: int | None) -> int | None:
@@ -386,7 +417,18 @@ def write_video_tracks(
 ) -> int:
     cap = cv2.VideoCapture(str(source.path))
     if not cap.isOpened():
-        raise FileNotFoundError(f"Could not open video: {source.path}")
+        return write_ffmpeg_video_tracks(
+            clip_id,
+            source,
+            jsonl_path,
+            model,
+            device,
+            stride,
+            max_frames,
+            confidence_threshold,
+            fps,
+            total_source_frames,
+        )
 
     total = expected_video_outputs(total_source_frames, stride, max_frames)
     sampled_frames: deque[tuple[int, np.ndarray]] = deque(maxlen=3)
@@ -418,6 +460,83 @@ def write_video_tracks(
                 source_idx += 1
     finally:
         cap.release()
+
+    progress(clip_id, processed, total, done=True)
+    return processed
+
+
+def write_ffmpeg_video_tracks(
+    clip_id: str,
+    source: ClipSource,
+    jsonl_path: Path,
+    model: BallTrackerNet,
+    device: torch.device,
+    stride: int,
+    max_frames: int | None,
+    confidence_threshold: float,
+    fps: float,
+    total_source_frames: int | None,
+) -> int:
+    total = expected_video_outputs(total_source_frames, stride, max_frames)
+    frame_bytes = INPUT_SIZE[0] * INPUT_SIZE[1] * 3
+    command = [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-i",
+        str(source.path),
+        "-vf",
+        f"scale={INPUT_SIZE[0]}:{INPUT_SIZE[1]}",
+        "-pix_fmt",
+        "rgb24",
+        "-f",
+        "rawvideo",
+        "pipe:1",
+    ]
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if proc.stdout is None:
+        raise RuntimeError("Could not open ffmpeg stdout pipe")
+
+    sampled_frames: deque[tuple[int, np.ndarray]] = deque(maxlen=3)
+    processed = 0
+    source_idx = 0
+    stderr = b""
+
+    try:
+        with open(jsonl_path, "w", encoding="utf-8") as f:
+            while True:
+                raw = proc.stdout.read(frame_bytes)
+                if not raw:
+                    break
+                if len(raw) != frame_bytes:
+                    raise RuntimeError(f"Partial frame read from ffmpeg for {source.path}")
+                if source_idx % stride == 0:
+                    frame = np.frombuffer(raw, dtype=np.uint8).reshape(INPUT_SIZE[1], INPUT_SIZE[0], 3).copy()
+                    sampled_frames.append((source_idx, frame))
+                    if len(sampled_frames) == 3:
+                        center_frame_idx = sampled_frames[1][0]
+                        pred = infer_triplet(
+                            model,
+                            device,
+                            [sampled_frames[0][1], sampled_frames[1][1], sampled_frames[2][1]],
+                            confidence_threshold,
+                        )
+                        row = row_from_prediction(center_frame_idx, fps, pred)
+                        f.write(json.dumps(row, separators=(",", ":")) + "\n")
+                        processed += 1
+                        progress(clip_id, processed, total)
+                        if max_frames is not None and processed >= max_frames:
+                            break
+                source_idx += 1
+    finally:
+        proc.stdout.close()
+        if proc.stderr is not None:
+            stderr = proc.stderr.read()
+
+    returncode = proc.wait()
+    if returncode != 0 and processed == 0:
+        message = stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"ffmpeg video read failed for {source.path}: {message}")
 
     progress(clip_id, processed, total, done=True)
     return processed

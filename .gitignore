@@ -70,3 +70,14 @@ eval/datasets/closed-beta-soft-v1/videos/*
 eval/datasets/closed-beta-soft-v1/clips/*
 !eval/datasets/closed-beta-soft-v1/clips/.gitkeep
 eval/datasets/closed-beta-soft-v1/frames/
+
+# RF-DETR isolated env (torch>=2.5)
+.venv-rfdetr/
+
+# Modal CLI isolated env
+.venv-modal/
+
+# RF-DETR downloaded weights + generated datasets (rejected approach, large/regenerable)
+rf-detr-nano.pth
+eval/datasets/*/rfdetr-coco/
+eval/datasets/*/labels-box/

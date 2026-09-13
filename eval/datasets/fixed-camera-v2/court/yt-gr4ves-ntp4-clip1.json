@@ -1,0 +1,7 @@
+{
+  "court": "singles",
+  "image_corners": [[175, 475], [1105, 505], [880, 185], [445, 182]],
+  "court_corners_m": [[0, 0], [8.23, 0], [8.23, 23.77], [0, 23.77]],
+  "corner_order": "near-left, near-right, far-right, far-left",
+  "note": "APPROXIMATE calibration eyeballed from a mid-rally frame (steep amateur camera angle). Sanity: net line maps to court-y ~13m (true 11.9), x-center ~4.1m. Good enough to validate the pipeline; precise calibration is a deferred B2 refinement."
+}

@@ -1,0 +1,6 @@
+{
+  "court": "doubles",
+  "_note": "APPROXIMATE eyeballed corners from frame_000540 (1280x720). For rough validation; refine for accurate placement.",
+  "image_corners": [[35, 540], [1010, 540], [930, 325], [295, 325]],
+  "court_corners_m": [[0.0, 0.0], [10.97, 0.0], [10.97, 23.77], [0.0, 23.77]]
+}

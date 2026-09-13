@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "videoId": "yt-qtrjfrca3z0-clip1",
+  "sourceUrl": "https://www.youtube.com/watch?v=QTrjFRCa3z0",
+  "sourceSha256": "",
+  "fps": 30,
+  "clipOffsetSec": 0,
+  "clipDurationSec": 600,
+  "note": "DETECTOR-ASSISTED DRAFT — generated from run \"draft-yt-qtrjfrca3z0-clip1\" (blob detector, confidence≥0). This file must be manually reviewed and corrected before use as ground truth. Adjust rally boundaries to ±1–2s accuracy by watching the source video. Remove _DRAFT from the filename when the labels are accurate. TRAINING USE ONLY: held-out test clips must be labeled without detector pre-fill.",
+  "rallies": [
+    {
+      "startSec": 86.6,
+      "endSec": 99.1,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 124.6,
+      "endSec": 136.8,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 153.3,
+      "endSec": 170.4,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 175,
+      "endSec": 200.1,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 197,
+      "endSec": 218.5,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 232.3,
+      "endSec": 249.5,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 252,
+      "endSec": 273.5,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 316.4,
+      "endSec": 326.2,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 345.1,
+      "endSec": 360.9,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 421.1,
+      "endSec": 433.6,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 476.8,
+      "endSec": 495.7,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    },
+    {
+      "startSec": 522.8,
+      "endSec": 552.3,
+      "server": null,
+      "winner": null,
+      "endReason": null
+    }
+  ]
+}

@@ -24,12 +24,21 @@ import {
 import { PointLogSheet } from '@/components/point';
 import { AutoPointCard } from '@/components/scoring';
 import { useSession } from '@/hooks';
+import {
+  isCloudAnalysisEnabled,
+  runCloudAnalysis,
+  type CourtCornersNormalized,
+} from '@/services/analysis/cloudAnalyze';
+import { isVideoUploadConfigured, uploadVideoForAnalysis } from '@/services/analysis/videoUpload';
 import { analyzeRally, analyzeRallyBatch, detectRallyWindows } from '@/services/ball';
 import { proposeCandidates } from '@/services/scoring';
+import { cloudResultToCandidates } from '@/services/scoring/cloudCandidates';
 import { useSessionStore } from '@/stores';
 import { useTheme } from '@/theme';
 import { type AutoPointCandidate, type PointRecord } from '@/types';
 import { generateId } from '@/utils/id';
+
+const CLOUD_ANALYSIS_AVAILABLE = isCloudAnalysisEnabled() && isVideoUploadConfigured();
 
 type PlayerSideValue = 'near' | 'far';
 type ServeMode = 'yes' | 'no';
@@ -68,6 +77,8 @@ export default function AutoScoreScreen() {
   const [serveAttempt, setServeAttempt] = useState<ServeAttemptValue>('1');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+  const [isCloudAnalyzing, setIsCloudAnalyzing] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState('');
   const [progress, setProgress] = useState(0);
   const [candidates, setCandidates] = useState<AutoPointCandidate[]>([]);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
@@ -225,6 +236,87 @@ export default function AutoScoreScreen() {
       Alert.alert('一括採点に失敗しました', '動画、撮影範囲を確認して、もう一度お試しください。');
     } finally {
       setIsAutoDetecting(false);
+    }
+  };
+
+  const handleCloudAnalyze = async () => {
+    if (
+      !session?.videoUri ||
+      !session.courtCalibration ||
+      isAnalyzing ||
+      isAutoDetecting ||
+      isCloudAnalyzing ||
+      !Number.isFinite(videoDurationSec) ||
+      videoDurationSec <= 0
+    ) {
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsCloudAnalyzing(true);
+    setProgress(0);
+    setCandidates([]);
+    setHasAnalyzed(false);
+    setDraftCount(null);
+    setCloudStatus('ラリー検出中...');
+
+    try {
+      const windows = await detectRallyWindows({
+        videoUri: session.videoUri,
+        videoDurationSec,
+        onProgress: (value) => setProgress(Math.max(0, Math.min(0.2, value * 0.2))),
+        signal: controller.signal,
+      });
+      if (windows.length === 0) {
+        Alert.alert('ラリーが検出できませんでした', '撮影範囲や動画を確認してください。');
+        return;
+      }
+
+      const corners = session.courtCalibration.imageCorners.map((p) => [
+        p.x,
+        p.y,
+      ]) as unknown as CourtCornersNormalized;
+      const clipId = generateId();
+
+      setCloudStatus('動画をアップロード中...');
+      const { videoUrl } = await uploadVideoForAnalysis({
+        videoUri: session.videoUri,
+        clipId,
+        onProgress: (value) => setProgress(Math.max(0.2, Math.min(0.4, 0.2 + value * 0.2))),
+      });
+
+      setCloudStatus('クラウド解析中...(数分かかることがあります)');
+      const result = await runCloudAnalysis(
+        {
+          clipId,
+          videoUrl,
+          courtCorners: corners,
+          courtType: 'singles',
+          rallies: windows.map((w) => ({ startSec: w.startSec, endSec: w.endSec })),
+          handedness: 'right',
+        },
+        {
+          onStatus: (status) =>
+            setCloudStatus(
+              status === 'running' || status === 'queued'
+                ? 'クラウド解析中...(数分かかることがあります)'
+                : `状態: ${status}`
+            ),
+          signal: controller.signal,
+        }
+      );
+
+      setProgress(1);
+      setCandidates(cloudResultToCandidates(result));
+      setHasAnalyzed(true);
+    } catch (error) {
+      Alert.alert(
+        'クラウド解析に失敗しました',
+        error instanceof Error ? error.message : '時間をおいて再試行してください。'
+      );
+    } finally {
+      setIsCloudAnalyzing(false);
+      setCloudStatus('');
     }
   };
 
@@ -434,7 +526,13 @@ export default function AutoScoreScreen() {
 
               <Button
                 accessibilityLabel="自動ラリー検出"
-                disabled={isAnalyzing || isAutoDetecting || !canAutoDetect || videoDurationSec <= 0}
+                disabled={
+                  isAnalyzing ||
+                  isAutoDetecting ||
+                  isCloudAnalyzing ||
+                  !canAutoDetect ||
+                  videoDurationSec <= 0
+                }
                 label={
                   session.courtCalibration
                     ? '自動ラリー検出 → 採点候補を生成'
@@ -449,17 +547,38 @@ export default function AutoScoreScreen() {
               <Button
                 accessibilityLabel="解析して採点候補を生成（コート較正必須）"
                 disabled={
-                  isAnalyzing || isAutoDetecting || !session.courtCalibration || endSec <= startSec
+                  isAnalyzing ||
+                  isAutoDetecting ||
+                  isCloudAnalyzing ||
+                  !session.courtCalibration ||
+                  endSec <= startSec
                 }
                 label="範囲を指定して採点候補を生成（較正必須）"
                 loading={isAnalyzing}
                 onPress={() => void handleAnalyze()}
                 size="l"
               />
+
+              {CLOUD_ANALYSIS_AVAILABLE ? (
+                <Button
+                  accessibilityLabel="クラウドでショット解析（較正必須）"
+                  disabled={
+                    isAnalyzing ||
+                    isAutoDetecting ||
+                    isCloudAnalyzing ||
+                    !session.courtCalibration ||
+                    videoDurationSec <= 0
+                  }
+                  label="クラウドでショット解析（速度・コース・FH/BH）"
+                  loading={isCloudAnalyzing}
+                  onPress={() => void handleCloudAnalyze()}
+                  size="l"
+                />
+              ) : null}
             </View>
           </View>
 
-          {isAnalyzing || isAutoDetecting ? (
+          {isAnalyzing || isAutoDetecting || isCloudAnalyzing ? (
             <View
               style={[
                 styles.card,
@@ -469,7 +588,11 @@ export default function AutoScoreScreen() {
             >
               <ActivityIndicator color={colors.primary} size="small" />
               <Text style={[styles.progressLabel, { color: colors.text }]}>
-                {isAutoDetecting ? '自動検出と一括採点中...' : '解析中...'}
+                {isCloudAnalyzing
+                  ? cloudStatus || 'クラウド解析中...'
+                  : isAutoDetecting
+                    ? '自動検出と一括採点中...'
+                    : '解析中...'}
               </Text>
               <View style={[styles.progressTrack, { backgroundColor: colors.surfaceAlt }]}>
                 <View
@@ -485,7 +608,11 @@ export default function AutoScoreScreen() {
             </View>
           ) : null}
 
-          {hasAnalyzed && candidates.length === 0 && !isAnalyzing && !isAutoDetecting ? (
+          {hasAnalyzed &&
+          candidates.length === 0 &&
+          !isAnalyzing &&
+          !isAutoDetecting &&
+          !isCloudAnalyzing ? (
             draftCount !== null ? (
               <View
                 style={[

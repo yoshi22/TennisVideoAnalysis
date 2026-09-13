@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#1F6F4A"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.courtlens.app",
@@ -74,6 +72,10 @@
         "url": "",
         "anonKey": "",
         "bucket": "beta-submissions"
+      },
+      "cloudAnalysis": {
+        "submitUrl": "https://yoshi22--tennis-ball-submit.modal.run",
+        "resultUrl": "https://yoshi22--tennis-ball-result.modal.run"
       }
     },
     "owner": "yoshi22"
