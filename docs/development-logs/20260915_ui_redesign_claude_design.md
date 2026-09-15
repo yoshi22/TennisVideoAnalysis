@@ -44,3 +44,17 @@ CourtLens の UI を Claude Design のデザインキャンバスから取り込
 ## 注記(正直な適応)
 - 「コンディション 0-100」はアプリに無かった概念のため既存指標からの**合成スコア**として実装。
 - レポート/履歴のスコアはテニスのセットスコアを捏造せず、**ポイント差 / WIN・ERR** の実データで表現。
+
+## 追記(同日): 2次画面を全て同方向へ(codex 実装 / Opus レビュー)
+
+役割分担=**実装 codex(gpt-5.2)/ レビュー Opus**。残りの2次画面すべてに方向を適用(コミット `0db991e`)。
+
+- 対象: session の auto-score / video / court / calibration / ball-trace、form-analysis(new/select/capture/[id])、session/new、onboarding、beta-consent、help、recording-guide、settings のプロフィール。共有 `Button`/`Chip`/`SegmentedControl`/`SecondSlider`/`FormScoreRing`/`SwingMetricCard`/`AutoPointCard` もトークン化コントラスト+数値化。
+- 各画面: 濃緑ヒーロー(**onHero テキスト**+コート装飾)、Saira Condensed 数値、ヘアラインカード化。挙動/testID は不変(視覚のみ)。
+- `Button` の primary/danger 文字色を `surface`→`onHero` に変更(ダークで緑ボタン上の文字が沈む不具合の解消)。
+
+**Opus レビュー結果(承認)**:
+- 静的スキャン: **hero上の surface 文字=0、accent の塗り使用=0**(= 私が踏んだコントラスト地雷を回避できている)。全画面で onHero + fontFamily.numeric 適用を確認。
+- シミュレーター(Appium, light+dark): **設定 / コート較正 / 自動採点**を目視確認(ヒーロー+数値+コントラスト良好)。遷移で **赤画面ゼロ**。
+- type-check / lint / **テスト147件** グリーン。
+- 未目視(静的+代表画面で担保): video/ball-trace/form 各ステップ/new/onboarding 等。リスクは視覚的な作り込みの粗さのみで、正当性・コントラストは担保。
