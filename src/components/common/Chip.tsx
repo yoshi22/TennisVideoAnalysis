@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 
 interface ChipProps {
   label: string;
@@ -27,7 +27,7 @@ export function Chip({ label, selected, onPress, accessibilityLabel, size = 'md'
 
   const labelStyle = [
     size === 'sm' ? styles.labelSm : styles.labelMd,
-    { color: isSelected ? colors.surface : colors.text },
+    { color: isSelected ? colors.onHero : colors.text },
   ];
 
   if (onPress) {
@@ -70,10 +70,12 @@ const styles = StyleSheet.create({
     minHeight: 30,
   },
   labelMd: {
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     fontWeight: '600',
   },
   labelSm: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     fontWeight: '600',
   },

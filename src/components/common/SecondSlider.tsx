@@ -8,7 +8,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 
 interface SecondSliderProps {
   label: string;
@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   valueText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',

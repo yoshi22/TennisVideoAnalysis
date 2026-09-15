@@ -13,15 +13,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, EmptyState, SectionHeader, SegmentedControl } from '@/components/common';
+import {
+  Button,
+  CourtLines,
+  EmptyState,
+  SectionHeader,
+  SegmentedControl,
+} from '@/components/common';
 import { FORM_ANALYSIS_SHOT_OPTIONS, normalizeFormShotTypeParam } from '@/components/pose';
 import { analyzeClip } from '@/services/pose';
 import { useFormAnalysisStore, useSessionStore } from '@/stores';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type ShotType, type TennisSession } from '@/types';
 import { replaceRoute } from '@/utils/navigation';
 
 type SessionWithVideo = TennisSession & { videoUri: string };
+const NUM = fontFamily.numeric;
 
 function getStringParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -122,9 +129,9 @@ export default function SelectFormAnalysisVideoScreen() {
         options={{
           headerShown: true,
           title: '動画を選択',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -134,13 +141,26 @@ export default function SelectFormAnalysisVideoScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroPad}>
+          <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+            <View style={styles.heroMotif} pointerEvents="none">
+              <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+            </View>
+            <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>CLIP SELECT</Text>
+            <Text style={[styles.heroTitle, { color: colors.onHero }]}>動画を選択</Text>
+            <Text style={[styles.heroRange, { color: colors.onHero, fontFamily: NUM }]}>
+              {startText}–{endText} 秒
+            </Text>
+          </View>
+        </View>
+
         {selectedVideoUri ? (
           <>
             <View>
@@ -291,20 +311,20 @@ export default function SelectFormAnalysisVideoScreen() {
 
       {isAnalyzing ? (
         <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
-          <ActivityIndicator color={colors.surface} size="large" />
-          <Text style={[styles.overlayTitle, { color: colors.surface }]}>解析中...</Text>
+          <ActivityIndicator color={colors.onHero} size="large" />
+          <Text style={[styles.overlayTitle, { color: colors.onHero }]}>解析中...</Text>
           <View
             accessibilityLabel="解析の進捗"
-            style={[styles.progressTrack, { backgroundColor: withAlpha(colors.surface, 0.28) }]}
+            style={[styles.progressTrack, { backgroundColor: withAlpha(colors.onHero, 0.28) }]}
           >
             <View
               style={[
                 styles.progressFill,
-                { backgroundColor: colors.surface, width: `${Math.round(progress * 100)}%` },
+                { backgroundColor: colors.onHero, width: `${Math.round(progress * 100)}%` },
               ]}
             />
           </View>
-          <Text style={[styles.progressText, { color: colors.surface }]}>
+          <Text style={[styles.progressText, { color: colors.onHero }]}>
             {Math.round(progress * 100)}%
           </Text>
         </View>
@@ -318,13 +338,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    gap: 18,
+    gap: 16,
     paddingBottom: 48,
     paddingTop: 20,
   },
+  heroPad: {
+    paddingHorizontal: 20,
+  },
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 100,
+    position: 'absolute',
+    right: -20,
+    top: -10,
+    width: 220,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroRange: {
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 26,
+    marginTop: 8,
+  },
   selectedCard: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     gap: 8,
     marginHorizontal: 20,
     padding: 14,
@@ -339,7 +392,7 @@ const styles = StyleSheet.create({
   },
   rangeCard: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     gap: 10,
     marginHorizontal: 20,
     padding: 14,
@@ -354,7 +407,8 @@ const styles = StyleSheet.create({
   },
   input: {
     borderRadius: 10,
-    borderWidth: 0.5,
+    borderWidth: 1,
+    fontFamily: fontFamily.numeric,
     fontSize: 16,
     minHeight: 48,
     paddingHorizontal: 12,
@@ -383,7 +437,7 @@ const styles = StyleSheet.create({
   sessionRow: {
     alignItems: 'center',
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 12,
     padding: 14,
@@ -397,6 +451,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sessionDate: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     marginTop: 3,
   },
@@ -422,6 +477,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   progressText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',

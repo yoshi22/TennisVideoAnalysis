@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { colors, spacing, typography } from '@/theme';
+import { fontFamily, spacing, typography, useTheme } from '@/theme';
 
 interface SegmentedControlProps<T extends string> {
   options: { label: string; value: T }[];
@@ -15,6 +15,8 @@ export function SegmentedControl<T extends string>({
   onSelect,
   accessibilityLabel,
 }: SegmentedControlProps<T>) {
+  const { colors } = useTheme();
+
   return (
     <View accessibilityLabel={accessibilityLabel} style={styles.container}>
       {options.map((option) => {
@@ -28,9 +30,14 @@ export function SegmentedControl<T extends string>({
             activeOpacity={0.85}
             key={option.value}
             onPress={() => onSelect(option.value)}
-            style={[styles.option, isSelected ? styles.selected : styles.unselected]}
+            style={[
+              styles.option,
+              {
+                backgroundColor: isSelected ? colors.primary : colors.surfaceAlt,
+              },
+            ]}
           >
-            <Text style={[styles.label, isSelected ? styles.selectedText : styles.unselectedText]}>
+            <Text style={[styles.label, { color: isSelected ? colors.onHero : colors.text }]}>
               {option.label}
             </Text>
           </TouchableOpacity>
@@ -54,19 +61,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: spacing.md,
   },
-  selected: {
-    backgroundColor: colors.primary,
-  },
-  unselected: {
-    backgroundColor: colors.surfaceHover,
-  },
   label: {
     ...typography.bodyStrong,
-  },
-  selectedText: {
-    color: colors.surface,
-  },
-  unselectedText: {
-    color: colors.text,
+    fontFamily: fontFamily.numeric,
   },
 });

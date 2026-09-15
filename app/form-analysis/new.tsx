@@ -4,8 +4,8 @@ import { type ComponentProps, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SectionHeader, SegmentedControl } from '@/components/common';
-import { FORM_ANALYSIS_SHOT_OPTIONS } from '@/components/pose';
+import { CourtLines, SectionHeader, SegmentedControl } from '@/components/common';
+import { FORM_ANALYSIS_SHOT_OPTIONS, getShotTypeLabel } from '@/components/pose';
 import { useTheme } from '@/theme';
 import { type ShotType } from '@/types';
 import { pushRoute } from '@/utils/navigation';
@@ -30,7 +30,6 @@ function SourceCard({ icon, title, onPress }: SourceCardProps) {
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          shadowColor: colors.text,
         },
       ]}
     >
@@ -44,7 +43,7 @@ function SourceCard({ icon, title, onPress }: SourceCardProps) {
 }
 
 export default function NewFormAnalysisScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const [shotType, setShotType] = useState<ShotType>('forehand');
 
@@ -62,9 +61,9 @@ export default function NewFormAnalysisScreen() {
         options={{
           headerShown: true,
           title: 'フォーム分析',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -74,13 +73,26 @@ export default function NewFormAnalysisScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroPad}>
+          <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+            <View style={styles.heroMotif} pointerEvents="none">
+              <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+            </View>
+            <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>FORM ANALYSIS</Text>
+            <Text style={[styles.heroTitle, { color: colors.onHero }]}>フォーム分析</Text>
+            <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
+              {getShotTypeLabel(shotType)}
+            </Text>
+          </View>
+        </View>
+
         <View>
           <SectionHeader title="ソース選択" />
           <View style={styles.sectionBody}>
@@ -120,9 +132,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    gap: 18,
+    gap: 16,
     paddingBottom: 48,
     paddingTop: 20,
+  },
+  heroPad: {
+    paddingHorizontal: 20,
+  },
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 100,
+    position: 'absolute',
+    right: -20,
+    top: -10,
+    width: 220,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
   sectionBody: {
     gap: 10,
@@ -131,15 +175,11 @@ const styles = StyleSheet.create({
   sourceCard: {
     alignItems: 'center',
     borderRadius: 14,
-    borderWidth: 0.5,
-    elevation: 1,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 12,
     minHeight: 76,
     padding: 16,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   sourceIcon: {
     alignItems: 'center',

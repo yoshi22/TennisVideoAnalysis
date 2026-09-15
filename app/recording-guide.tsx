@@ -5,7 +5,8 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Line, Rect, Svg } from 'react-native-svg';
 
-import { spacing, useTheme } from '@/theme';
+import { CourtLines } from '@/components/common';
+import { fontFamily, spacing, useTheme } from '@/theme';
 
 interface TipItem {
   icon: ComponentProps<typeof Ionicons>['name'];
@@ -148,7 +149,7 @@ function TipGroup({
 }
 
 export default function RecordingGuideScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const [category, setCategory] = useState<CategoryKey>('match');
 
@@ -158,9 +159,9 @@ export default function RecordingGuideScreen() {
         options={{
           headerShown: true,
           title: '撮影のコツ',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           headerBackVisible: false,
           headerLeft: () => (
             <TouchableOpacity
@@ -169,13 +170,24 @@ export default function RecordingGuideScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+          <View style={styles.heroMotif} pointerEvents="none">
+            <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+          </View>
+          <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>RECORDING</Text>
+          <Text style={[styles.heroTitle, { color: colors.onHero }]}>撮影のコツ</Text>
+          <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
+            {category === 'match' ? '試合（固定カメラ）' : 'サーブ練習'}
+          </Text>
+        </View>
+
         {/* Category selector */}
         <View style={[styles.categoryRow, { borderColor: colors.border }]}>
           {CATEGORY_OPTIONS.map((opt) => {
@@ -198,7 +210,7 @@ export default function RecordingGuideScreen() {
                 <Text
                   style={[
                     styles.categoryTabText,
-                    { color: active ? colors.surface : colors.textSub },
+                    { color: active ? colors.onHero : colors.textSub },
                   ]}
                 >
                   {opt.label}
@@ -213,18 +225,25 @@ export default function RecordingGuideScreen() {
             <View style={styles.diagramWrap}>
               <Svg height={140} viewBox="0 0 220 140" width={220}>
                 <Rect
-                  fill={colors.primaryLo}
+                  fill={colors.court}
                   height={100}
-                  stroke={colors.primary}
+                  stroke={colors.courtLine}
                   strokeWidth={2}
                   width={200}
                   x={10}
                   y={20}
                 />
-                <Line stroke={colors.primary} strokeWidth={2} x1={10} x2={210} y1={70} y2={70} />
-                <Line stroke={colors.primary} strokeWidth={1} x1={85} x2={85} y1={20} y2={120} />
-                <Line stroke={colors.primary} strokeWidth={1} x1={135} x2={135} y1={20} y2={120} />
-                <Rect fill={colors.primary} height={12} rx={3} width={30} x={95} y={128} />
+                <Line stroke={colors.courtLine} strokeWidth={2} x1={10} x2={210} y1={70} y2={70} />
+                <Line stroke={colors.courtLine} strokeWidth={1} x1={85} x2={85} y1={20} y2={120} />
+                <Line
+                  stroke={colors.courtLine}
+                  strokeWidth={1}
+                  x1={135}
+                  x2={135}
+                  y1={20}
+                  y2={120}
+                />
+                <Rect fill={colors.tileNavy} height={12} rx={3} width={30} x={95} y={128} />
               </Svg>
               <Text style={[styles.diagramLabel, { color: colors.textMuted }]}>
                 カメラ位置（ベースライン後方中央）
@@ -274,11 +293,41 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 48,
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+  },
+  hero: {
+    borderRadius: 14,
+    marginBottom: spacing.xl,
+    overflow: 'hidden',
+    padding: spacing.lg,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 120,
+    position: 'absolute',
+    right: -20,
+    top: -16,
+    width: 240,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
   diagramWrap: {
     alignItems: 'center',
     marginBottom: spacing.xl,
-    paddingTop: spacing.xl,
   },
   diagramLabel: {
     fontSize: 11,
@@ -295,7 +344,7 @@ const styles = StyleSheet.create({
   },
   tipGroup: {
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     marginBottom: spacing.xl,
     overflow: 'hidden',
   },
@@ -318,6 +367,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   tipDesc: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 2,
@@ -333,7 +383,7 @@ const styles = StyleSheet.create({
   },
   categoryRow: {
     borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 6,
     marginBottom: spacing.md,
@@ -342,7 +392,7 @@ const styles = StyleSheet.create({
   categoryTab: {
     alignItems: 'center',
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
     minHeight: 40,

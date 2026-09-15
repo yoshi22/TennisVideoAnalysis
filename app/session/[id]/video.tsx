@@ -20,7 +20,7 @@ import { SHOT_TYPE_META } from '@/constants/shotTypes';
 import { useSession } from '@/hooks';
 import { consumePendingSeek } from '@/services/video';
 import { useSessionStore } from '@/stores/sessionStore';
-import { spacing, useTheme } from '@/theme';
+import { fontFamily, spacing, useTheme } from '@/theme';
 import { type PointOutcome, type PointRecord } from '@/types';
 import { formatSeconds } from '@/utils/formatTime';
 import { generateId } from '@/utils/id';
@@ -28,13 +28,14 @@ import { computeCumulativeScores } from '@/utils/cumulativeScore';
 import { getPointDetailStatus, isConfirmed } from '@/utils/pointDetails';
 
 type TimestampedPoint = PointRecord & { videoTimestamp: number };
+const NUM = fontFamily.numeric;
 
 function hasVideoTimestamp(point: PointRecord): point is TimestampedPoint {
   return point.videoTimestamp !== undefined;
 }
 
 export default function SessionVideoScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const push = (path: string) => router.push(path as any);
@@ -268,12 +269,12 @@ export default function SessionVideoScreen() {
         <View style={styles.quickMetaRow}>
           <View>
             <Text style={[styles.quickLabel, { color: colors.textMuted }]}>現在</Text>
-            <Text style={[styles.quickTime, { color: colors.text }]}>
+            <Text style={[styles.quickTime, { color: colors.text, fontFamily: NUM }]}>
               {formatSeconds(currentTimeSec)}
             </Text>
           </View>
           <View style={styles.quickScoreBox}>
-            <Text style={[styles.quickScore, { color: colors.text }]}>
+            <Text style={[styles.quickScore, { color: colors.text, fontFamily: NUM }]}>
               {score.won}–{score.lost}
             </Text>
             <Text style={[styles.quickLabel, { color: colors.textMuted }]}>スコア</Text>
@@ -319,7 +320,10 @@ export default function SessionVideoScreen() {
           <Text
             style={[
               styles.rallyStartText,
-              { color: rallyStartMark !== null ? colors.primary : colors.textSub },
+              {
+                color: rallyStartMark !== null ? colors.primary : colors.textSub,
+                fontFamily: NUM,
+              },
             ]}
           >
             {rallyStartMark !== null
@@ -336,7 +340,7 @@ export default function SessionVideoScreen() {
             onPress={() => handleQuickLog('won')}
             style={[styles.quickActionButton, { backgroundColor: colors.success }]}
           >
-            <Text style={[styles.quickActionText, { color: colors.surface }]}>得点</Text>
+            <Text style={[styles.quickActionText, { color: colors.onHero }]}>得点</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityLabel="現在時刻を失点として記録"
@@ -345,12 +349,12 @@ export default function SessionVideoScreen() {
             onPress={() => handleQuickLog('lost')}
             style={[styles.quickActionButton, { backgroundColor: colors.danger }]}
           >
-            <Text style={[styles.quickActionText, { color: colors.surface }]}>失点</Text>
+            <Text style={[styles.quickActionText, { color: colors.onHero }]}>失点</Text>
           </TouchableOpacity>
         </View>
 
         {latestUndoEntry ? (
-          <Text style={[styles.quickFeedback, { color: colors.textSub }]}>
+          <Text style={[styles.quickFeedback, { color: colors.textSub, fontFamily: NUM }]}>
             {formatSeconds(latestUndoEntry.timeSec)} に
             {latestUndoEntry.outcome === 'won' ? '得点' : '失点'}を記録しました
           </Text>
@@ -369,7 +373,7 @@ export default function SessionVideoScreen() {
               <Text style={[styles.detailScoreLabel, { color: colors.textMuted }]}>
                 動画内スコア
               </Text>
-              <Text style={[styles.detailScore, { color: colors.text }]}>
+              <Text style={[styles.detailScore, { color: colors.text, fontFamily: NUM }]}>
                 {(() => {
                   const s = cumulativeScores.get(selectedPoint.id);
                   return s ? `${s.w}–${s.l}` : '–';
@@ -387,7 +391,7 @@ export default function SessionVideoScreen() {
                     },
                   ]}
                 >
-                  <Text style={[styles.detailOutcomeText, { color: colors.surface }]}>
+                  <Text style={[styles.detailOutcomeText, { color: colors.onHero }]}>
                     {OUTCOME_LABELS[selectedPoint.outcome]}
                   </Text>
                 </View>
@@ -419,7 +423,7 @@ export default function SessionVideoScreen() {
                       style={[
                         styles.draftOutcomeToggleText,
                         {
-                          color: selectedPoint.outcome === 'won' ? colors.surface : colors.textSub,
+                          color: selectedPoint.outcome === 'won' ? colors.onHero : colors.textSub,
                         },
                       ]}
                     >
@@ -445,7 +449,7 @@ export default function SessionVideoScreen() {
                       style={[
                         styles.draftOutcomeToggleText,
                         {
-                          color: selectedPoint.outcome === 'lost' ? colors.surface : colors.textSub,
+                          color: selectedPoint.outcome === 'lost' ? colors.onHero : colors.textSub,
                         },
                       ]}
                     >
@@ -513,7 +517,7 @@ export default function SessionVideoScreen() {
                   size={20}
                 />
               </TouchableOpacity>
-              <Text style={[styles.detailNavLabel, { color: colors.textMuted }]}>
+              <Text style={[styles.detailNavLabel, { color: colors.textMuted, fontFamily: NUM }]}>
                 {selectedPointIndex + 1} / {timestampedPoints.length}
               </Text>
               <TouchableOpacity
@@ -581,7 +585,11 @@ export default function SessionVideoScreen() {
                     <View
                       style={[
                         styles.marker,
-                        { borderBottomColor: isWon ? colors.primary : colors.danger },
+                        {
+                          borderBottomColor: isWon ? colors.primary : colors.danger,
+                          borderLeftColor: withAlpha(colors.bg, 0),
+                          borderRightColor: withAlpha(colors.bg, 0),
+                        },
                       ]}
                     />
                   </TouchableOpacity>
@@ -677,6 +685,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   quickTime: {
+    fontFamily: fontFamily.numeric,
     fontSize: 18,
     fontVariant: ['tabular-nums'],
     fontWeight: '800',
@@ -687,6 +696,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   quickScore: {
+    fontFamily: fontFamily.numeric,
     fontSize: 22,
     fontVariant: ['tabular-nums'],
     fontWeight: '800',
@@ -775,9 +785,7 @@ const styles = StyleSheet.create({
   },
   marker: {
     borderBottomWidth: 12,
-    borderLeftColor: 'transparent',
     borderLeftWidth: 6,
-    borderRightColor: 'transparent',
     borderRightWidth: 6,
     height: 0,
     width: 0,
@@ -828,6 +836,7 @@ const styles = StyleSheet.create({
     width: 10,
   },
   pointTime: {
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',
@@ -866,6 +875,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   detailScore: {
+    fontFamily: fontFamily.numeric,
     fontSize: 20,
     fontVariant: ['tabular-nums'],
     fontWeight: '800',
@@ -921,6 +931,7 @@ const styles = StyleSheet.create({
     minWidth: 44,
   },
   detailNavLabel: {
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     fontVariant: ['tabular-nums'],
     fontWeight: '600',

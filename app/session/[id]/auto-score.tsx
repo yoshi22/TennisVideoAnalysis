@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Button,
+  CourtLines,
   EmptyState,
   SecondSlider,
   SectionHeader,
@@ -34,7 +35,7 @@ import { isVideoUploadConfigured, uploadVideoForAnalysis } from '@/services/anal
 import { analyzeRally, analyzeRallyBatch, detectRallyWindows } from '@/services/ball';
 import { proposeCandidates } from '@/services/scoring';
 import { useSessionStore } from '@/stores';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type AutoPointCandidate, type PointRecord } from '@/types';
 import { generateId } from '@/utils/id';
 
@@ -46,6 +47,7 @@ type ServeAttemptValue = '1' | '2';
 
 const SLIDER_MIN = 0;
 const SLIDER_STEP = 0.5;
+const NUM = fontFamily.numeric;
 /** Low-confidence threshold — windows below this are marked 要確認 in the draft summary */
 const DRAFT_LOW_CONFIDENCE_THRESHOLD = 0.5;
 
@@ -65,7 +67,7 @@ const SERVE_ATTEMPT_OPTIONS: { label: string; value: ServeAttemptValue }[] = [
 ];
 
 export default function AutoScoreScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const { session, sessionId } = useSession();
   const addPoint = useSessionStore((state) => state.addPoint);
@@ -391,9 +393,9 @@ export default function AutoScoreScreen() {
         options={{
           headerShown: true,
           title: '自動採点（実験的）',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -403,7 +405,7 @@ export default function AutoScoreScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
@@ -423,6 +425,28 @@ export default function AutoScoreScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroPad}>
+            <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+              <View style={styles.heroMotif} pointerEvents="none">
+                <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+              </View>
+              <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>AUTO SCORE</Text>
+              <Text style={[styles.heroTitle, { color: colors.onHero }]}>自動採点</Text>
+              <Text style={[styles.heroRange, { color: colors.onHero, fontFamily: NUM }]}>
+                {startSec.toFixed(1)}–{endSec.toFixed(1)} 秒
+              </Text>
+              <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
+                候補 <Text style={{ fontFamily: NUM }}>{candidates.length}</Text> 件
+                {videoDurationSec > 0 ? (
+                  <>
+                    {' '}
+                    / 動画 <Text style={{ fontFamily: NUM }}>{videoDurationSec.toFixed(1)}</Text> 秒
+                  </>
+                ) : null}
+              </Text>
+            </View>
+          </View>
+
           <View
             style={[
               styles.card,
@@ -715,13 +739,51 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   content: {
-    gap: 18,
+    gap: 16,
     paddingBottom: 48,
     paddingTop: 20,
   },
+  heroPad: {
+    paddingHorizontal: 20,
+  },
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 120,
+    position: 'absolute',
+    right: -20,
+    top: -16,
+    width: 240,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroRange: {
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 26,
+    marginTop: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 4,
+  },
   card: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     marginHorizontal: 20,
     padding: 14,
   },
@@ -748,7 +810,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   optionsCard: {
-    gap: 18,
+    gap: 16,
   },
   optionGroup: {
     gap: 8,
@@ -776,6 +838,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   progressText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',
@@ -792,6 +855,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   draftSuccessTitle: {
+    fontFamily: fontFamily.numeric,
     fontSize: 15,
     fontWeight: '700',
   },

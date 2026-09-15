@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Circle, Svg } from 'react-native-svg';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type ShotType } from '@/types';
 
 import { getShotTypeLabel } from './constants';
@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   score: {
+    fontFamily: fontFamily.numeric,
     fontSize: 48,
     fontWeight: '700',
     lineHeight: 54,

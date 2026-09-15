@@ -3,9 +3,9 @@ import { Stack, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/common';
+import { Button, CourtLines } from '@/components/common';
 import { useBetaStore } from '@/stores/betaStore';
-import { spacing, useTheme } from '@/theme';
+import { fontFamily, spacing, useTheme } from '@/theme';
 
 interface CollectionItem {
   icon: 'videocam-outline' | 'analytics-outline' | 'location-outline' | 'phone-portrait-outline';
@@ -37,7 +37,7 @@ const COLLECTION_ITEMS: CollectionItem[] = [
 ];
 
 export default function BetaConsentScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const giveConsent = useBetaStore((s) => s.giveConsent);
 
@@ -52,9 +52,9 @@ export default function BetaConsentScreen() {
         options={{
           headerShown: true,
           title: 'クローズドベータへの参加',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           headerBackVisible: false,
           headerLeft: () => (
             <TouchableOpacity
@@ -63,22 +63,24 @@ export default function BetaConsentScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.heroBadge, { backgroundColor: colors.primaryLo }]}>
-          <Text style={[styles.heroBadgeText, { color: colors.primary }]}>CLOSED BETA</Text>
+        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+          <View style={styles.heroMotif} pointerEvents="none">
+            <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+          </View>
+          <Text style={[styles.heroBadgeText, { color: colors.heroAccent }]}>CLOSED BETA</Text>
+          <Text style={[styles.heading, { color: colors.onHero }]}>データ収集の同意について</Text>
+          <Text style={[styles.body, { color: withAlpha(colors.onHero, 0.72) }]}>
+            このアプリは軟式テニスの解析モデル改善を目的として、参加者から動画と試合ラベルを任意で収集しています。
+            収集するデータは以下の通りです。
+          </Text>
         </View>
-
-        <Text style={[styles.heading, { color: colors.text }]}>データ収集の同意について</Text>
-        <Text style={[styles.body, { color: colors.textSub }]}>
-          このアプリは軟式テニスの解析モデル改善を目的として、参加者から動画と試合ラベルを任意で収集しています。
-          収集するデータは以下の通りです。
-        </Text>
 
         <View
           style={[
@@ -145,29 +147,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
   },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: spacing.lg,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 120,
+    position: 'absolute',
+    right: -20,
+    top: -16,
+    width: 240,
   },
   heroBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.08,
+    letterSpacing: 0,
   },
   heading: {
     fontSize: 20,
     fontWeight: '700',
     lineHeight: 28,
+    marginTop: 8,
   },
   body: {
     fontSize: 14,
     lineHeight: 22,
+    marginTop: 8,
   },
   itemGroup: {
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   itemRow: {
@@ -189,6 +200,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   itemDesc: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 2,

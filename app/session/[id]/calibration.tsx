@@ -13,16 +13,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, EmptyState, SectionHeader } from '@/components/common';
+import { Button, CourtLines, EmptyState, SectionHeader } from '@/components/common';
 import { CalibrationCanvas } from '@/components/court';
 import { useSession } from '@/hooks';
 import { buildCalibration, validateCalibration } from '@/services/court';
 import { extractStillFrame, type StillFrame } from '@/services/pose/frameSampler';
 import { useSessionStore } from '@/stores';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type ImagePoint, type TennisSession } from '@/types';
 
 type CalibrationCorners = [ImagePoint, ImagePoint, ImagePoint, ImagePoint];
+const NUM = fontFamily.numeric;
 
 const CANVAS_WIDTH = Dimensions.get('window').width;
 const CANVAS_HEIGHT = CANVAS_WIDTH * 0.75;
@@ -42,7 +43,7 @@ function getVideoDurationSec(session: TennisSession | undefined): number {
 }
 
 export default function CourtCalibrationScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const { session, sessionId } = useSession();
   const setCourtCalibration = useSessionStore((state) => state.setCourtCalibration);
@@ -107,9 +108,9 @@ export default function CourtCalibrationScreen() {
         options={{
           headerShown: true,
           title: 'コート較正',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -119,7 +120,7 @@ export default function CourtCalibrationScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
@@ -136,6 +137,22 @@ export default function CourtCalibrationScreen() {
       ) : (
         <>
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            <View style={styles.heroPad}>
+              <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+                <View style={styles.heroMotif} pointerEvents="none">
+                  <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+                </View>
+                <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>CALIBRATION</Text>
+                <Text style={[styles.heroTitle, { color: colors.onHero }]}>コート較正</Text>
+                <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
+                  基準フレーム{' '}
+                  <Text style={{ fontFamily: NUM }}>
+                    {referenceFrame ? `${referenceFrame.timeSec.toFixed(1)}秒` : '未取得'}
+                  </Text>
+                </Text>
+              </View>
+            </View>
+
             <View>
               <SectionHeader title="基準フレーム" />
               <View
@@ -233,6 +250,38 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 20,
   },
+  heroPad: {
+    paddingHorizontal: 20,
+  },
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 120,
+    position: 'absolute',
+    right: -20,
+    top: -16,
+    width: 240,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
+  },
   canvasFrame: {
     borderBottomWidth: 0.5,
     borderTopWidth: 0.5,
@@ -254,7 +303,7 @@ const styles = StyleSheet.create({
   },
   helpCard: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     marginHorizontal: 20,
     padding: 14,
   },

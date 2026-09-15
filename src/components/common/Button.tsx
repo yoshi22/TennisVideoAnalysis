@@ -42,7 +42,7 @@ export function Button({
   testID,
   tone = 'default',
 }: ButtonProps) {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const isDisabled = disabled === true || loading === true;
 
   const bgColor =
@@ -53,12 +53,12 @@ export function Button({
       : variant === 'danger'
         ? colors.danger
         : variant === 'ghost'
-          ? 'transparent'
+          ? withAlpha(colors.bg, 0)
           : colors.surfaceAlt;
 
   const textColor =
     variant === 'primary' || variant === 'danger'
-      ? colors.surface
+      ? colors.onHero
       : variant === 'ghost'
         ? tone === 'danger'
           ? colors.danger
@@ -100,7 +100,7 @@ export function Button({
     >
       {loading === true ? (
         <ActivityIndicator
-          color={variant === 'secondary' ? colors.text : colors.surface}
+          color={variant === 'secondary' ? colors.text : colors.onHero}
           size="small"
           style={styles.indicator}
         />

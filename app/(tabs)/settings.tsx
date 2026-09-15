@@ -13,11 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button, SegmentedControl, Tag } from '@/components/common';
+import { Button, CourtLines, SegmentedControl, Tag } from '@/components/common';
 import { hasValidConsent, useBetaStore } from '@/stores/betaStore';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useSessionStore } from '@/stores/sessionStore';
-import { spacing, typography, useTheme, type ColorTokens } from '@/theme';
+import { fontFamily, spacing, typography, useTheme, type ColorTokens } from '@/theme';
 import { type PlayerProfile, type PlayStyle, type SportType } from '@/types';
 import { generateId } from '@/utils/id';
 import { pushRoute } from '@/utils/navigation';
@@ -172,7 +172,7 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { colors, mode } = useTheme();
+  const { colors, mode, withAlpha } = useTheme();
   const profile = usePlayerStore((state) => state.profile);
   const setProfile = usePlayerStore((state) => state.setProfile);
   const updateProfile = usePlayerStore((state) => state.updateProfile);
@@ -262,26 +262,26 @@ export default function SettingsScreen() {
 
         <View style={styles.profilePad}>
           <View
-            style={[
-              styles.profileCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
+            style={[styles.profileCard, { backgroundColor: colors.hero, borderColor: colors.hero }]}
           >
-            <View style={[styles.avatar, { backgroundColor: colors.primaryLo }]}>
-              <Text style={[styles.avatarText, { color: colors.primary }]}>{initials}</Text>
+            <View style={styles.profileMotif} pointerEvents="none">
+              <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+            </View>
+            <View style={[styles.avatar, { backgroundColor: withAlpha(colors.onHero, 0.14) }]}>
+              <Text style={[styles.avatarText, { color: colors.onHero }]}>{initials}</Text>
             </View>
             <View style={styles.profileText}>
-              <Text numberOfLines={1} style={[styles.profileName, { color: colors.text }]}>
+              <Text numberOfLines={1} style={[styles.profileName, { color: colors.onHero }]}>
                 {displayName}
               </Text>
-              <Text style={[styles.profileDescription, { color: colors.textSub }]}>
+              <Text style={[styles.profileDescription, { color: withAlpha(colors.onHero, 0.68) }]}>
                 {SPORT_LABELS[sport]} ・ 分析プロフィール
               </Text>
               <View style={styles.tagRow}>
-                <Tag bg={`${colors.primary}1A`} color={colors.primary}>
+                <Tag bg={withAlpha(colors.onHero, 0.14)} color={colors.onHero}>
                   {HAND_LABELS[dominantHand]}
                 </Tag>
-                <Tag bg={colors.surfaceAlt} color={colors.textSub}>
+                <Tag bg={withAlpha(colors.onHero, 0.14)} color={colors.onHero}>
                   {PLAY_STYLE_LABELS[playStyle]}
                 </Tag>
               </View>
@@ -541,15 +541,19 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    elevation: 1,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 14,
+    overflow: 'hidden',
     padding: spacing.lg,
-    shadowColor: '#0F281C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    position: 'relative',
+  },
+  profileMotif: {
+    height: 118,
+    position: 'absolute',
+    right: -20,
+    top: -20,
+    width: 220,
   },
   avatar: {
     alignItems: 'center',
@@ -592,7 +596,7 @@ const styles = StyleSheet.create({
   },
   groupCard: {
     borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     marginHorizontal: spacing.xl,
     overflow: 'hidden',
   },
@@ -609,6 +613,7 @@ const styles = StyleSheet.create({
   },
   formRowValue: {
     ...typography.body,
+    fontFamily: fontFamily.numeric,
     flexShrink: 1,
     textAlign: 'right',
   },
@@ -626,6 +631,7 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     ...typography.body,
+    fontFamily: fontFamily.numeric,
     flexShrink: 1,
   },
   settingsRow: {
@@ -640,7 +646,7 @@ const styles = StyleSheet.create({
   input: {
     ...typography.body,
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     minHeight: 46,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

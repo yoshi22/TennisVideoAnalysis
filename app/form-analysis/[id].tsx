@@ -3,14 +3,16 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, EmptyState, Tag } from '@/components/common';
-import { FormScoreRing, getShotTypeLabel, SwingMetricCard } from '@/components/pose';
+import { Button, CourtLines, EmptyState, Tag } from '@/components/common';
+import { getShotTypeLabel, SwingMetricCard } from '@/components/pose';
 import { useFormAnalysisStore } from '@/stores';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { getParamId } from '@/utils/sessionParams';
 
+const NUM = fontFamily.numeric;
+
 export default function FormAnalysisResultScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
   const analysisId = getParamId(params.id);
@@ -30,9 +32,9 @@ export default function FormAnalysisResultScreen() {
         options={{
           headerShown: true,
           title: 'フォーム分析結果',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -42,7 +44,7 @@ export default function FormAnalysisResultScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
@@ -50,7 +52,28 @@ export default function FormAnalysisResultScreen() {
 
       {analysis ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <FormScoreRing score={analysis.result.overallScore} shotType={analysis.result.shotType} />
+          <View style={[styles.scoreHero, { backgroundColor: colors.hero }]}>
+            <View style={styles.heroMotif} pointerEvents="none">
+              <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+            </View>
+            <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>FORM SCORE</Text>
+            <View style={styles.scoreRow}>
+              <Text style={[styles.scoreValue, { color: colors.onHero, fontFamily: NUM }]}>
+                {Math.round(Math.max(0, Math.min(100, analysis.result.overallScore)))}
+              </Text>
+              <Text
+                style={[
+                  styles.scoreMax,
+                  { color: withAlpha(colors.onHero, 0.58), fontFamily: NUM },
+                ]}
+              >
+                /100
+              </Text>
+            </View>
+            <Text style={[styles.heroShot, { color: withAlpha(colors.onHero, 0.72) }]}>
+              {getShotTypeLabel(analysis.result.shotType)}
+            </Text>
+          </View>
 
           <View
             style={[
@@ -107,9 +130,47 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     gap: 12,
     padding: 16,
+  },
+  scoreHero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 120,
+    position: 'absolute',
+    right: -20,
+    top: -16,
+    width: 240,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  scoreRow: {
+    alignItems: 'baseline',
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 8,
+  },
+  scoreValue: {
+    fontSize: 56,
+    fontWeight: '800',
+    lineHeight: 60,
+  },
+  scoreMax: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  heroShot: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
   summaryText: {
     fontSize: 14,

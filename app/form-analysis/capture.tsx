@@ -6,7 +6,7 @@ import { normalizeFormShotTypeParam } from '@/components/pose';
 import { VideoRecorder } from '@/components/video/VideoRecorder';
 import { analyzeClip } from '@/services/pose';
 import { useFormAnalysisStore } from '@/stores';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { replaceRoute } from '@/utils/navigation';
 
 export default function CaptureFormAnalysisScreen() {
@@ -67,20 +67,20 @@ export default function CaptureFormAnalysisScreen() {
       {isAnalyzing ? (
         <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
           <View style={styles.overlayContent}>
-            <ActivityIndicator color={colors.surface} size="large" />
-            <Text style={[styles.overlayTitle, { color: colors.surface }]}>解析中...</Text>
+            <ActivityIndicator color={colors.onHero} size="large" />
+            <Text style={[styles.overlayTitle, { color: colors.onHero }]}>解析中...</Text>
             <View
               accessibilityLabel="解析の進捗"
-              style={[styles.progressTrack, { backgroundColor: withAlpha(colors.surface, 0.28) }]}
+              style={[styles.progressTrack, { backgroundColor: withAlpha(colors.onHero, 0.28) }]}
             >
               <View
                 style={[
                   styles.progressFill,
-                  { backgroundColor: colors.surface, width: `${Math.round(progress * 100)}%` },
+                  { backgroundColor: colors.onHero, width: `${Math.round(progress * 100)}%` },
                 ]}
               />
             </View>
-            <Text style={[styles.progressText, { color: colors.surface }]}>
+            <Text style={[styles.progressText, { color: colors.onHero }]}>
               {Math.round(progress * 100)}%
             </Text>
           </View>
@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   progressText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',

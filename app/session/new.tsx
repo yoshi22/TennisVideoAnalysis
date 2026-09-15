@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, SectionHeader, SegmentedControl } from '@/components/common';
+import { Button, CourtLines, SectionHeader, SegmentedControl } from '@/components/common';
 import { VideoPickerSheet, VideoThumbnail } from '@/components/video';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
@@ -31,7 +31,7 @@ const MATCH_FORMAT_OPTIONS: { label: string; value: MatchFormat }[] = [
 ];
 
 export default function NewSessionScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const addSession = useSessionStore((state) => state.addSession);
   const [title, setTitle] = useState('');
@@ -77,9 +77,9 @@ export default function NewSessionScreen() {
         options={{
           headerShown: true,
           title: '新しいセッション',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -95,12 +95,24 @@ export default function NewSessionScreen() {
               }}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+          <View style={styles.heroMotif} pointerEvents="none">
+            <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+          </View>
+          <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>NEW SESSION</Text>
+          <Text style={[styles.heroTitle, { color: colors.onHero }]}>セッション作成</Text>
+          <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
+            {sport === 'softTennis' ? 'ソフトテニス' : '硬式テニス'} ・{' '}
+            {matchFormat === 'singles' ? 'シングルス' : 'ダブルス'}
+          </Text>
+        </View>
+
         {/* Video drop zone */}
         <View
           style={[
@@ -117,8 +129,8 @@ export default function NewSessionScreen() {
             />
           ) : (
             <>
-              <View style={[styles.videoIconBg, { backgroundColor: colors.primaryLo }]}>
-                <Text style={[styles.videoIconText, { color: colors.primary }]}>▶</Text>
+              <View style={[styles.videoIconBg, { backgroundColor: colors.tileNavy }]}>
+                <Text style={[styles.videoIconText, { color: colors.onHero }]}>▶</Text>
               </View>
               <Text style={[styles.videoDropTitle, { color: colors.text }]}>動画を追加</Text>
               <Text style={[styles.videoDropSub, { color: colors.textMuted }]}>
@@ -261,6 +273,35 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     gap: 20,
   },
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 100,
+    position: 'absolute',
+    right: -20,
+    top: -10,
+    width: 220,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
+  },
   videoDrop: {
     borderRadius: 14,
     borderWidth: 1,
@@ -293,11 +334,11 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 0.02,
+    letterSpacing: 0,
   },
   input: {
     minHeight: 48,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -305,7 +346,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 112,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,

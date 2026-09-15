@@ -7,7 +7,7 @@ import { SERVE_RESULT_META } from '@/constants/serveResults';
 import { SHOT_TYPE_META } from '@/constants/shotTypes';
 import { OUTCOME_LABELS, RESULT_REASON_LABELS } from '@/constants/labels';
 import { buildDraftPointFromCandidate } from '@/services/scoring';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type AutoPointCandidate, type PointRecord } from '@/types';
 
 interface AutoPointCardProps {
@@ -53,7 +53,6 @@ export function AutoPointCard({
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          shadowColor: colors.text,
         },
       ]}
     >
@@ -61,7 +60,7 @@ export function AutoPointCard({
         <View
           style={[styles.outcomeChip, { backgroundColor: isWon ? colors.success : colors.danger }]}
         >
-          <Text style={[styles.outcomeText, { color: colors.surface }]}>
+          <Text style={[styles.outcomeText, { color: colors.onHero }]}>
             {OUTCOME_LABELS[candidate.suggestedOutcome]}
           </Text>
         </View>
@@ -76,7 +75,7 @@ export function AutoPointCard({
         {confidenceColor !== undefined && candidate.confidence !== undefined ? (
           <View style={styles.confidenceColumn}>
             <View style={[styles.confidenceBadge, { backgroundColor: confidenceColor }]}>
-              <Text style={[styles.confidenceText, { color: colors.surface }]}>
+              <Text style={[styles.confidenceText, { color: colors.onHero }]}>
                 {`信頼度 ${Math.round(candidate.confidence * 100)}%`}
               </Text>
             </View>
@@ -165,13 +164,9 @@ export function AutoPointCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
-    borderWidth: 0.5,
-    elevation: 1,
+    borderWidth: 1,
     gap: 14,
     padding: 14,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   headerRow: {
     alignItems: 'center',
@@ -197,6 +192,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     fontVariant: ['tabular-nums'],
     marginTop: 2,
@@ -207,6 +203,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   metaText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -236,6 +233,7 @@ const styles = StyleSheet.create({
   },
   diagnosticText: {
     flex: 1,
+    fontFamily: fontFamily.numeric,
     fontSize: 13,
     lineHeight: 20,
   },
@@ -250,6 +248,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   confidenceText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 11,
     fontWeight: '700',
   },

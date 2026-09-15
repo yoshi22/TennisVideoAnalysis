@@ -13,12 +13,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Chip, EmptyState, SecondSlider, SectionHeader } from '@/components/common';
+import {
+  Button,
+  Chip,
+  CourtLines,
+  EmptyState,
+  SecondSlider,
+  SectionHeader,
+} from '@/components/common';
 import { BallTraceOverlay } from '@/components/court';
 import { useSession } from '@/hooks';
 import { analyzeRally, detectRallyWindows, type RallyWindow } from '@/services/ball';
 import { extractStillFrame, type StillFrame } from '@/services/pose/frameSampler';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type BallTrajectory, type Bounce } from '@/types';
 import { formatSeconds } from '@/utils/formatTime';
 
@@ -31,6 +38,7 @@ interface RallyResult {
 const SLIDER_MIN = 0;
 const SLIDER_MAX = 60;
 const SLIDER_STEP = 0.5;
+const NUM = fontFamily.numeric;
 const CANVAS_WIDTH = Dimensions.get('window').width - 40;
 const CANVAS_HEIGHT = CANVAS_WIDTH * 0.75;
 
@@ -41,7 +49,7 @@ function formatWindowLabel(window: RallyWindow): string {
 }
 
 export default function BallTraceScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const { session } = useSession();
   const [startSec, setStartSec] = useState(0);
@@ -140,9 +148,9 @@ export default function BallTraceScreen() {
         options={{
           headerShown: true,
           title: 'ボール軌跡解析',
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: colors.surface,
-          headerTitleStyle: { fontWeight: '700' },
+          headerStyle: { backgroundColor: colors.hero },
+          headerTintColor: colors.onHero,
+          headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
           headerLeft: () => (
@@ -152,7 +160,7 @@ export default function BallTraceScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Ionicons color={colors.surface} name="chevron-back" size={26} />
+              <Ionicons color={colors.onHero} name="chevron-back" size={26} />
             </TouchableOpacity>
           ),
         }}
@@ -172,6 +180,22 @@ export default function BallTraceScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroPad}>
+            <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+              <View style={styles.heroMotif} pointerEvents="none">
+                <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+              </View>
+              <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>BALL TRACE</Text>
+              <Text style={[styles.heroTitle, { color: colors.onHero }]}>ボール軌跡解析</Text>
+              <Text style={[styles.heroRange, { color: colors.onHero, fontFamily: NUM }]}>
+                {startSec.toFixed(1)}–{endSec.toFixed(1)} 秒
+              </Text>
+              <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
+                バウンド <Text style={{ fontFamily: NUM }}>{result?.bounces.length ?? 0}</Text> 回
+              </Text>
+            </View>
+          </View>
+
           <View>
             <SectionHeader title="自動分割" />
             <View
@@ -346,13 +370,51 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   content: {
-    gap: 18,
+    gap: 16,
     paddingBottom: 48,
     paddingTop: 20,
   },
+  heroPad: {
+    paddingHorizontal: 20,
+  },
+  hero: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    padding: 16,
+    position: 'relative',
+  },
+  heroMotif: {
+    height: 120,
+    position: 'absolute',
+    right: -20,
+    top: -16,
+    width: 240,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+    marginTop: 8,
+  },
+  heroRange: {
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 26,
+    marginTop: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 4,
+  },
   card: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     marginHorizontal: 20,
     padding: 14,
   },
@@ -390,6 +452,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   progressText: {
+    fontFamily: fontFamily.numeric,
     fontSize: 12,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',
@@ -403,6 +466,7 @@ const styles = StyleSheet.create({
   },
   resultText: {
     alignSelf: 'stretch',
+    fontFamily: fontFamily.numeric,
     fontSize: 14,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',
@@ -410,6 +474,7 @@ const styles = StyleSheet.create({
   },
   speedText: {
     alignSelf: 'stretch',
+    fontFamily: fontFamily.numeric,
     fontSize: 15,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',

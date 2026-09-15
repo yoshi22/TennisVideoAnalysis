@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BrandMark, Button, SegmentedControl } from '@/components/common';
+import { BrandMark, Button, CourtLines, SegmentedControl } from '@/components/common';
 import { MockAutoScoreCard } from '@/components/onboarding/MockAutoScoreCard';
 import { MockCalibrationCard } from '@/components/onboarding/MockCalibrationCard';
 import { MockNewSessionCard } from '@/components/onboarding/MockNewSessionCard';
@@ -60,7 +60,7 @@ const STEPS = [
 ] as const;
 
 export default function OnboardingScreen() {
-  const { colors } = useTheme();
+  const { colors, withAlpha } = useTheme();
   const router = useRouter();
   const { replay } = useLocalSearchParams<{ replay?: string }>();
   const scrollRef = useRef<ScrollView>(null);
@@ -117,7 +117,7 @@ export default function OnboardingScreen() {
     if (index === 0) {
       return (
         <View style={styles.brandWrap}>
-          <BrandMark size={48} withText={true} />
+          <BrandMark color={colors.heroAccent} size={48} withText={false} />
         </View>
       );
     }
@@ -192,11 +192,31 @@ export default function OnboardingScreen() {
         {STEPS.map((step, index) => (
           <View key={step.title} style={[styles.page, { width }]}>
             <View
-              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: index === 0 ? colors.hero : colors.surface,
+                  borderColor: index === 0 ? colors.hero : colors.border,
+                },
+              ]}
             >
+              {index === 0 ? (
+                <View style={styles.heroMotif} pointerEvents="none">
+                  <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
+                </View>
+              ) : null}
               <View style={styles.visual}>{renderVisual(index)}</View>
-              <Text style={[styles.title, { color: colors.text }]}>{step.title}</Text>
-              <Text style={[styles.body, { color: colors.textSub }]}>{step.body}</Text>
+              <Text style={[styles.title, { color: index === 0 ? colors.onHero : colors.text }]}>
+                {step.title}
+              </Text>
+              <Text
+                style={[
+                  styles.body,
+                  { color: index === 0 ? withAlpha(colors.onHero, 0.72) : colors.textSub },
+                ]}
+              >
+                {step.body}
+              </Text>
             </View>
           </View>
         ))}
@@ -253,13 +273,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
   },
+  heroMotif: {
+    height: 180,
+    position: 'absolute',
+    right: -20,
+    top: 8,
+    width: 260,
+  },
   card: {
     alignItems: 'center',
     borderRadius: radius.l,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
     padding: spacing.xxl,
+    overflow: 'hidden',
   },
   visual: {
     alignItems: 'center',

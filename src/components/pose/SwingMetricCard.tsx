@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useTheme, type ColorTokens } from '@/theme';
+import { fontFamily, useTheme, type ColorTokens } from '@/theme';
 import { type SwingMetric, type SwingRating } from '@/types';
 
 interface SwingMetricCardProps {
@@ -29,7 +29,6 @@ export function SwingMetricCard({ metric }: SwingMetricCardProps) {
           backgroundColor: colors.surface,
           borderColor: colors.border,
           borderLeftColor: ratingColor,
-          shadowColor: colors.text,
         },
       ]}
     >
@@ -48,14 +47,10 @@ export function SwingMetricCard({ metric }: SwingMetricCardProps) {
 const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderLeftWidth: 4,
-    elevation: 1,
     gap: 8,
     padding: 14,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   header: {
     alignItems: 'flex-start',
@@ -70,6 +65,7 @@ const styles = StyleSheet.create({
   },
   value: {
     flexShrink: 0,
+    fontFamily: fontFamily.numeric,
     fontSize: 15,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
