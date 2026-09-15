@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 
 interface PointScoreboardProps {
   ourScore: number;
@@ -60,7 +60,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   score: {
-    fontSize: 44,
+    fontFamily: fontFamily.numeric,
+    fontSize: 46,
     fontWeight: '700',
     lineHeight: 48,
     letterSpacing: -1,

@@ -23,7 +23,7 @@ import { WEAKNESS_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
 import { getAnalyzer } from '@/services/analysis';
 import { computeMatchScore } from '@/services/scoring';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { formatDate } from '@/utils/date';
 import { formatPercent } from '@/utils/format';
 import { pushRoute } from '@/utils/navigation';
@@ -109,33 +109,33 @@ export default function ReportScreen() {
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero card */}
-        <View style={[styles.hero, { backgroundColor: colors.primary }]}>
+        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
           <View style={styles.heroMotif} pointerEvents="none">
-            <CourtLines stroke={colors.surface} strokeOpacity={0.18} strokeWidth={1.4} />
+            <CourtLines stroke={colors.onHero} strokeOpacity={0.18} strokeWidth={1.4} />
           </View>
           <View style={styles.heroMeta}>
-            <Tag color={colors.surface} bg={`${colors.surface}2E`}>
+            <Tag color={colors.onHero} bg={`${colors.onHero}2E`}>
               {session.sport === 'tennis' ? '硬式' : 'ソフト'}
             </Tag>
-            <Tag color={colors.surface} bg={`${colors.surface}2E`}>
+            <Tag color={colors.onHero} bg={`${colors.onHero}2E`}>
               {session.matchFormat === 'singles' ? 'シングルス' : 'ダブルス'}
             </Tag>
             {wonCount > lostCount && (
-              <Tag color={colors.surface} bg={`${colors.surface}47`}>
+              <Tag color={colors.onHero} bg={`${colors.onHero}47`}>
                 勝
               </Tag>
             )}
-            <Text style={[styles.heroDate, { color: colors.surface }]}>
+            <Text style={[styles.heroDate, { color: colors.onHero }]}>
               {formatDate(session.createdAt)}
             </Text>
           </View>
-          <Text style={[styles.heroTitle, { color: colors.surface }]} numberOfLines={1}>
+          <Text style={[styles.heroTitle, { color: colors.onHero }]} numberOfLines={1}>
             {session.title}
           </Text>
-          <Text style={[styles.heroScore, { color: colors.surface }]}>
+          <Text style={[styles.heroScore, { color: colors.onHero }]}>
             {wonCount}–{lostCount}
           </Text>
-          <Text style={[styles.heroSub, { color: colors.surface }]}>
+          <Text style={[styles.heroSub, { color: colors.onHero }]}>
             {totalPoints} ポイント
             {quickPointCount > 0 ? ` ・ 詳細未入力 ${quickPointCount}` : ''}
           </Text>
@@ -439,6 +439,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heroScore: {
+    fontFamily: fontFamily.numeric,
     fontSize: 36,
     fontWeight: '700',
     lineHeight: 40,
@@ -468,6 +469,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
+    fontFamily: fontFamily.numeric,
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.3,

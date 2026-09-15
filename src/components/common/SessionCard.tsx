@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type TennisSession } from '@/types/session';
 
 import { Tag } from './Tag';
@@ -114,8 +114,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   score: {
-    fontSize: 20,
+    fontFamily: fontFamily.numeric,
+    fontSize: 22,
     fontWeight: '700',
-    letterSpacing: -0.3,
+    letterSpacing: 0.3,
   },
 });

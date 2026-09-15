@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatGameScore, formatSetScoreLine } from '@/services/scoring';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { type MatchScore } from '@/types';
 
 interface MatchScoreboardProps {
@@ -60,7 +60,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   score: {
-    fontSize: 22,
+    fontFamily: fontFamily.numeric,
+    fontSize: 24,
     fontVariant: ['tabular-nums'],
     fontWeight: '700',
   },

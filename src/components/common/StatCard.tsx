@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 
 import { CourtLines } from './CourtLines';
 import { ProgressRing } from './ProgressRing';
@@ -191,30 +191,30 @@ const styles = StyleSheet.create({
     letterSpacing: 0.02,
   },
   bigNum: {
-    fontSize: 28,
+    fontFamily: fontFamily.numeric,
+    fontSize: 30,
     fontWeight: '700',
     lineHeight: 32,
-    letterSpacing: -0.3,
   },
   unit: {
     fontSize: 14,
     fontWeight: '400',
   },
   sparkNum: {
-    fontSize: 34,
+    fontFamily: fontFamily.numeric,
+    fontSize: 36,
     fontWeight: '700',
     lineHeight: 36,
-    letterSpacing: -0.3,
   },
   sparkUnit: {
     fontSize: 15,
     fontWeight: '600',
   },
   displayNum: {
-    fontSize: 40,
+    fontFamily: fontFamily.numeric,
+    fontSize: 42,
     fontWeight: '700',
     lineHeight: 44,
-    letterSpacing: -0.3,
   },
   displayUnit: {
     fontSize: 16,
@@ -233,8 +233,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringInner: {
-    fontSize: 11,
+    fontFamily: fontFamily.numeric,
+    fontSize: 13,
     fontWeight: '700',
-    letterSpacing: -0.3,
   },
 });

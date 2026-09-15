@@ -16,7 +16,7 @@ import { ReportDrillList, ReportInsightList, ReportTipList } from '@/components/
 import { WEAKNESS_LABELS } from '@/constants/labels';
 import { getAnalyzer } from '@/services/analysis';
 import { useSessionStore } from '@/stores/sessionStore';
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { formatDate } from '@/utils/date';
 import { formatPercent } from '@/utils/format';
 import { pushRoute } from '@/utils/navigation';
@@ -92,28 +92,28 @@ export default function ReportTabScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* hero card */}
         <View style={styles.heroPad}>
-          <View style={[styles.hero, { backgroundColor: colors.primary }]}>
+          <View style={[styles.hero, { backgroundColor: colors.hero }]}>
             <View style={styles.courtMotif} pointerEvents="none">
-              <CourtLines stroke={colors.surface} strokeOpacity={0.18} strokeWidth={1.4} />
+              <CourtLines stroke={colors.onHero} strokeOpacity={0.18} strokeWidth={1.4} />
             </View>
             <View style={styles.heroTagRow}>
-              <Tag color={colors.surface} bg="rgba(255,255,255,0.18)">
+              <Tag color={colors.onHero} bg="rgba(255,255,255,0.18)">
                 {s.sport === 'tennis' ? '硬式' : 'ソフト'}
               </Tag>
-              <Tag color={colors.surface} bg="rgba(255,255,255,0.18)">
+              <Tag color={colors.onHero} bg="rgba(255,255,255,0.18)">
                 {s.matchFormat === 'singles' ? 'シングルス' : 'ダブルス'}
               </Tag>
               <View style={{ flex: 1 }} />
-              <Text style={[styles.heroDate, { color: colors.surface }]}>
+              <Text style={[styles.heroDate, { color: colors.onHero }]}>
                 {formatDate(s.startedAt)}
               </Text>
             </View>
-            <Text style={[styles.heroTitle, { color: colors.surface }]}>{s.title}</Text>
-            <Text style={[styles.heroScore, { color: colors.surface }]}>
+            <Text style={[styles.heroTitle, { color: colors.onHero }]}>{s.title}</Text>
+            <Text style={[styles.heroScore, { color: colors.onHero }]}>
               {wonCount}–{lostCount}
             </Text>
             {quickPointCount > 0 ? (
-              <Text style={[styles.heroSub, { color: colors.surface }]}>
+              <Text style={[styles.heroSub, { color: colors.onHero }]}>
                 詳細未入力 {quickPointCount}
               </Text>
             ) : null}
@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heroScore: {
+    fontFamily: fontFamily.numeric,
     fontSize: 36,
     fontWeight: '700',
     lineHeight: 40,
@@ -311,6 +312,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
+    fontFamily: fontFamily.numeric,
     fontSize: 22,
     fontWeight: '700',
     lineHeight: 26,
