@@ -72,6 +72,16 @@ export default function SessionLayout() {
         }}
       />
       <Tabs.Screen
+        name="rally-history"
+        options={{
+          title: 'ラリー履歴',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons color={color} name="git-branch-outline" size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="calibration"
         options={{
           href: null,

@@ -10,6 +10,9 @@ export const fontFamily = {
   jpMedium: 'NotoSansJP_500Medium',
   jpSemiBold: 'NotoSansJP_600SemiBold',
   jpBold: 'NotoSansJP_700Bold',
+  // Condensed numeral face — scores, stats, speeds. Digits only.
+  numeric: 'SairaCondensed_700Bold',
+  numericSemi: 'SairaCondensed_600SemiBold',
 } as const;
 
 // Numeric variant — tabular nums, tight tracking

@@ -10,6 +10,10 @@ import {
   NotoSansJP_600SemiBold,
   NotoSansJP_700Bold,
 } from '@expo-google-fonts/noto-sans-jp';
+import {
+  SairaCondensed_600SemiBold,
+  SairaCondensed_700Bold,
+} from '@expo-google-fonts/saira-condensed';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -44,6 +48,8 @@ export default function RootLayout() {
     NotoSansJP_500Medium,
     NotoSansJP_600SemiBold,
     NotoSansJP_700Bold,
+    SairaCondensed_600SemiBold,
+    SairaCondensed_700Bold,
   });
   const [onboardingHydrated, setOnboardingHydrated] = useState(
     useOnboardingStore.persist.hasHydrated()
