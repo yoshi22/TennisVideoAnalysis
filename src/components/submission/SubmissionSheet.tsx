@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/common/Button';
 import { SESSION_TYPE_LABELS } from '@/constants/labels';
@@ -23,11 +24,13 @@ export function SubmissionSheet({ session, onClose, router }: SubmissionSheetPro
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const betaState = useBetaStore((s) => ({
-    participantId: s.participantId,
-    consentVersion: s.consentVersion,
-    consentAcceptedAt: s.consentAcceptedAt,
-  }));
+  const betaState = useBetaStore(
+    useShallow((s) => ({
+      participantId: s.participantId,
+      consentVersion: s.consentVersion,
+      consentAcceptedAt: s.consentAcceptedAt,
+    }))
+  );
   const consented = hasValidConsent(betaState);
 
   const uploader = createUploader();

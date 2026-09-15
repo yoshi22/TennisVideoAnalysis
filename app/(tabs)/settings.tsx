@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button, SegmentedControl, Tag } from '@/components/common';
 import { hasValidConsent, useBetaStore } from '@/stores/betaStore';
@@ -176,11 +177,13 @@ export default function SettingsScreen() {
   const setProfile = usePlayerStore((state) => state.setProfile);
   const updateProfile = usePlayerStore((state) => state.updateProfile);
   const clearAll = useSessionStore((state) => state.clearAll);
-  const betaState = useBetaStore((s) => ({
-    participantId: s.participantId,
-    consentVersion: s.consentVersion,
-    consentAcceptedAt: s.consentAcceptedAt,
-  }));
+  const betaState = useBetaStore(
+    useShallow((s) => ({
+      participantId: s.participantId,
+      consentVersion: s.consentVersion,
+      consentAcceptedAt: s.consentAcceptedAt,
+    }))
+  );
   const revokeConsent = useBetaStore((s) => s.revokeConsent);
   const betaConsented = hasValidConsent(betaState);
   const [name, setName] = useState(profile?.name ?? '');
