@@ -23,6 +23,9 @@ import cv2
 import numpy as np
 import torch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import display_path, resolve_path
+
 if __package__ in (None, ""):
     sys.path.append(str(Path(__file__).resolve().parent))
     from eval_pe import load_model, resolve_device  # type: ignore
@@ -80,18 +83,6 @@ def load_windows(path_value: str) -> list[tuple[float, float]] | None:
     for row in rows:
         windows.append((float(row["startSec"]), float(row["endSec"])))
     return windows
-
-
-def resolve_path(value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else BASE / path
-
-
-def display_path(path: Path) -> str:
-    try:
-        return str(path.relative_to(BASE))
-    except ValueError:
-        return str(path)
 
 
 def frame_number(path: Path) -> int:
@@ -172,7 +163,7 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = resolve_device(args.device)
-    checkpoint_path = resolve_path(args.checkpoint)
+    checkpoint_path = resolve_path(args.checkpoint, Path(args.checkpoint))
     model, checkpoint = load_model(checkpoint_path, device)
     config = checkpoint.get("config", {}) if isinstance(checkpoint, dict) else {}
     input_height = int(config.get("input_height", 288))

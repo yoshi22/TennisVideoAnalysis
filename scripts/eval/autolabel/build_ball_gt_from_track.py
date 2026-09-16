@@ -5,9 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import resolve_path
 
 BASE = Path(__file__).resolve().parents[3]
 DATASETS_DIR = BASE / "eval" / "datasets"
@@ -30,13 +34,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--source-filter", choices=("det", "all"), default="det")
     return parser.parse_args()
-
-
-def resolve_path(value: str | None, default: Path) -> Path:
-    if value is None:
-        return default
-    path = Path(value)
-    return path if path.is_absolute() else BASE / path
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

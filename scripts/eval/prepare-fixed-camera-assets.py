@@ -15,11 +15,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+
+from _common import load_json
 
 BASE = Path(__file__).parent.parent.parent
 DATASET = "fixed-camera-v1"
@@ -66,11 +66,6 @@ def set_dataset(dataset: str) -> None:
     CLIP_DIR = DATASET_DIR / "clips"
     FRAMES_DIR = DATASET_DIR / "frames"
     FRAMES30_DIR = DATASET_DIR / "frames30"
-
-
-def load_json(path: Path) -> Any:
-    with open(path) as f:
-        return json.load(f)
 
 
 def load_label_specs(clip_ids: list[str] | None, default_duration_sec: float) -> list[AssetSpec]:

@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +31,8 @@ from typing import Any
 
 import cv2
 import numpy as np
+
+from _common import frame_number
 
 BASE = Path(__file__).parent.parent.parent
 DATASET = "fixed-camera-v1"
@@ -84,11 +85,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fukui-fallback-max-existing-iou", type=float, default=0.2)
     parser.add_argument("--iou-debug", action="store_true")
     return parser.parse_args()
-
-
-def frame_number(path: Path) -> int:
-    match = re.search(r"(\d+)", path.name)
-    return int(match.group(1)) if match else 0
 
 
 def clip_frame_paths(clip_id: str) -> list[Path]:

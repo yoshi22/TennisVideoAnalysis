@@ -19,21 +19,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
+import sys
 from pathlib import Path
 
 import cv2
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import frame_number
 
 from blob_candidates import candidates_for_triplet
 
 BASE = Path(__file__).resolve().parents[3]
 DATASETS_DIR = BASE / "eval/datasets"
-FRAME_NUMBER_RE = re.compile(r"(\d+)")
-
-
-def frame_number(path: Path) -> int:
-    m = FRAME_NUMBER_RE.search(path.name)
-    return int(m.group(1)) if m else 0
 
 
 def sorted_frames(clip_dir: Path) -> list[Path]:

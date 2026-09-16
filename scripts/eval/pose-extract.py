@@ -26,11 +26,11 @@ Court ROI filter: only persons whose bbox center falls within ROI are kept.
 
 import sys
 import os
-import re
-import json
 import argparse
 import numpy as np
 from pathlib import Path
+
+from _common import frame_number
 
 BASE = Path(__file__).parent.parent.parent
 DATASET = "fixed-camera-v1"
@@ -80,11 +80,6 @@ def set_dataset(dataset: str) -> None:
 
 def clip_ids() -> list[str]:
     return sorted(path.stem for path in LABEL_DIR.glob("*.json"))
-
-
-def frame_number(path: Path) -> int:
-    match = re.search(r"(\d+)", path.name)
-    return int(match.group(1)) if match else 0
 
 
 def clip_config(clip_id: str) -> dict[str, int]:

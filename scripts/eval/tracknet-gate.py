@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +27,8 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
+
+from _common import frame_number
 
 BASE = Path(__file__).parent.parent.parent
 DATASET_DIR = BASE / "eval/datasets/fixed-camera-v1"
@@ -123,11 +124,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto", choices=("auto", "cpu", "mps", "cuda"))
     parser.add_argument("--iou-debug", action="store_true")
     return parser.parse_args()
-
-
-def frame_number(path: Path) -> int:
-    match = re.search(r"(\d+)", path.name)
-    return int(match.group(1)) if match else 0
 
 
 def clip_ids_from_labels(selected: list[str] | None) -> list[str]:

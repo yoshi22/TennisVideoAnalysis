@@ -14,13 +14,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import cv2
 import numpy as np
+
+from _common import frame_number
 
 BASE = Path(__file__).parent.parent.parent
 FRAMES_DIR = BASE / "eval/datasets/fixed-camera-v1/frames"
@@ -40,11 +41,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--min-interval-sec", type=float, default=6.0)
     return parser.parse_args()
-
-
-def frame_number(path: Path) -> int:
-    match = re.search(r"(\d+)", path.name)
-    return int(match.group(1)) if match else 0
 
 
 def load_gt(clip_id: str) -> list[dict[str, float]]:

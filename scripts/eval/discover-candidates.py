@@ -27,6 +27,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from _common import load_json
+
 BASE = Path(__file__).resolve().parent.parent.parent
 
 DEFAULT_QUERIES = [
@@ -51,11 +53,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--status", default="needs_screening")
     parser.add_argument("--write", action="store_true")
     return parser.parse_args()
-
-
-def load_json(path: Path) -> Any:
-    with open(path) as f:
-        return json.load(f)
 
 
 def write_json(path: Path, payload: Any) -> None:

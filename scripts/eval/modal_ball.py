@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from _common import COURT_LENGTH_M, DOUBLES_WIDTH_M, SINGLES_WIDTH_M
+
 BASE = Path(__file__).resolve().parent.parent.parent
 
 try:
@@ -35,9 +37,6 @@ REMOTE_V4_CHECKPOINT = "eval/results/tracknet-v4-modal/latest.pt"
 NORM_WIDTH = 1280
 NORM_HEIGHT = 720
 NORM_FPS = 30
-COURT_LENGTH_M = 23.77
-SINGLES_WIDTH_M = 8.23
-DOUBLES_WIDTH_M = 10.97
 
 app = modal.App(APP_NAME)
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)

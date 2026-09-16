@@ -16,6 +16,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import load_json
+
 if __package__ in (None, ""):
     sys.path.append(str(Path(__file__).resolve().parent))
     import extract_features  # type: ignore
@@ -66,11 +69,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto", choices=("auto", "mps", "cuda", "cpu"))
     parser.add_argument("--overwrite-features", action="store_true")
     return parser.parse_args()
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def clip_duration_sec(dataset: str, clip_id: str) -> float:

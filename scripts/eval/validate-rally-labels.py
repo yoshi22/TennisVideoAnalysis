@@ -13,9 +13,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 from typing import Any
+
+from _common import load_json
 
 BASE = Path(__file__).parent.parent.parent
 
@@ -33,11 +34,6 @@ def parse_args() -> argparse.Namespace:
 
 def allow_long_rally_warnings(dataset: str) -> bool:
     return dataset.startswith("closed-beta-soft")
-
-
-def load_json(path: Path) -> Any:
-    with open(path) as f:
-        return json.load(f)
 
 
 def label_paths(dataset: str, selected: list[str] | None) -> list[Path]:

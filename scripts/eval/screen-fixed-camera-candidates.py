@@ -15,10 +15,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import subprocess
 from pathlib import Path
 from typing import Any
+
+from _common import load_json
 
 BASE = Path(__file__).parent.parent.parent
 
@@ -38,11 +39,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
-
-
-def load_json(path: Path) -> Any:
-    with open(path) as f:
-        return json.load(f)
 
 
 def source_key(url: str) -> str:

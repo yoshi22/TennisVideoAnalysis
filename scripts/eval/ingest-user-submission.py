@@ -25,6 +25,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from _common import load_json
+
 BASE = Path(__file__).resolve().parent.parent.parent
 MIN_RALLY_SEC = 1.5
 MAX_RALLY_SEC = 45.0
@@ -48,11 +50,6 @@ def is_number(value: object) -> bool:
 
 def is_non_empty_string(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
-
-
-def load_json(path: Path) -> object:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def write_json(path: Path, data: object) -> None:

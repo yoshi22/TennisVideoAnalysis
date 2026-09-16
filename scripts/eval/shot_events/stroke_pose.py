@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import os
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +15,9 @@ from typing import Any
 
 import cv2
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import display_path, resolve_path
 
 BASE = Path(__file__).resolve().parents[3]
 DATASETS_DIR = BASE / "eval" / "datasets"
@@ -92,18 +96,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-player-ball-px", type=float, default=220.0)
     parser.add_argument("--self-test", action="store_true")
     return parser.parse_args()
-
-
-def resolve_path(value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else BASE / path
-
-
-def display_path(path: Path) -> str:
-    try:
-        return str(path.relative_to(BASE))
-    except ValueError:
-        return str(path)
 
 
 def valid_kp(person: PersonPose, idx: int, kp_conf: float) -> bool:
@@ -313,7 +305,7 @@ def form_metrics(person: PersonPose, ball_xy: tuple[float, float], handedness: s
 
 
 def load_shot_events(clip_id: str, path_value: str | None) -> dict[str, Any]:
-    path = resolve_path(path_value) if path_value else RESULTS_DIR / f"{clip_id}.json"
+    path = resolve_path(path_value, Path(path_value)) if path_value else RESULTS_DIR / f"{clip_id}.json"
     if not path.exists():
         raise SystemExit(f"B2 shot-events JSON not found: {display_path(path)}")
     with open(path, encoding="utf-8") as handle:
@@ -469,7 +461,7 @@ def draw_pose_overlay(
 def process_clip(args: argparse.Namespace) -> dict[str, Any]:
     events_payload = load_shot_events(args.clip_id, args.events)
     contacts = contact_events(events_payload)
-    out_dir = resolve_path(args.output_dir)
+    out_dir = resolve_path(args.output_dir, Path(args.output_dir))
     overlay_dir = out_dir / "strokes"
     model = load_pose_model(args.model)
 
@@ -517,7 +509,9 @@ def process_clip(args: argparse.Namespace) -> dict[str, Any]:
         "schemaVersion": 1,
         "dataset": args.dataset,
         "clipId": args.clip_id,
-        "sourceShotEvents": display_path(resolve_path(args.events) if args.events else RESULTS_DIR / f"{args.clip_id}.json"),
+        "sourceShotEvents": display_path(
+            resolve_path(args.events, Path(args.events)) if args.events else RESULTS_DIR / f"{args.clip_id}.json"
+        ),
         "handedness": args.handedness,
         "caveats": [
             "Stroke type and form metrics are heuristic from single-frame COCO pose keypoints.",
@@ -583,9 +577,13 @@ def main() -> None:
         return
     payload = process_clip(args)
     summary = payload["summary"]
-    print(f"stroke_pose {display_path(resolve_path(args.output_dir) / f'{args.clip_id}_strokes.json')}")
+    print(
+        f"stroke_pose {display_path(resolve_path(args.output_dir, Path(args.output_dir)) / f'{args.clip_id}_strokes.json')}"
+    )
     print(f"contacts={summary['contacts']} counts={summary['counts']}")
-    print(f"overlays={len(summary['overlays'])} dir={display_path(resolve_path(args.output_dir) / 'strokes')}")
+    print(
+        f"overlays={len(summary['overlays'])} dir={display_path(resolve_path(args.output_dir, Path(args.output_dir)) / 'strokes')}"
+    )
 
 
 if __name__ == "__main__":

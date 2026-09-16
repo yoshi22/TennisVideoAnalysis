@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +27,8 @@ from typing import Any
 
 import cv2
 import numpy as np
+
+from _common import frame_number, load_json
 
 BASE = Path(__file__).parent.parent.parent
 DATASET = "fixed-camera-v2"
@@ -75,16 +76,6 @@ def set_dataset(dataset: str) -> None:
     DATASET_DIR = BASE / "eval/datasets" / DATASET
     LABEL_DIR = DATASET_DIR / "labels"
     TRACK_DIR = DATASET_DIR / "motion-tracks"
-
-
-def frame_number(path: Path) -> int:
-    match = re.search(r"(\d+)", path.name)
-    return int(match.group(1)) if match else 0
-
-
-def load_json(path: Path) -> Any:
-    with open(path) as f:
-        return json.load(f)
 
 
 def write_json(path: Path, payload: Any) -> None:

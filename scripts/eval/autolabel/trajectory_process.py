@@ -20,12 +20,16 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 import cv2
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import load_json
 
 BASE = Path(__file__).resolve().parents[3]
 DATASETS_DIR = BASE / "eval/datasets"
@@ -93,11 +97,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--height", type=int, default=720, help="Source frame height in pixels")
     p.add_argument("--no-trails", action="store_true", help="Skip verification trail image rendering")
     return p.parse_args()
-
-
-def load_json(path: Path) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def resolve_labels_path(dataset_dir: Path, clip_id: str) -> Path:

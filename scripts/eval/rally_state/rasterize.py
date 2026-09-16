@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
-import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import load_json
 
 BASE = Path(__file__).resolve().parent.parent.parent.parent
 DATASETS_DIR = BASE / "eval" / "datasets"
@@ -21,11 +24,6 @@ def format_fps(fps: float) -> str:
 
 def cache_path(dataset: str, fps: float) -> Path:
     return TMP_DIR / f"rally_state_labels_{dataset}_{format_fps(fps)}fps.npz"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def clip_duration(label: dict[str, Any]) -> float:

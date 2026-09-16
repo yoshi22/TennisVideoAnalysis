@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import urllib.request
 from collections import deque
@@ -23,6 +22,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from _common import display_path, frame_number, load_json
+
 BASE = Path(__file__).parent.parent.parent
 DATASETS_DIR = BASE / "eval/datasets"
 DEFAULT_DATASET = "fixed-camera-v2"
@@ -30,7 +31,6 @@ DEFAULT_MODEL = "tracknet-v1"
 DEFAULT_WEIGHTS = Path("/private/tmp/tennis-eval-models/tracknet_weights.pth")
 WEIGHTS_URL = "https://huggingface.co/vishnushenoy09/tracknet-v1-tennis/resolve/main/tracknet_weights.pth"
 INPUT_SIZE = (640, 360)
-FRAME_NUMBER_RE = re.compile(r"(\d+)")
 
 
 class ConvBlock(nn.Module):
@@ -138,18 +138,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def frame_number(path: Path) -> int:
-    match = FRAME_NUMBER_RE.search(path.name)
-    return int(match.group(1)) if match else 0
-
-
 def sorted_jpgs(path: Path) -> tuple[Path, ...]:
     return tuple(sorted(path.glob("*.jpg"), key=frame_number))
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def dataset_dir(dataset: str) -> Path:
@@ -540,13 +530,6 @@ def write_ffmpeg_video_tracks(
 
     progress(clip_id, processed, total, done=True)
     return processed
-
-
-def display_path(path: Path) -> str:
-    try:
-        return str(path.relative_to(BASE))
-    except ValueError:
-        return str(path)
 
 
 def write_meta(

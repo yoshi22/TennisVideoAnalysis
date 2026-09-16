@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import statistics
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,14 +16,21 @@ from typing import Any, Iterable
 import cv2
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import (
+    COURT_LENGTH_M,
+    DOUBLES_WIDTH_M,
+    SINGLES_WIDTH_M,
+    display_path,
+    load_json,
+    resolve_path,
+)
+
 BASE = Path(__file__).resolve().parents[3]
 DATASETS_DIR = BASE / "eval" / "datasets"
 
 SOURCE_WIDTH = 1280
 SOURCE_HEIGHT = 720
-COURT_LENGTH_M = 23.77
-SINGLES_WIDTH_M = 8.23
-DOUBLES_WIDTH_M = 10.97
 SERVICE_LINE_FROM_NET_M = 6.40
 
 
@@ -119,23 +127,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--self-test", action="store_true")
     return parser.parse_args()
-
-
-def resolve_path(value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else BASE / path
-
-
-def display_path(path: Path) -> str:
-    try:
-        return str(path.relative_to(BASE))
-    except ValueError:
-        return str(path)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as handle:
-        return json.load(handle)
 
 
 def load_clean_trajectory(dataset: str, track_model: str, clip_id: str) -> list[TrackPoint]:
@@ -761,7 +752,7 @@ def write_outputs(
     all_raw_speeds: list[float],
     args: argparse.Namespace,
 ) -> Path:
-    output_dir = resolve_path(args.output_dir)
+    output_dir = resolve_path(args.output_dir, Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=True)
     points_by_rally = group_by_rally(points)
     rally_by_id = {rally["rally"]: rally for rally in rally_outputs}

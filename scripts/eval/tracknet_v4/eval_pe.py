@@ -14,6 +14,9 @@ import cv2
 import numpy as np
 import torch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import display_path, resolve_path
+
 if __package__ in (None, ""):
     sys.path.append(str(Path(__file__).resolve().parent))
     from dataset import TrackNetV4BallDataset  # type: ignore
@@ -40,18 +43,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source-width", type=int, default=1280)
     parser.add_argument("--source-height", type=int, default=720)
     return parser.parse_args()
-
-
-def resolve_path(value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else BASE / path
-
-
-def display_path(path: Path) -> str:
-    try:
-        return str(path.relative_to(BASE))
-    except ValueError:
-        return str(path)
 
 
 def resolve_device(requested: str) -> torch.device:
@@ -160,8 +151,8 @@ def draw_overlay(
 
 def main() -> None:
     args = parse_args()
-    checkpoint_path = resolve_path(args.checkpoint)
-    output_dir = resolve_path(args.output_dir)
+    checkpoint_path = resolve_path(args.checkpoint, Path(args.checkpoint))
+    output_dir = resolve_path(args.output_dir, Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     device = resolve_device(args.device)

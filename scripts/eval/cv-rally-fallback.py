@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -28,6 +27,8 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
+
+from _common import frame_number
 
 BASE = Path(__file__).parent.parent.parent
 DATASET = "fixed-camera-v1"
@@ -88,11 +89,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-window-confidence", type=float, default=0.55)
     parser.add_argument("--iou-debug", action="store_true")
     return parser.parse_args()
-
-
-def frame_number(path: Path) -> int:
-    match = re.search(r"(\d+)", path.name)
-    return int(match.group(1)) if match else 0
 
 
 def clip_ids() -> list[str]:

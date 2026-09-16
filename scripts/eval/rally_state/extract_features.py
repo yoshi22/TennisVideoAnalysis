@@ -5,9 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import math
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +13,9 @@ from typing import Any
 
 import cv2
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/eval, for _common
+from _common import frame_number, load_json
 
 if __package__ in (None, ""):
     sys.path.append(str(Path(__file__).resolve().parent))
@@ -25,7 +26,6 @@ else:
 BASE = Path(__file__).resolve().parent.parent.parent.parent
 DATASETS_DIR = BASE / "eval" / "datasets"
 TMP_DIR = Path("/tmp")
-FRAME_NUMBER_RE = re.compile(r"(\d+)")
 RESIZE_WIDTH = 320
 DIFF_LO = 25
 DIFF_HI = 50
@@ -33,16 +33,6 @@ DIFF_HI = 50
 
 def feature_cache_path(clip_id: str, fps: float = 3.0) -> Path:
     return TMP_DIR / f"rally_state_features_{clip_id}_{fps:.1f}fps.npz"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def frame_number(path: Path) -> int:
-    match = FRAME_NUMBER_RE.search(path.name)
-    return int(match.group(1)) if match else 0
 
 
 def sorted_jpgs(path: Path) -> tuple[Path, ...]:

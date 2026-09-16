@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from _common import load_json
+
 BASE = Path(__file__).parent.parent.parent
 
 
@@ -28,11 +30,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", default="fixed-camera-v1")
     parser.add_argument("--iou-threshold", type=float, default=0.5)
     return parser.parse_args()
-
-
-def load_json(path: Path) -> Any:
-    with open(path) as f:
-        return json.load(f)
 
 
 def iou(a: dict[str, float], b: dict[str, float]) -> float:
