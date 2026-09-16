@@ -7,6 +7,7 @@ import { CourtChart } from '@/components/court';
 import { useSession } from '@/hooks';
 import { fontFamily, useTheme } from '@/theme';
 import { type ShotLocation } from '@/types';
+import { countLost, countWon } from '@/utils/reportStats';
 
 type OutcomeFilter = 'all' | 'won' | 'lost';
 const NUM = fontFamily.numeric;
@@ -34,14 +35,8 @@ export default function CourtScreen() {
       .filter(hasLocation);
   }, [filter, session]);
 
-  const wonCount = useMemo(
-    () => (session ? session.points.filter((p) => p.outcome === 'won').length : 0),
-    [session]
-  );
-  const lostCount = useMemo(
-    () => (session ? session.points.filter((p) => p.outcome === 'lost').length : 0),
-    [session]
-  );
+  const wonCount = useMemo(() => (session ? countWon(session.points) : 0), [session]);
+  const lostCount = useMemo(() => (session ? countLost(session.points) : 0), [session]);
 
   if (!session) {
     return (

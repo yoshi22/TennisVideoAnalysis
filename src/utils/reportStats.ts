@@ -1,5 +1,5 @@
 import { SHOT_TYPE_META, SHOT_TYPES } from '@/constants/shotTypes';
-import { type ShotLocation, type ShotType, type TennisSession } from '@/types';
+import { type PointRecord, type ShotLocation, type ShotType, type TennisSession } from '@/types';
 import { isConfirmed, isPointComplete } from '@/utils/pointDetails';
 
 export interface ShotBreakdownItem {
@@ -23,6 +23,33 @@ export function hasLocation(loc: ShotLocation | undefined): loc is ShotLocation 
   return loc !== undefined;
 }
 
+export function countWon(points: PointRecord[]): number {
+  return points.filter((p) => p.outcome === 'won').length;
+}
+
+export function countLost(points: PointRecord[]): number {
+  return points.filter((p) => p.outcome === 'lost').length;
+}
+
+export function resultFromPoints(points: PointRecord[]): 'won' | 'lost' | null {
+  if (points.length === 0) {
+    return null;
+  }
+
+  const wins = countWon(points);
+  const losses = countLost(points);
+
+  if (wins > losses) {
+    return 'won';
+  }
+
+  if (losses > wins) {
+    return 'lost';
+  }
+
+  return null;
+}
+
 export function calculateShotBreakdown(session: TennisSession): ShotBreakdownItem[] {
   const confirmedPoints = session.points.filter(isConfirmed);
   return SHOT_TYPES.map((shotType) => {
@@ -31,8 +58,8 @@ export function calculateShotBreakdown(session: TennisSession): ShotBreakdownIte
       shotType,
       label: SHOT_TYPE_META[shotType].label,
       total: pts.length,
-      wonCount: pts.filter((p) => p.outcome === 'won').length,
-      lostCount: pts.filter((p) => p.outcome === 'lost').length,
+      wonCount: countWon(pts),
+      lostCount: countLost(pts),
     };
   });
 }
@@ -55,8 +82,8 @@ export function computeReportStats(session: TennisSession): ReportStats {
   const draftCount = session.points.filter((p) => !isConfirmed(p)).length;
 
   return {
-    wonCount: confirmedPoints.filter((p) => p.outcome === 'won').length,
-    lostCount: confirmedPoints.filter((p) => p.outcome === 'lost').length,
+    wonCount: countWon(confirmedPoints),
+    lostCount: countLost(confirmedPoints),
     totalPoints: session.points.length,
     confirmedCount: confirmedPoints.length,
     completePointCount: completePoints.length,

@@ -44,6 +44,10 @@ function fmtSpeed(kmh: number | null | undefined): string {
   return kmh !== null && kmh !== undefined ? `${Math.round(kmh)}km/h` : '';
 }
 
+function countRalliesByOutcome(rallies: RallyRecord[], outcome: RallyOutcome): number {
+  return rallies.filter((rally) => rally.outcome === outcome).length;
+}
+
 export default function RallyHistoryScreen() {
   const { colors, withAlpha } = useTheme();
   const insets = useSafeAreaInsets();
@@ -70,8 +74,8 @@ export default function RallyHistoryScreen() {
     }
   };
 
-  const won = rallies.filter((r) => r.outcome === 'won').length;
-  const lost = rallies.filter((r) => r.outcome === 'lost').length;
+  const won = countRalliesByOutcome(rallies, 'won');
+  const lost = countRalliesByOutcome(rallies, 'lost');
   const unconfirmed = rallies.filter((r) => r.outcomeSource === 'auto');
   const avgShots = rallies.length
     ? rallies.reduce((sum, r) => sum + r.shotCount, 0) / rallies.length

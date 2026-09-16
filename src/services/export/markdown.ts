@@ -7,6 +7,7 @@ import { SESSION_TYPE_LABELS, WEAKNESS_LABELS } from '@/constants/labels';
 import { formatSetScoreLine } from '@/services/scoring/matchState';
 import { formatDateTimeLong } from '@/utils/date';
 import { isConfirmed, isPointComplete } from '@/utils/pointDetails';
+import { countLost, countWon } from '@/utils/reportStats';
 
 export function buildSessionReport(
   session: TennisSession,
@@ -49,8 +50,8 @@ export function buildSessionReport(
 
   if (session.points.length > 0) {
     const confirmedPoints = session.points.filter(isConfirmed);
-    const wonCount = confirmedPoints.filter((p) => p.outcome === 'won').length;
-    const lostCount = confirmedPoints.length - wonCount;
+    const wonCount = countWon(confirmedPoints);
+    const lostCount = countLost(confirmedPoints);
     const winRate =
       confirmedPoints.length > 0 ? ((wonCount / confirmedPoints.length) * 100).toFixed(1) : '0.0';
     const completePoints = confirmedPoints.filter(isPointComplete);

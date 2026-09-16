@@ -12,6 +12,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { fontFamily, useTheme } from '@/theme';
 import { type PointRecord, type TennisSession } from '@/types';
 import { pushRoute } from '@/utils/navigation';
+import { countLost, countWon, resultFromPoints } from '@/utils/reportStats';
 
 const NUM = fontFamily.numeric;
 
@@ -27,11 +28,8 @@ function decidedPoints(session: TennisSession): PointRecord[] {
 
 /** 'W' | 'L' | null for a session's overall result. */
 function sessionResult(session: TennisSession): 'W' | 'L' | null {
-  const pts = decidedPoints(session);
-  if (pts.length === 0) return null;
-  const w = pts.filter((p) => p.outcome === 'won').length;
-  const l = pts.filter((p) => p.outcome === 'lost').length;
-  return w > l ? 'W' : w < l ? 'L' : null;
+  const result = resultFromPoints(decidedPoints(session));
+  return result === 'won' ? 'W' : result === 'lost' ? 'L' : null;
 }
 
 function clamp01to100(v: number): number {
@@ -160,8 +158,8 @@ export default function HomeScreen() {
 
   // Latest-report summary (honest counts, no fabricated set score).
   const latestPts = latest ? decidedPoints(latest) : [];
-  const pointsWon = latestPts.filter((p) => p.outcome === 'won').length;
-  const pointsLost = latestPts.filter((p) => p.outcome === 'lost').length;
+  const pointsWon = countWon(latestPts);
+  const pointsLost = countLost(latestPts);
   const latestOutcome = latest ? sessionResult(latest) : null;
   const winners = latestPts.filter((p) => p.resultReason === 'winner').length;
   const errCount = latestPts.filter((p) =>

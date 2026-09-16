@@ -2,6 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { fontFamily, useTheme } from '@/theme';
 import { type TennisSession } from '@/types/session';
+import { countLost, countWon } from '@/utils/reportStats';
 
 import { Tag } from './Tag';
 
@@ -16,8 +17,8 @@ export function SessionCard({ session: s, onPress, compact = false }: SessionCar
   const sportLabel = s.sport === 'tennis' ? '硬式' : 'ソフト';
   const sportTone = s.sport === 'softTennis' ? colors.accent : colors.primary;
 
-  const wonCount = s.points.filter((p) => p.outcome === 'won').length;
-  const lostCount = s.points.filter((p) => p.outcome === 'lost').length;
+  const wonCount = countWon(s.points);
+  const lostCount = countLost(s.points);
   const score = s.points.length > 0 ? `${wonCount}–${lostCount}` : '—';
 
   const date = new Date(s.startedAt);

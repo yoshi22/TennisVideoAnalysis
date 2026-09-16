@@ -6,6 +6,7 @@ import {
   type WeaknessPattern,
 } from '@/types';
 import { isConfirmed, isPointComplete } from '@/utils/pointDetails';
+import { countLost, countWon } from '@/utils/reportStats';
 
 import { generateCoachingTips } from './CoachingTipsGenerator';
 import { generatePracticeMenu } from './PracticeMenuGenerator';
@@ -86,8 +87,8 @@ function calculateShotBreakdowns(points: PointRecord[]): ShotBreakdown[] {
     return {
       shotType,
       total: shotPoints.length,
-      wonCount: shotPoints.filter((point) => point.outcome === 'won').length,
-      lostCount: shotPoints.filter((point) => point.outcome === 'lost').length,
+      wonCount: countWon(shotPoints),
+      lostCount: countLost(shotPoints),
     };
   });
 }
@@ -191,7 +192,7 @@ export class ManualAnalyzer implements TennisAnalyzer {
 
     // serveStats / winRate は quick ポイントも含む確定済みポイントを対象
     const serveStats = calculateServeStats(confirmedPoints);
-    const wonCount = confirmedPoints.filter((point) => point.outcome === 'won').length;
+    const wonCount = countWon(confirmedPoints);
 
     // 詳細入力済みポイントのみを対象にするラリー・ショット・弱点分析
     const rallyStats = calculateRallyStats(completePoints);

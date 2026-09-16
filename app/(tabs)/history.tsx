@@ -7,6 +7,7 @@ import { Chip, EmptyState, SessionCard } from '@/components/common';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type SessionType, type TennisSession } from '@/types';
+import { countLost, countWon } from '@/utils/reportStats';
 
 type HistoryFilter = 'all' | 'win' | 'loss' | 'practice';
 
@@ -41,18 +42,7 @@ function sortSessionsByDate(sessions: TennisSession[]): TennisSession[] {
 }
 
 function getOutcomeCounts(session: TennisSession): { won: number; lost: number } {
-  return session.points.reduce(
-    (counts, point) => {
-      if (point.outcome === 'won') {
-        counts.won += 1;
-      } else {
-        counts.lost += 1;
-      }
-
-      return counts;
-    },
-    { won: 0, lost: 0 }
-  );
+  return { won: countWon(session.points), lost: countLost(session.points) };
 }
 
 function matchesFilter(session: TennisSession, filter: HistoryFilter): boolean {

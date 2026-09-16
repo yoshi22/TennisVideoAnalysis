@@ -26,6 +26,7 @@ import { formatSeconds } from '@/utils/formatTime';
 import { generateId } from '@/utils/id';
 import { computeCumulativeScores } from '@/utils/cumulativeScore';
 import { getPointDetailStatus, isConfirmed } from '@/utils/pointDetails';
+import { countLost, countWon } from '@/utils/reportStats';
 
 type TimestampedPoint = PointRecord & { videoTimestamp: number };
 const NUM = fontFamily.numeric;
@@ -68,8 +69,8 @@ export default function SessionVideoScreen() {
   const score = useMemo(() => {
     const confirmed = (session?.points ?? []).filter(isConfirmed);
     return {
-      won: confirmed.filter((p) => p.outcome === 'won').length,
-      lost: confirmed.filter((p) => p.outcome === 'lost').length,
+      won: countWon(confirmed),
+      lost: countLost(confirmed),
     };
   }, [session]);
 

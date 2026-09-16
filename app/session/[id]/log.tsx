@@ -16,6 +16,7 @@ import { computeCumulativeScores } from '@/utils/cumulativeScore';
 import { generateId } from '@/utils/id';
 import { pushRoute } from '@/utils/navigation';
 import { getPointDetailStatus, isConfirmed } from '@/utils/pointDetails';
+import { countLost, countWon } from '@/utils/reportStats';
 
 type LogFilter = 'all' | 'quick';
 
@@ -55,11 +56,11 @@ export default function SessionLogScreen() {
   );
 
   const ourScore = useMemo(
-    () => confirmedChronologicalPoints.filter((p) => p.outcome === 'won').length,
+    () => countWon(confirmedChronologicalPoints),
     [confirmedChronologicalPoints]
   );
   const oppScore = useMemo(
-    () => confirmedChronologicalPoints.filter((p) => p.outcome === 'lost').length,
+    () => countLost(confirmedChronologicalPoints),
     [confirmedChronologicalPoints]
   );
   const matchScore = useMemo(() => {
