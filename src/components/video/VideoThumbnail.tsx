@@ -2,7 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import { colors } from '@/theme';
+// Video thumbnail chrome is drawn over video frames — intentionally theme-independent.
+const PLACEHOLDER_BG = '#15201A';
+const PLAY_ICON_COLOR = '#FFFFFF';
+const SCRIM = 'rgba(21, 32, 26, 0.5)';
 
 interface VideoThumbnailProps {
   uri: string;
@@ -26,7 +29,7 @@ export function VideoThumbnail({ uri, width = 160, height = 90, onPress }: Video
         style={StyleSheet.absoluteFill}
       />
       <View pointerEvents="none" style={styles.overlay}>
-        <Ionicons color={colors.surface} name="play-circle" size={40} />
+        <Ionicons color={PLAY_ICON_COLOR} name="play-circle" size={40} />
       </View>
     </>
   );
@@ -55,12 +58,12 @@ const styles = StyleSheet.create({
     minWidth: 44,
     overflow: 'hidden',
     borderRadius: 8,
-    backgroundColor: colors.text,
+    backgroundColor: PLACEHOLDER_BG,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.overlay,
+    backgroundColor: SCRIM,
   },
 });

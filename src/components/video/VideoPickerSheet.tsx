@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/common';
 import { pickVideoFromLibrary } from '@/services/video';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography, useTheme } from '@/theme';
 
 import { VideoRecorder } from './VideoRecorder';
 
@@ -14,6 +14,7 @@ interface VideoPickerSheetProps {
 }
 
 export function VideoPickerSheet({ visible, onDismiss, onVideoSelected }: VideoPickerSheetProps) {
+  const { colors } = useTheme();
   const [recordingVisible, setRecordingVisible] = useState(false);
 
   useEffect(() => {
@@ -42,9 +43,9 @@ export function VideoPickerSheet({ visible, onDismiss, onVideoSelected }: VideoP
       {recordingVisible ? (
         <VideoRecorder onCancel={() => setRecordingVisible(false)} onRecorded={handleRecorded} />
       ) : (
-        <View style={styles.backdrop}>
-          <View style={styles.sheet}>
-            <Text style={styles.title}>動画を追加</Text>
+        <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.title, { color: colors.text }]}>動画を追加</Text>
             <Button
               accessibilityLabel="動画を撮影"
               label="動画を撮影"
@@ -73,11 +74,9 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: colors.overlay,
   },
   sheet: {
     gap: spacing.md,
-    backgroundColor: colors.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: spacing.xxl,
