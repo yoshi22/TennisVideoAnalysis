@@ -1,231 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  type ListRenderItemInfo,
-} from 'react-native';
+import { useRouter } from 'expo-router';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/common';
-import { CourtChart } from '@/components/court';
-import { VideoPlayer, type VideoPlayerRef } from '@/components/video';
-import { OUTCOME_LABELS, RESULT_REASON_LABELS } from '@/constants/labels';
-import { SERVE_RESULT_META } from '@/constants/serveResults';
-import { SHOT_TYPE_META } from '@/constants/shotTypes';
-import { useSession } from '@/hooks';
-import { consumePendingSeek } from '@/services/video';
-import { useSessionStore } from '@/stores/sessionStore';
-import { fontFamily, spacing, useTheme } from '@/theme';
-import { type PointOutcome, type PointRecord } from '@/types';
-import { formatSeconds } from '@/utils/formatTime';
-import { generateId } from '@/utils/id';
-import { computeCumulativeScores } from '@/utils/cumulativeScore';
-import { getPointDetailStatus, isConfirmed } from '@/utils/pointDetails';
-import { countLost, countWon } from '@/utils/reportStats';
-
-type TimestampedPoint = PointRecord & { videoTimestamp: number };
-const NUM = fontFamily.numeric;
-
-function hasVideoTimestamp(point: PointRecord): point is TimestampedPoint {
-  return point.videoTimestamp !== undefined;
-}
+import {
+  VideoPlayer,
+  VideoPointDetailCard,
+  VideoPointRow,
+  VideoQuickDock,
+  VideoTimeline,
+} from '@/components/video';
+import { useSession, useSessionVideo } from '@/hooks';
+import { useTheme } from '@/theme';
 
 export default function SessionVideoScreen() {
-  const { colors, withAlpha } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const push = (path: string) => router.push(path as any);
   const { session, sessionId } = useSession();
-  const addPoint = useSessionStore((state) => state.addPoint);
-  const updatePoint = useSessionStore((state) => state.updatePoint);
-  const deletePoint = useSessionStore((state) => state.deletePoint);
-  const setVideoDuration = useSessionStore((state) => state.setVideoDuration);
-  const playerRef = useRef<VideoPlayerRef>(null);
-  const requestedSeekRef = useRef<number | null>(null);
-  const [durationSec, setDurationSec] = useState(0);
-  const [initialSeekSec, setInitialSeekSec] = useState<number | null>(null);
-  const [currentTimeSec, setCurrentTimeSec] = useState(0);
-  const [rallyStartMark, setRallyStartMark] = useState<number | null>(null);
-  const [undoStack, setUndoStack] = useState<
-    { id: string; outcome: PointOutcome; timeSec: number }[]
-  >([]);
-  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
-
-  const timestampedPoints = useMemo(
-    () =>
-      session
-        ? session.points
-            .filter(hasVideoTimestamp)
-            .sort((a, b) => a.videoTimestamp - b.videoTimestamp)
-        : [],
-    [session]
-  );
-
-  const score = useMemo(() => {
-    const confirmed = (session?.points ?? []).filter(isConfirmed);
-    return {
-      won: countWon(confirmed),
-      lost: countLost(confirmed),
-    };
-  }, [session]);
-
-  const cumulativeScores = useMemo(
-    () => computeCumulativeScores(timestampedPoints.filter(isConfirmed)),
-    [timestampedPoints]
-  );
-
-  const selectedPoint = useMemo(
-    () =>
-      selectedPointId ? (session?.points.find((p) => p.id === selectedPointId) ?? null) : null,
-    [selectedPointId, session]
-  );
-
-  const selectedPointIndex = useMemo(
-    () => (selectedPointId ? timestampedPoints.findIndex((p) => p.id === selectedPointId) : -1),
-    [selectedPointId, timestampedPoints]
-  );
-
-  const seekTo = useCallback((seconds: number) => {
-    requestedSeekRef.current = seconds;
-    setInitialSeekSec(seconds);
-    playerRef.current?.seekTo(seconds);
-  }, []);
-
-  const consumeSeek = useCallback(() => {
-    const seconds = consumePendingSeek(sessionId);
-    if (seconds !== null) {
-      seekTo(seconds);
-    }
-  }, [seekTo, sessionId]);
-
-  useEffect(() => {
-    consumeSeek();
-  }, [consumeSeek]);
-
-  useFocusEffect(
-    useCallback(() => {
-      consumeSeek();
-    }, [consumeSeek])
-  );
-
-  const handleDurationLoaded = (seconds: number) => {
-    setDurationSec(seconds);
-    if (Number.isFinite(seconds) && seconds > 0) {
-      setVideoDuration(sessionId, seconds);
-    }
-    if (requestedSeekRef.current !== null) {
-      playerRef.current?.seekTo(requestedSeekRef.current);
-    }
-  };
-
-  const handleMarkRallyStart = () => {
-    const t = Math.max(0, playerRef.current?.getCurrentTime() ?? currentTimeSec ?? 0);
-    setRallyStartMark(t);
-  };
-
-  const handleQuickLog = (outcome: PointOutcome) => {
-    const videoTimestamp = Math.max(0, playerRef.current?.getCurrentTime() ?? currentTimeSec ?? 0);
-    const hasInterval = rallyStartMark !== null && rallyStartMark < videoTimestamp;
-    const point: PointRecord = {
-      id: generateId(),
-      sessionId,
-      timestamp: new Date().toISOString(),
-      outcome,
-      videoTimestamp,
-      detailStatus: 'quick',
-      ...(hasInterval && {
-        rallyStartSec: rallyStartMark,
-        rallyEndSec: videoTimestamp,
-      }),
-    };
-
-    addPoint(sessionId, point);
-    setUndoStack((prev) => [...prev, { id: point.id, outcome, timeSec: videoTimestamp }]);
-    setRallyStartMark(null);
-  };
-
-  const handleUndoLast = () => {
-    const lastEntry = undoStack[undoStack.length - 1];
-    if (!lastEntry) return;
-    deletePoint(sessionId, lastEntry.id);
-    setUndoStack((prev) => prev.slice(0, -1));
-  };
-
-  const handleSelectPoint = useCallback(
-    (point: TimestampedPoint) => {
-      setSelectedPointId(point.id);
-      seekTo(point.rallyStartSec ?? point.videoTimestamp);
-    },
-    [seekTo]
-  );
-
-  const handlePrevPoint = useCallback(() => {
-    if (selectedPointIndex > 0 && selectedPointIndex !== -1) {
-      handleSelectPoint(timestampedPoints[selectedPointIndex - 1]);
-    }
-  }, [selectedPointIndex, timestampedPoints, handleSelectPoint]);
-
-  const handleNextPoint = useCallback(() => {
-    if (selectedPointIndex !== -1 && selectedPointIndex < timestampedPoints.length - 1) {
-      handleSelectPoint(timestampedPoints[selectedPointIndex + 1]);
-    }
-  }, [selectedPointIndex, timestampedPoints, handleSelectPoint]);
-
-  const latestUndoEntry = undoStack[undoStack.length - 1];
-
-  const renderPoint = ({ item, index }: ListRenderItemInfo<TimestampedPoint>) => {
-    const isWon = item.outcome === 'won';
-    const isSelected = item.id === selectedPointId;
-    return (
-      <TouchableOpacity
-        accessibilityLabel={`${formatSeconds(item.videoTimestamp)}のポイントを動画で確認`}
-        accessibilityRole="button"
-        activeOpacity={0.82}
-        onPress={() => handleSelectPoint(item)}
-        style={[
-          styles.pointRow,
-          {
-            backgroundColor: isSelected ? colors.primaryLo : colors.surface,
-            borderBottomColor: colors.border,
-            borderBottomWidth:
-              index === timestampedPoints.length - 1 ? 0 : StyleSheet.hairlineWidth,
-          },
-        ]}
-      >
-        <View
-          style={[styles.pointDot, { backgroundColor: isWon ? colors.primary : colors.danger }]}
-        />
-        <Text style={[styles.pointTime, { color: colors.text }]}>
-          {formatSeconds(item.videoTimestamp)}
-        </Text>
-        <View style={styles.pointBody}>
-          <Text style={[styles.pointTitle, { color: colors.text }]} numberOfLines={1}>
-            {item.shotType ? SHOT_TYPE_META[item.shotType].label : '詳細未入力'}
-          </Text>
-          <Text
-            style={[
-              styles.pointOutcome,
-              {
-                color:
-                  getPointDetailStatus(item) === 'quick'
-                    ? colors.warning
-                    : isWon
-                      ? colors.primary
-                      : colors.danger,
-              },
-            ]}
-          >
-            {getPointDetailStatus(item) === 'quick' ? '後で補完' : OUTCOME_LABELS[item.outcome]}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const v = useSessionVideo(session, sessionId);
 
   if (!session) {
     return (
@@ -253,369 +48,49 @@ export default function SessionVideoScreen() {
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
       <VideoPlayer
-        initialTimeSec={initialSeekSec ?? 0}
-        onDurationLoaded={handleDurationLoaded}
-        onTimeUpdate={setCurrentTimeSec}
-        ref={playerRef}
+        initialTimeSec={v.initialSeekSec ?? 0}
+        onDurationLoaded={v.handleDurationLoaded}
+        onTimeUpdate={v.setCurrentTimeSec}
+        ref={v.playerRef}
         style={styles.player}
         uri={session.videoUri}
       />
 
-      <View
-        style={[
-          styles.quickDock,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
-      >
-        <View style={styles.quickMetaRow}>
-          <View>
-            <Text style={[styles.quickLabel, { color: colors.textMuted }]}>現在</Text>
-            <Text style={[styles.quickTime, { color: colors.text, fontFamily: NUM }]}>
-              {formatSeconds(currentTimeSec)}
-            </Text>
-          </View>
-          <View style={styles.quickScoreBox}>
-            <Text style={[styles.quickScore, { color: colors.text, fontFamily: NUM }]}>
-              {score.won}–{score.lost}
-            </Text>
-            <Text style={[styles.quickLabel, { color: colors.textMuted }]}>スコア</Text>
-          </View>
-          <TouchableOpacity
-            accessibilityLabel="直前の記録を取り消す"
-            accessibilityRole="button"
-            activeOpacity={0.82}
-            disabled={undoStack.length === 0}
-            onPress={handleUndoLast}
-            style={[
-              styles.undoButton,
-              {
-                backgroundColor: undoStack.length > 0 ? colors.surfaceAlt : colors.bg,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.undoText,
-                { color: undoStack.length > 0 ? colors.textSub : colors.textMuted },
-              ]}
-            >
-              取り消し
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <VideoQuickDock
+        currentTimeSec={v.currentTimeSec}
+        latestUndoEntry={v.latestUndoEntry}
+        onMarkRallyStart={v.handleMarkRallyStart}
+        onQuickLog={v.handleQuickLog}
+        onUndo={v.handleUndoLast}
+        rallyStartMark={v.rallyStartMark}
+        score={v.score}
+        undoDisabled={v.undoStack.length === 0}
+      />
 
-        <TouchableOpacity
-          accessibilityLabel="ラリー開始時刻をマーク"
-          accessibilityRole="button"
-          activeOpacity={0.82}
-          onPress={handleMarkRallyStart}
-          style={[
-            styles.rallyStartButton,
-            {
-              backgroundColor: rallyStartMark !== null ? colors.primaryLo : colors.surfaceAlt,
-              borderColor: rallyStartMark !== null ? colors.primary : colors.border,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.rallyStartText,
-              {
-                color: rallyStartMark !== null ? colors.primary : colors.textSub,
-                fontFamily: NUM,
-              },
-            ]}
-          >
-            {rallyStartMark !== null
-              ? `▶ ラリー開始 ${formatSeconds(rallyStartMark)}`
-              : '▶ ラリー開始をマーク'}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.quickActionRow}>
-          <TouchableOpacity
-            accessibilityLabel="現在時刻を得点として記録"
-            accessibilityRole="button"
-            activeOpacity={0.86}
-            onPress={() => handleQuickLog('won')}
-            style={[styles.quickActionButton, { backgroundColor: colors.success }]}
-          >
-            <Text style={[styles.quickActionText, { color: colors.onHero }]}>得点</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityLabel="現在時刻を失点として記録"
-            accessibilityRole="button"
-            activeOpacity={0.86}
-            onPress={() => handleQuickLog('lost')}
-            style={[styles.quickActionButton, { backgroundColor: colors.danger }]}
-          >
-            <Text style={[styles.quickActionText, { color: colors.onHero }]}>失点</Text>
-          </TouchableOpacity>
-        </View>
-
-        {latestUndoEntry ? (
-          <Text style={[styles.quickFeedback, { color: colors.textSub, fontFamily: NUM }]}>
-            {formatSeconds(latestUndoEntry.timeSec)} に
-            {latestUndoEntry.outcome === 'won' ? '得点' : '失点'}を記録しました
-          </Text>
-        ) : null}
-      </View>
-
-      {selectedPoint ? (
-        <View
-          style={[
-            styles.detailCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.detailHeader}>
-            <View>
-              <Text style={[styles.detailScoreLabel, { color: colors.textMuted }]}>
-                動画内スコア
-              </Text>
-              <Text style={[styles.detailScore, { color: colors.text, fontFamily: NUM }]}>
-                {(() => {
-                  const s = cumulativeScores.get(selectedPoint.id);
-                  return s ? `${s.w}–${s.l}` : '–';
-                })()}
-              </Text>
-            </View>
-            <View style={styles.detailMeta}>
-              <View style={styles.detailOutcomeRow}>
-                <View
-                  style={[
-                    styles.detailOutcomeChip,
-                    {
-                      backgroundColor:
-                        selectedPoint.outcome === 'won' ? colors.primary : colors.danger,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.detailOutcomeText, { color: colors.onHero }]}>
-                    {OUTCOME_LABELS[selectedPoint.outcome]}
-                  </Text>
-                </View>
-                {selectedPoint.reviewStatus === 'draft' ? (
-                  <View style={[styles.detailDraftChip, { backgroundColor: colors.surfaceAlt }]}>
-                    <Text style={[styles.detailDraftText, { color: colors.textMuted }]}>draft</Text>
-                  </View>
-                ) : null}
-              </View>
-              {/* Outcome toggle for auto-drafted points — lets user correct the placeholder 'won' */}
-              {selectedPoint.source === 'auto' && selectedPoint.reviewStatus === 'draft' ? (
-                <View style={styles.draftOutcomeToggleRow}>
-                  <TouchableOpacity
-                    accessibilityLabel="得点に変更"
-                    accessibilityRole="button"
-                    activeOpacity={0.82}
-                    onPress={() => updatePoint(sessionId, selectedPoint.id, { outcome: 'won' })}
-                    style={[
-                      styles.draftOutcomeToggleBtn,
-                      {
-                        backgroundColor:
-                          selectedPoint.outcome === 'won' ? colors.primary : colors.surfaceAlt,
-                        borderColor:
-                          selectedPoint.outcome === 'won' ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.draftOutcomeToggleText,
-                        {
-                          color: selectedPoint.outcome === 'won' ? colors.onHero : colors.textSub,
-                        },
-                      ]}
-                    >
-                      得点
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    accessibilityLabel="失点に変更"
-                    accessibilityRole="button"
-                    activeOpacity={0.82}
-                    onPress={() => updatePoint(sessionId, selectedPoint.id, { outcome: 'lost' })}
-                    style={[
-                      styles.draftOutcomeToggleBtn,
-                      {
-                        backgroundColor:
-                          selectedPoint.outcome === 'lost' ? colors.danger : colors.surfaceAlt,
-                        borderColor:
-                          selectedPoint.outcome === 'lost' ? colors.danger : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.draftOutcomeToggleText,
-                        {
-                          color: selectedPoint.outcome === 'lost' ? colors.onHero : colors.textSub,
-                        },
-                      ]}
-                    >
-                      失点
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-              <Text style={[styles.detailMetaText, { color: colors.text }]} numberOfLines={1}>
-                {selectedPoint.shotType
-                  ? SHOT_TYPE_META[selectedPoint.shotType].label
-                  : '詳細未入力'}
-              </Text>
-              {selectedPoint.resultReason ? (
-                <Text style={[styles.detailMetaSub, { color: colors.textSub }]}>
-                  {RESULT_REASON_LABELS[selectedPoint.resultReason]}
-                </Text>
-              ) : null}
-              {selectedPoint.serveResult ? (
-                <Text style={[styles.detailMetaSub, { color: colors.textSub }]}>
-                  {SERVE_RESULT_META[selectedPoint.serveResult].label}
-                </Text>
-              ) : null}
-            </View>
-            <TouchableOpacity
-              accessibilityLabel="詳細を閉じる"
-              accessibilityRole="button"
-              onPress={() => setSelectedPointId(null)}
-              style={styles.detailClose}
-            >
-              <Ionicons color={colors.textMuted} name="close" size={20} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.detailBody}>
-            {selectedPoint.shotLocation ? (
-              <CourtChart
-                height={160}
-                shotLocations={[selectedPoint.shotLocation]}
-                sport={session.sport}
-                width={100}
-              />
-            ) : (
-              <View style={[styles.detailNoShot, { backgroundColor: colors.bg }]}>
-                <Text style={[styles.detailNoShotText, { color: colors.textMuted }]}>配球なし</Text>
-              </View>
-            )}
-            <View style={styles.detailNav}>
-              <TouchableOpacity
-                accessibilityLabel="前のラリーへ"
-                accessibilityRole="button"
-                disabled={selectedPointIndex <= 0}
-                onPress={handlePrevPoint}
-                style={[
-                  styles.navButton,
-                  {
-                    backgroundColor: selectedPointIndex > 0 ? colors.surfaceAlt : colors.bg,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  color={selectedPointIndex > 0 ? colors.text : colors.textMuted}
-                  name="chevron-back"
-                  size={20}
-                />
-              </TouchableOpacity>
-              <Text style={[styles.detailNavLabel, { color: colors.textMuted, fontFamily: NUM }]}>
-                {selectedPointIndex + 1} / {timestampedPoints.length}
-              </Text>
-              <TouchableOpacity
-                accessibilityLabel="次のラリーへ"
-                accessibilityRole="button"
-                disabled={selectedPointIndex >= timestampedPoints.length - 1}
-                onPress={handleNextPoint}
-                style={[
-                  styles.navButton,
-                  {
-                    backgroundColor:
-                      selectedPointIndex < timestampedPoints.length - 1
-                        ? colors.surfaceAlt
-                        : colors.bg,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  color={
-                    selectedPointIndex < timestampedPoints.length - 1
-                      ? colors.text
-                      : colors.textMuted
-                  }
-                  name="chevron-forward"
-                  size={20}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+      {v.selectedPoint ? (
+        <VideoPointDetailCard
+          cumulative={v.cumulativeScores.get(v.selectedPoint.id)}
+          index={v.selectedPointIndex}
+          onClose={() => v.setSelectedPointId(null)}
+          onNext={v.handleNextPoint}
+          onPrev={v.handlePrevPoint}
+          onSetOutcome={(outcome) => v.updateDraftOutcome(v.selectedPoint!.id, outcome)}
+          point={v.selectedPoint}
+          sport={session.sport}
+          total={v.timestampedPoints.length}
+        />
       ) : null}
 
-      {durationSec > 0 ? (
+      {v.durationSec > 0 ? (
         <View style={styles.timelineSection}>
           <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
             ポイントタイムライン
           </Text>
-          <View style={styles.timelineWrap}>
-            <View style={[styles.timelineTrack, { backgroundColor: colors.surfaceAlt }]} />
-            {timestampedPoints.map((point) => {
-              const ratio = Math.max(0, Math.min(1, point.videoTimestamp / durationSec));
-              const isWon = point.outcome === 'won';
-              const isDraft = point.reviewStatus === 'draft';
-              const hasInterval =
-                point.rallyStartSec !== undefined && point.rallyEndSec !== undefined;
-              const startRatio = hasInterval
-                ? Math.max(0, Math.min(1, point.rallyStartSec! / durationSec))
-                : ratio;
-              const endRatio = hasInterval
-                ? Math.max(0, Math.min(1, point.rallyEndSec! / durationSec))
-                : ratio;
-              return (
-                <Fragment key={point.id}>
-                  <TouchableOpacity
-                    accessibilityLabel={`${formatSeconds(point.videoTimestamp)}へ移動`}
-                    accessibilityRole="button"
-                    activeOpacity={0.82}
-                    onPress={() => handleSelectPoint(point)}
-                    style={[
-                      styles.markerTouch,
-                      { left: `${ratio * 100}%`, opacity: isDraft ? 0.4 : 1 },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.marker,
-                        {
-                          borderBottomColor: isWon ? colors.primary : colors.danger,
-                          borderLeftColor: withAlpha(colors.bg, 0),
-                          borderRightColor: withAlpha(colors.bg, 0),
-                        },
-                      ]}
-                    />
-                  </TouchableOpacity>
-                  {hasInterval ? (
-                    <TouchableOpacity
-                      accessibilityLabel={`${formatSeconds(point.rallyStartSec!)}から${formatSeconds(
-                        point.rallyEndSec!
-                      )}へ移動`}
-                      accessibilityRole="button"
-                      activeOpacity={0.82}
-                      onPress={() => handleSelectPoint(point)}
-                      style={[
-                        styles.intervalBar,
-                        {
-                          backgroundColor: isWon ? colors.primary : colors.danger,
-                          left: `${startRatio * 100}%`,
-                          width: `${Math.max(0.5, (endRatio - startRatio) * 100)}%`,
-                        },
-                      ]}
-                    />
-                  ) : null}
-                </Fragment>
-              );
-            })}
-          </View>
+          <VideoTimeline
+            durationSec={v.durationSec}
+            onSelect={v.handleSelectPoint}
+            points={v.timestampedPoints}
+          />
         </View>
       ) : null}
 
@@ -647,9 +122,17 @@ export default function SessionVideoScreen() {
           </View>
         }
         contentContainerStyle={styles.listContent}
-        data={timestampedPoints}
+        data={v.timestampedPoints}
         keyExtractor={(item) => item.id}
-        renderItem={renderPoint}
+        renderItem={({ item, index }) => (
+          <VideoPointRow
+            index={index}
+            isSelected={item.id === v.selectedPointId}
+            item={item}
+            onSelect={v.handleSelectPoint}
+            total={v.timestampedPoints.length}
+          />
+        )}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -669,84 +152,6 @@ const styles = StyleSheet.create({
   player: {
     width: '100%',
   },
-  quickDock: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  quickMetaRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  quickLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  quickTime: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 18,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  quickScoreBox: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  quickScore: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 22,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-  },
-  undoButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 76,
-    paddingHorizontal: 12,
-  },
-  undoText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  rallyStartButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 36,
-    paddingHorizontal: 12,
-  },
-  rallyStartText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  quickActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  quickActionButton: {
-    alignItems: 'center',
-    borderRadius: 10,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 56,
-  },
-  quickActionText: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  quickFeedback: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   timelineSection: {
     paddingBottom: 10,
     paddingHorizontal: 20,
@@ -757,39 +162,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
     textTransform: 'uppercase',
-  },
-  timelineWrap: {
-    height: 34,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  timelineTrack: {
-    borderRadius: 999,
-    height: 6,
-    width: '100%',
-  },
-  markerTouch: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    marginLeft: -22,
-    position: 'absolute',
-    top: -5,
-    width: 44,
-  },
-  intervalBar: {
-    borderRadius: 2,
-    height: 6,
-    opacity: 0.45,
-    position: 'absolute',
-    top: 14,
-  },
-  marker: {
-    borderBottomWidth: 12,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    height: 0,
-    width: 0,
   },
   listContent: {
     paddingBottom: 48,
@@ -822,161 +194,5 @@ const styles = StyleSheet.create({
   emptyPoints: {
     minHeight: 220,
     justifyContent: 'center',
-  },
-  pointRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    minHeight: 60,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  pointDot: {
-    borderRadius: 5,
-    height: 10,
-    width: 10,
-  },
-  pointTime: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '700',
-    width: 48,
-  },
-  pointBody: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 10,
-    minWidth: 0,
-  },
-  pointTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  pointOutcome: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  detailCard: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  detailHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  detailScoreLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  detailScore: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 20,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  detailMeta: {
-    flex: 1,
-  },
-  detailMetaText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  detailMetaSub: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  detailClose: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
-    minWidth: 36,
-  },
-  detailBody: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  detailNoShot: {
-    alignItems: 'center',
-    borderRadius: 8,
-    height: 160,
-    justifyContent: 'center',
-    width: 100,
-  },
-  detailNoShotText: {
-    fontSize: 11,
-  },
-  detailNav: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  navButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 44,
-  },
-  detailNavLabel: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '600',
-  },
-  detailOutcomeRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 4,
-  },
-  detailOutcomeChip: {
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  detailOutcomeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  detailDraftChip: {
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  detailDraftText: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  draftOutcomeToggleRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 6,
-  },
-  draftOutcomeToggleBtn: {
-    alignItems: 'center',
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'center',
-    minHeight: 32,
-    paddingHorizontal: 12,
-  },
-  draftOutcomeToggleText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
 });
