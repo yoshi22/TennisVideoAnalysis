@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Chip, CourtLines, EmptyState } from '@/components/common';
+import { Chip, EmptyState, ScreenHero } from '@/components/common';
 import { CourtChart } from '@/components/court';
 import { useSession } from '@/hooks';
 import { fontFamily, useTheme } from '@/theme';
@@ -65,12 +65,7 @@ export default function CourtScreen() {
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-          <View style={styles.heroMotif} pointerEvents="none">
-            <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-          </View>
-          <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>COURT MAP</Text>
-          <Text style={[styles.heroTitle, { color: colors.onHero }]}>コート分布</Text>
+        <ScreenHero eyebrow="COURT MAP" title="コート分布" topInset={false}>
           <View style={styles.heroStats}>
             <Text style={[styles.heroStat, { color: colors.onHero, fontFamily: NUM }]}>
               {shotLocations.length}
@@ -84,7 +79,7 @@ export default function CourtScreen() {
               <Text style={{ fontFamily: NUM }}>{lostCount}</Text>
             </Text>
           </View>
-        </View>
+        </ScreenHero>
 
         {/* Filter chips */}
         <ScrollView
@@ -154,30 +149,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-  },
-  hero: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    padding: 16,
-    position: 'relative',
-  },
-  heroMotif: {
-    height: 120,
-    position: 'absolute',
-    right: -20,
-    top: -16,
-    width: 240,
-  },
-  heroEyebrow: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 30,
-    marginTop: 8,
   },
   heroStats: {
     marginTop: 10,

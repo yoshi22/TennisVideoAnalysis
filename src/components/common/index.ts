@@ -12,6 +12,7 @@ export { SectionHeader } from './SectionHeader';
 export { SecondSlider } from './SecondSlider';
 export { SegmentedControl } from './SegmentedControl';
 export { SessionCard } from './SessionCard';
+export { ScreenHero } from './ScreenHero';
 export { Sparkline } from './Sparkline';
 export { StatCard } from './StatCard';
 export type { StatCardData } from './StatCard';

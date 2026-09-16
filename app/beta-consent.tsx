@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, CourtLines } from '@/components/common';
+import { Button, ScreenHero } from '@/components/common';
 import { useBetaStore } from '@/stores/betaStore';
 import { fontFamily, spacing, useTheme } from '@/theme';
 
@@ -70,17 +70,13 @@ export default function BetaConsentScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-          <View style={styles.heroMotif} pointerEvents="none">
-            <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-          </View>
-          <Text style={[styles.heroBadgeText, { color: colors.heroAccent }]}>CLOSED BETA</Text>
+        <ScreenHero eyebrow="CLOSED BETA" topInset={false}>
           <Text style={[styles.heading, { color: colors.onHero }]}>データ収集の同意について</Text>
           <Text style={[styles.body, { color: withAlpha(colors.onHero, 0.72) }]}>
             このアプリは軟式テニスの解析モデル改善を目的として、参加者から動画と試合ラベルを任意で収集しています。
             収集するデータは以下の通りです。
           </Text>
-        </View>
+        </ScreenHero>
 
         <View
           style={[
@@ -146,24 +142,6 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
-  },
-  hero: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    padding: spacing.lg,
-    position: 'relative',
-  },
-  heroMotif: {
-    height: 120,
-    position: 'absolute',
-    right: -20,
-    top: -16,
-    width: 240,
-  },
-  heroBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0,
   },
   heading: {
     fontSize: 20,

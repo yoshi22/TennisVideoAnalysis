@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BrandMark, Button, CourtLines, SegmentedControl } from '@/components/common';
+import { BrandMark, Button, ScreenHero, SegmentedControl } from '@/components/common';
 import { MockAutoScoreCard } from '@/components/onboarding/MockAutoScoreCard';
 import { MockCalibrationCard } from '@/components/onboarding/MockCalibrationCard';
 import { MockNewSessionCard } from '@/components/onboarding/MockNewSessionCard';
@@ -191,33 +191,33 @@ export default function OnboardingScreen() {
       >
         {STEPS.map((step, index) => (
           <View key={step.title} style={[styles.page, { width }]}>
-            <View
-              style={[
-                styles.card,
-                {
-                  backgroundColor: index === 0 ? colors.hero : colors.surface,
-                  borderColor: index === 0 ? colors.hero : colors.border,
-                },
-              ]}
-            >
-              {index === 0 ? (
-                <View style={styles.heroMotif} pointerEvents="none">
-                  <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-                </View>
-              ) : null}
-              <View style={styles.visual}>{renderVisual(index)}</View>
-              <Text style={[styles.title, { color: index === 0 ? colors.onHero : colors.text }]}>
-                {step.title}
-              </Text>
-              <Text
+            {index === 0 ? (
+              <ScreenHero
+                motifStyle={styles.heroMotif}
+                style={[styles.card, { borderColor: colors.hero }]}
+                topInset={false}
+              >
+                <View style={styles.visual}>{renderVisual(index)}</View>
+                <Text style={[styles.title, { color: colors.onHero }]}>{step.title}</Text>
+                <Text style={[styles.body, { color: withAlpha(colors.onHero, 0.72) }]}>
+                  {step.body}
+                </Text>
+              </ScreenHero>
+            ) : (
+              <View
                 style={[
-                  styles.body,
-                  { color: index === 0 ? withAlpha(colors.onHero, 0.72) : colors.textSub },
+                  styles.card,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
                 ]}
               >
-                {step.body}
-              </Text>
-            </View>
+                <View style={styles.visual}>{renderVisual(index)}</View>
+                <Text style={[styles.title, { color: colors.text }]}>{step.title}</Text>
+                <Text style={[styles.body, { color: colors.textSub }]}>{step.body}</Text>
+              </View>
+            )}
           </View>
         ))}
       </ScrollView>

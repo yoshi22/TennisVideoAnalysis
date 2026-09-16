@@ -16,8 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Button,
   Chip,
-  CourtLines,
   EmptyState,
+  ScreenHero,
   SecondSlider,
   SectionHeader,
 } from '@/components/common';
@@ -181,19 +181,14 @@ export default function BallTraceScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroPad}>
-            <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-              <View style={styles.heroMotif} pointerEvents="none">
-                <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-              </View>
-              <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>BALL TRACE</Text>
-              <Text style={[styles.heroTitle, { color: colors.onHero }]}>ボール軌跡解析</Text>
+            <ScreenHero eyebrow="BALL TRACE" title="ボール軌跡解析" topInset={false}>
               <Text style={[styles.heroRange, { color: colors.onHero, fontFamily: NUM }]}>
                 {startSec.toFixed(1)}–{endSec.toFixed(1)} 秒
               </Text>
               <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
                 バウンド <Text style={{ fontFamily: NUM }}>{result?.bounces.length ?? 0}</Text> 回
               </Text>
-            </View>
+            </ScreenHero>
           </View>
 
           <View>
@@ -376,30 +371,6 @@ const styles = StyleSheet.create({
   },
   heroPad: {
     paddingHorizontal: 20,
-  },
-  hero: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    padding: 16,
-    position: 'relative',
-  },
-  heroMotif: {
-    height: 120,
-    position: 'absolute',
-    right: -20,
-    top: -16,
-    width: 240,
-  },
-  heroEyebrow: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 30,
-    marginTop: 8,
   },
   heroRange: {
     fontSize: 22,

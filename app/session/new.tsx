@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, CourtLines, SectionHeader, SegmentedControl } from '@/components/common';
+import { Button, ScreenHero, SectionHeader, SegmentedControl } from '@/components/common';
 import { VideoPickerSheet, VideoThumbnail } from '@/components/video';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
@@ -101,17 +101,12 @@ export default function NewSessionScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-          <View style={styles.heroMotif} pointerEvents="none">
-            <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-          </View>
-          <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>NEW SESSION</Text>
-          <Text style={[styles.heroTitle, { color: colors.onHero }]}>セッション作成</Text>
+        <ScreenHero eyebrow="NEW SESSION" title="セッション作成" topInset={false}>
           <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
             {sport === 'softTennis' ? 'ソフトテニス' : '硬式テニス'} ・{' '}
             {matchFormat === 'singles' ? 'シングルス' : 'ダブルス'}
           </Text>
-        </View>
+        </ScreenHero>
 
         {/* Video drop zone */}
         <View
@@ -272,30 +267,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 48,
     gap: 20,
-  },
-  hero: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    padding: 16,
-    position: 'relative',
-  },
-  heroMotif: {
-    height: 100,
-    position: 'absolute',
-    right: -20,
-    top: -10,
-    width: 220,
-  },
-  heroEyebrow: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 30,
-    marginTop: 8,
   },
   heroSub: {
     fontSize: 13,

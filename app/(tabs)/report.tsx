@@ -5,14 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   AnalysisConfidenceBanner,
-  CourtLines,
   Donut,
   EmptyState,
+  ScreenHero,
   SectionHeader,
   Tag,
 } from '@/components/common';
 import { CourtHeatmap } from '@/components/court';
-import { ReportDrillList, ReportInsightList, ReportTipList } from '@/components/report';
+import {
+  ReportDrillList,
+  ReportInsightList,
+  ReportStatRow,
+  ReportTipList,
+} from '@/components/report';
 import { WEAKNESS_LABELS } from '@/constants/labels';
 import { getAnalyzer } from '@/services/analysis';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -81,10 +86,10 @@ export default function ReportTabScreen() {
     }));
 
   const keyStats = [
-    { l: 'ポイント', v: `${s.points.length}`, c: colors.text },
-    { l: '得点率', v: formatPercent(analysis.winRate), c: colors.success },
-    { l: '1st%', v: formatPercent(analysis.firstServeInRate), c: colors.text },
-    { l: '詳細', v: `${completePointCount}/${s.points.length}`, c: colors.text },
+    { label: 'ポイント', value: `${s.points.length}`, color: colors.text },
+    { label: '得点率', value: formatPercent(analysis.winRate), color: colors.success },
+    { label: '1st%', value: formatPercent(analysis.firstServeInRate), color: colors.text },
+    { label: '詳細', value: `${completePointCount}/${s.points.length}`, color: colors.text },
   ];
 
   return (
@@ -92,15 +97,17 @@ export default function ReportTabScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* hero card */}
         <View style={styles.heroPad}>
-          <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-            <View style={styles.courtMotif} pointerEvents="none">
-              <CourtLines stroke={colors.onHero} strokeOpacity={0.18} strokeWidth={1.4} />
-            </View>
+          <ScreenHero
+            motifStrokeOpacity={0.18}
+            motifStyle={styles.courtMotif}
+            style={styles.hero}
+            topInset={false}
+          >
             <View style={styles.heroTagRow}>
-              <Tag color={colors.onHero} bg="rgba(255,255,255,0.18)">
+              <Tag color={colors.onHero} bg={`${colors.onHero}2E`}>
                 {s.sport === 'tennis' ? '硬式' : 'ソフト'}
               </Tag>
-              <Tag color={colors.onHero} bg="rgba(255,255,255,0.18)">
+              <Tag color={colors.onHero} bg={`${colors.onHero}2E`}>
                 {s.matchFormat === 'singles' ? 'シングルス' : 'ダブルス'}
               </Tag>
               <View style={{ flex: 1 }} />
@@ -117,30 +124,12 @@ export default function ReportTabScreen() {
                 詳細未入力 {quickPointCount}
               </Text>
             ) : null}
-          </View>
+          </ScreenHero>
         </View>
 
         {/* key stats */}
         <View style={styles.statsGridWrap}>
-          <View
-            style={[
-              styles.statsGrid,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            {keyStats.map((it, i) => (
-              <View
-                key={it.l}
-                style={[
-                  styles.statCell,
-                  { borderRightColor: colors.border, borderRightWidth: i < 3 ? 0.5 : 0 },
-                ]}
-              >
-                <Text style={[styles.statValue, { color: it.c }]}>{it.v}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{it.l}</Text>
-              </View>
-            ))}
-          </View>
+          <ReportStatRow items={keyStats} />
           {quickPointCount > 0 ? (
             <View
               style={[
@@ -251,8 +240,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     paddingBottom: 16,
-    overflow: 'hidden',
-    position: 'relative',
   },
   courtMotif: {
     position: 'absolute',
@@ -295,34 +282,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 22,
     gap: 10,
-  },
-  statsGrid: {
-    borderRadius: 14,
-    borderWidth: 0.5,
-    flexDirection: 'row',
-    padding: 14,
-    shadowColor: '#0F281C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  statCell: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 26,
-    letterSpacing: -0.3,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 4,
-    letterSpacing: 0.04,
   },
   detailNotice: {
     borderRadius: 12,

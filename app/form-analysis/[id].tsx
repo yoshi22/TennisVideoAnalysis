@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, CourtLines, EmptyState, Tag } from '@/components/common';
+import { Button, EmptyState, ScreenHero, Tag } from '@/components/common';
 import { getShotTypeLabel, SwingMetricCard } from '@/components/pose';
 import { useFormAnalysisStore } from '@/stores';
 import { fontFamily, useTheme } from '@/theme';
@@ -52,11 +52,7 @@ export default function FormAnalysisResultScreen() {
 
       {analysis ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={[styles.scoreHero, { backgroundColor: colors.hero }]}>
-            <View style={styles.heroMotif} pointerEvents="none">
-              <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-            </View>
-            <Text style={[styles.heroEyebrow, { color: colors.heroAccent }]}>FORM SCORE</Text>
+          <ScreenHero eyebrow="FORM SCORE" topInset={false}>
             <View style={styles.scoreRow}>
               <Text style={[styles.scoreValue, { color: colors.onHero, fontFamily: NUM }]}>
                 {Math.round(Math.max(0, Math.min(100, analysis.result.overallScore)))}
@@ -73,7 +69,7 @@ export default function FormAnalysisResultScreen() {
             <Text style={[styles.heroShot, { color: withAlpha(colors.onHero, 0.72) }]}>
               {getShotTypeLabel(analysis.result.shotType)}
             </Text>
-          </View>
+          </ScreenHero>
 
           <View
             style={[
@@ -133,24 +129,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
     padding: 16,
-  },
-  scoreHero: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    padding: 16,
-    position: 'relative',
-  },
-  heroMotif: {
-    height: 120,
-    position: 'absolute',
-    right: -20,
-    top: -16,
-    width: 240,
-  },
-  heroEyebrow: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0,
   },
   scoreRow: {
     alignItems: 'baseline',

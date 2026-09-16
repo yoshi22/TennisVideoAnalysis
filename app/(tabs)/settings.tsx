@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button, CourtLines, SegmentedControl, Tag } from '@/components/common';
+import { Button, ScreenHero, SegmentedControl, Tag } from '@/components/common';
 import { hasValidConsent, useBetaStore } from '@/stores/betaStore';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -261,12 +261,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.profilePad}>
-          <View
-            style={[styles.profileCard, { backgroundColor: colors.hero, borderColor: colors.hero }]}
-          >
-            <View style={styles.profileMotif} pointerEvents="none">
-              <CourtLines stroke={colors.onHero} strokeOpacity={0.12} strokeWidth={1.4} />
-            </View>
+          <ScreenHero style={[styles.profileCard, { borderColor: colors.hero }]} topInset={false}>
             <View style={[styles.avatar, { backgroundColor: withAlpha(colors.onHero, 0.14) }]}>
               <Text style={[styles.avatarText, { color: colors.onHero }]}>{initials}</Text>
             </View>
@@ -286,7 +281,7 @@ export default function SettingsScreen() {
                 </Tag>
               </View>
             </View>
-          </View>
+          </ScreenHero>
         </View>
 
         <View style={styles.section}>
@@ -540,20 +535,10 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     alignItems: 'center',
-    borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 14,
-    overflow: 'hidden',
     padding: spacing.lg,
-    position: 'relative',
-  },
-  profileMotif: {
-    height: 118,
-    position: 'absolute',
-    right: -20,
-    top: -20,
-    width: 220,
   },
   avatar: {
     alignItems: 'center',

@@ -7,17 +7,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   AnalysisConfidenceBanner,
   Card,
-  CourtLines,
   Donut,
   EmptyState,
   ExportMenu,
+  ScreenHero,
   SectionHeader,
   Tag,
   ToolEntryCard,
 } from '@/components/common';
 import { CourtHeatmap } from '@/components/court';
 import { FormAnalysisEntryCard } from '@/components/pose';
-import { ReportDrillList, ReportInsightList, ReportTipList } from '@/components/report';
+import {
+  ReportDrillList,
+  ReportInsightList,
+  ReportStatRow,
+  ReportTipList,
+} from '@/components/report';
 import { SubmissionSheet } from '@/components/submission/SubmissionSheet';
 import { WEAKNESS_LABELS } from '@/constants/labels';
 import { useSession } from '@/hooks';
@@ -109,10 +114,12 @@ export default function ReportScreen() {
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero card */}
-        <View style={[styles.hero, { backgroundColor: colors.hero }]}>
-          <View style={styles.heroMotif} pointerEvents="none">
-            <CourtLines stroke={colors.onHero} strokeOpacity={0.18} strokeWidth={1.4} />
-          </View>
+        <ScreenHero
+          motifStrokeOpacity={0.18}
+          motifStyle={styles.heroMotif}
+          style={styles.hero}
+          topInset={false}
+        >
           <View style={styles.heroMeta}>
             <Tag color={colors.onHero} bg={`${colors.onHero}2E`}>
               {session.sport === 'tennis' ? '硬式' : 'ソフト'}
@@ -139,30 +146,19 @@ export default function ReportScreen() {
             {totalPoints} ポイント
             {quickPointCount > 0 ? ` ・ 詳細未入力 ${quickPointCount}` : ''}
           </Text>
-        </View>
+        </ScreenHero>
 
         {/* Key stats row */}
-        <View
-          style={[styles.statsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          {[
+        <ReportStatRow
+          cellGap={4}
+          items={[
             { label: 'ポイント', value: String(totalPoints), color: colors.text },
             { label: '得点率', value: formatPercent(analysis.winRate), color: colors.success },
             { label: '1st%', value: formatPercent(analysis.firstServeInRate), color: colors.text },
             { label: '詳細', value: `${completePointCount}/${totalPoints}`, color: colors.text },
-          ].map((stat, i, arr) => (
-            <View
-              key={stat.label}
-              style={[
-                styles.statCell,
-                i < arr.length - 1 && { borderRightWidth: 0.5, borderRightColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
+          ]}
+          padded
+        />
         {quickPointCount > 0 ? (
           <View
             style={[
@@ -410,8 +406,6 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: 16,
     padding: 18,
-    position: 'relative',
-    overflow: 'hidden',
   },
   heroMotif: {
     position: 'absolute',
@@ -450,35 +444,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     opacity: 0.8,
     marginTop: 6,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    borderWidth: 0.5,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    shadowColor: '#0F281C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  statCell: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  statValue: {
-    fontFamily: fontFamily.numeric,
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    fontVariant: ['tabular-nums'],
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.04,
   },
   detailNotice: {
     borderRadius: 12,
