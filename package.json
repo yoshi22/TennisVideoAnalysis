@@ -17,7 +17,8 @@
     "eval:score": "tsx scripts/eval/score-stage1.ts",
     "eval:viz": "tsx scripts/eval/visualize.ts",
     "eval:stage1": "npm run eval:run1 -- $@ && npm run eval:score -- $@",
-    "eval:prefill": "tsx scripts/eval/prefill-label.ts"
+    "eval:prefill": "tsx scripts/eval/prefill-label.ts",
+    "eval:smoke": "python3.11 scripts/eval/_smoke_test.py"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
