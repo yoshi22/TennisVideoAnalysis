@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import { useEvent } from 'expo';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer } from 'expo-video';
@@ -113,7 +114,8 @@ export function useAutoScore(
 
       setCandidates(proposed);
       setHasAnalyzed(true);
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error);
       Alert.alert(
         '解析に失敗しました',
         '範囲、動画、コート較正を確認して、もう一度お試しください。'
@@ -192,7 +194,8 @@ export function useAutoScore(
       setProgress(1);
       setCandidates(allCandidates);
       setHasAnalyzed(true);
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error);
       Alert.alert('一括採点に失敗しました', '動画、撮影範囲を確認して、もう一度お試しください。');
     } finally {
       setIsAutoDetecting(false);
@@ -276,6 +279,7 @@ export function useAutoScore(
         Alert.alert('解析結果が空でした', 'ラリーが検出できませんでした。動画を確認してください。');
       }
     } catch (error) {
+      Sentry.captureException(error);
       Alert.alert(
         'クラウド解析に失敗しました',
         error instanceof Error ? error.message : '時間をおいて再試行してください。'

@@ -14,6 +14,8 @@ import {
   SairaCondensed_600SemiBold,
   SairaCondensed_700Bold,
 } from '@expo-google-fonts/saira-condensed';
+import * as Sentry from '@sentry/react-native';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -21,10 +23,21 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ErrorFallback } from '@/components/common';
 import { useOnboardingStore } from '@/stores';
 import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+const sentryDsn = Constants.expoConfig?.extra?.sentryDsn as string | undefined;
+
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: !__DEV__ && Boolean(sentryDsn),
+  environment: __DEV__ ? 'development' : 'production',
+  tracesSampleRate: 0.2,
+  attachStacktrace: true,
+});
 
 function AppStack() {
   const { colors } = useTheme();
@@ -38,7 +51,7 @@ function AppStack() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -77,9 +90,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppStack />
+          <Sentry.ErrorBoundary
+            fallback={({ eventId, resetError }) => (
+              <ErrorFallback eventId={eventId} resetError={resetError} />
+            )}
+          >
+            <AppStack />
+          </Sentry.ErrorBoundary>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);

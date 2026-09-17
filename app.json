@@ -57,6 +57,13 @@
         {
           "enableCoreMLDelegate": true
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "REPLACE_ME",
+          "project": "REPLACE_ME"
+        }
       ]
     ],
     "experiments": {
@@ -76,7 +83,8 @@
       "cloudAnalysis": {
         "submitUrl": "https://yoshi22--tennis-ball-submit.modal.run",
         "resultUrl": "https://yoshi22--tennis-ball-result.modal.run"
-      }
+      },
+      "sentryDsn": ""
     },
     "owner": "yoshi22"
   }

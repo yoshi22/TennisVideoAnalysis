@@ -6,6 +6,7 @@ export { Chip } from './Chip';
 export { CourtLines } from './CourtLines';
 export { Donut } from './Donut';
 export { EmptyState } from './EmptyState';
+export { ErrorFallback } from './ErrorFallback';
 export { ExportMenu } from './ExportMenu';
 export { ProgressRing } from './ProgressRing';
 export { SectionHeader } from './SectionHeader';
