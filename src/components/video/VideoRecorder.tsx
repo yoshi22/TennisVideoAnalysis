@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Button } from '@/components/common';
 import { spacing, typography, useTheme } from '@/theme';
@@ -52,6 +52,10 @@ export function VideoRecorder({ onRecorded, onCancel }: VideoRecorderProps) {
     void Promise.all([requestCameraPermission(), requestMicrophonePermission()]);
   }, [requestCameraPermission, requestMicrophonePermission]);
 
+  const handleOpenSettings = useCallback(() => {
+    void Linking.openSettings();
+  }, []);
+
   const handleStartRecording = useCallback(async () => {
     if (!cameraRef.current || isRecording) {
       return;
@@ -84,16 +88,24 @@ export function VideoRecorder({ onRecorded, onCancel }: VideoRecorderProps) {
 
   const hasPermission =
     cameraPermission?.granted === true && microphonePermission?.granted === true;
+  const blocked =
+    (cameraPermission && !cameraPermission.granted && !cameraPermission.canAskAgain) ||
+    (microphonePermission && !microphonePermission.granted && !microphonePermission.canAskAgain);
 
   if (!hasPermission) {
     return (
       <View style={[styles.permissionContainer, { backgroundColor: colors.bg }]}>
         <Text style={styles.permissionTitle}>カメラとマイクの権限が必要です</Text>
         <Text style={[styles.permissionDescription, { color: colors.textSub }]}>
-          動画を撮影するには、カメラとマイクへのアクセスを許可してください。
+          {blocked
+            ? 'アプリ内の権限リクエストを表示できません。設定でカメラとマイクへのアクセスを有効にしてください。'
+            : '動画を撮影するには、カメラとマイクへのアクセスを許可してください。'}
         </Text>
         <View style={styles.permissionActions}>
-          <Button label="権限を許可" onPress={handleRequestPermissions} />
+          <Button
+            label={blocked ? '設定を開く' : '権限を許可'}
+            onPress={blocked ? handleOpenSettings : handleRequestPermissions}
+          />
           <Button label="キャンセル" onPress={onCancel} variant="secondary" />
         </View>
       </View>

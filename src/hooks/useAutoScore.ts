@@ -246,6 +246,7 @@ export function useAutoScore(
         videoUri: session.videoUri,
         clipId,
         onProgress: (value) => setProgress(Math.max(0.2, Math.min(0.4, 0.2 + value * 0.2))),
+        signal: controller.signal,
       });
 
       setCloudStatus('クラウド解析中...(数分かかることがあります)');
@@ -282,7 +283,7 @@ export function useAutoScore(
       Sentry.captureException(error);
       Alert.alert(
         'クラウド解析に失敗しました',
-        error instanceof Error ? error.message : '時間をおいて再試行してください。'
+        '解析に失敗しました。通信環境を確認して、もう一度お試しください。'
       );
     } finally {
       setIsCloudAnalyzing(false);
