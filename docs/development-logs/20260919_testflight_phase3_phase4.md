@@ -78,8 +78,8 @@ New Architecture 専用であり、peer の `react-native-nitro-modules@0.35.6` 
 | U4 | iOS 配布証明書 / Provisioning Profile の生成（`eas credentials`、Apple ログインが対話的） | 待ち |
 | U5 | プライバシーポリシーの公開 URL | 待ち |
 
-取得後: `eas env:create --environment production --name <NAME> --value <VALUE> --visibility sensitive`
-（`SENTRY_AUTH_TOKEN` のみ `--visibility secret`）→ `npm run build:ios` → `npm run submit:ios`。
+手順の詳細（Supabase のバケット/RLS、Sentry の slug と token、`eas credentials` のプロンプト、
+`eas env:create` の visibility の使い分け）は **`docs/testflight-release-runbook.md`** に分離した。
 
 ## Phase 4: 実機検証チェックリスト
 
