@@ -40,14 +40,16 @@ cloud-first の「動画 → ショット毎JSON」解析エンドポイント�
 
 ## アプリ側の結線(実装済 ✅ / 実機実行の手前まで完了)
 `auto-score.tsx` の「クラウドでショット解析」ボタンに以下が結線済み。**残るはユーザーの設定+実機実行のみ**。
-1. ✅ **設定**: `app.json` の `expo.extra.cloudAnalysis {submitUrl, resultUrl}` 追加済。
-   - ⚠ **ユーザー作業**: `expo.extra.submission.url`/`anonKey` に Supabase 値を投入(空だとクラウドボタン非表示)。
+1. ✅ **設定**: `app.config.ts` の `extra.cloudAnalysis {submitUrl, resultUrl}` 追加済。
+   - ⚠ **ユーザー作業**: `SUPABASE_URL` / `SUPABASE_ANON_KEY` を環境に投入(空だと `extra.submission` が空になりクラウドボタン非表示)。ローカルは `.env.local`、ビルドは EAS の `production` 環境変数。キー名は `.env.example` 参照。
 2. ✅ **動画アップロード**: `src/services/analysis/videoUpload.ts`(Supabase へ PUT → 署名URL発行)。
 3. ✅ **較正**: `calibration.tsx` が保存する `CourtCalibration.imageCorners`(near-left..far-left 正規化)をそのまま送信。
 4. ✅ **ラリー窓**: 既存 `detectRallyWindows`(オンデバイス)→ `[{startSec,endSec}]`。
 5. ✅ **解析呼び出し**: `runCloudAnalysis(...)`(`src/services/analysis/cloudAnalyze.ts`)。
-6. ✅ **ドラフト化**: `cloudResultToCandidates(result)`(`src/services/scoring/cloudCandidates.ts`)→ `AutoPointCandidate[]` → 既存 `buildDraftPointFromCandidate` → `PointRecord`(source:'auto', draft)。
-7. ✅ **レビュー/補正**: 既存 `auto-score.tsx` + `AutoPointCard`(=補正フライホイール)。
+6. ✅ **ラリー履歴化**: `cloudResultToRallyAnalysis(result)`(`src/services/analysis/rallyHistory.ts`)→ `addRallyAnalysis` で永続化。
+7. ✅ **レビュー/補正**: `app/session/[id]/rally-history.tsx`(ショット毎のコース/速度/FH-BH ラダー + 勝ち負けトグル = 補正フライホイール)。
+
+> 旧記述にあった `cloudResultToCandidates` / `src/services/scoring/cloudCandidates.ts` は未使用のまま残っていたためコミット `23e58c6` で削除済み。クラウド結果は `AutoPointCandidate` を経由せず、上記のラリー履歴経路に入る。
 
 ⚠ **実機実行の残り(ユーザー)**: (a) `submission.url`/`anonKey` 設定 + バケットで署名URL発行可、(b) dev build で 動画取り込み→コート較正→「クラウドでショット解析」ボタン→レビュー。
 
@@ -59,4 +61,4 @@ cloud-first の「動画 → ショット毎JSON」解析エンドポイント�
 - **認証/課金**: 現状エンドポイントは無認証。ベータ検証用。公開前に要ガード。
 
 ## 検証済み
-- 2026-09-13: gr4ves(600秒/18,002フレーム)で POST→GET のHTTP疎通、データ駆動(corners+rallies引数)で 17ラリー/279イベント再現。`src/services/analysis/cloudAnalyze.ts` / `src/services/scoring/cloudCandidates.ts` は type-check/lint 通過。
+- 2026-09-13: gr4ves(600秒/18,002フレーム)で POST→GET のHTTP疎通、データ駆動(corners+rallies引数)で 17ラリー/279イベント再現。`src/services/analysis/cloudAnalyze.ts` は type-check/lint 通過。
