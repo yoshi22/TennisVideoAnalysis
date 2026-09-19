@@ -54,7 +54,7 @@ const config: ExpoConfig = {
   name: 'CourtLens',
   slug: 'courtlens',
   scheme: 'courtlens',
-  version: '1.1.0',
+  version: '1.2.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -73,7 +73,7 @@ const config: ExpoConfig = {
       NSPhotoLibraryUsageDescription: '撮影済みの動画をライブラリから選択するために使用します',
       ITSAppUsesNonExemptEncryption: false,
     },
-    buildNumber: '3',
+    buildNumber: '4',
   },
   android: {
     adaptiveIcon: {
