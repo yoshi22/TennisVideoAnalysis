@@ -114,7 +114,16 @@ export function VideoRecorder({ onRecorded, onCancel }: VideoRecorderProps) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.text }]}>
-      <CameraView active facing="back" mode="video" ref={cameraRef} style={styles.camera} />
+      {/* 720p, not the 1080p default: the cloud analyzer normalizes every clip to
+          1280x720 anyway, so recording higher only costs upload time and storage. */}
+      <CameraView
+        active
+        facing="back"
+        mode="video"
+        ref={cameraRef}
+        style={styles.camera}
+        videoQuality="720p"
+      />
       <View style={styles.controls}>
         <TouchableOpacity
           accessibilityLabel="録画をキャンセル"
