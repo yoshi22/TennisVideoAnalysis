@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -12,16 +13,17 @@
     },
     "production": {
       "ios": {
-        "simulator": false,
-        "autoIncrement": true
-      }
+        "simulator": false
+      },
+      "environment": "production"
     }
   },
   "submit": {
     "production": {
       "ios": {
         "appleId": "muroi.y22@gmail.com",
-        "ascAppId": "6769652596"
+        "ascAppId": "6769652596",
+        "appleTeamId": "7H57MX827T"
       }
     }
   }

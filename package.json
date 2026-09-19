@@ -10,6 +10,8 @@
     "test": "jest",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
+    "build:ios": "eas build --platform ios --profile production",
+    "submit:ios": "eas submit --platform ios --profile production --latest",
     "eval:fetch": "tsx scripts/eval/fetch-video.ts",
     "eval:clip": "tsx scripts/eval/clip-video.ts",
     "eval:frames": "tsx scripts/eval/extract-frames.ts",
