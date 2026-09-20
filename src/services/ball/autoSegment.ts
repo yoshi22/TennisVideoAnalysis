@@ -22,6 +22,18 @@ export interface DetectRallyWindowsOptions extends RallySegmentOptions {
 }
 
 /**
+ * Ceiling on frames per scan. Every frame costs a native video seek plus a
+ * decode, both sequential, so cost grows linearly with duration: at 3fps a
+ * ten-minute video would be 1,800 frames and take longer than the cloud
+ * analysis it feeds. Past this point the scan trades frame rate for finishing.
+ *
+ * The rally-segmentation thresholds in core/rallySegment.ts are tuned for 3fps,
+ * so a capped scan is a deliberate accuracy-for-feasibility trade and its
+ * detection quality on long clips has not been measured against the eval set.
+ */
+const MAX_SCAN_FRAMES = 540;
+
+/**
  * Scans the full video at low fps and identifies time windows where ball candidates exist.
  * Returns merged rally windows sorted chronologically.
  * React Native only — for Node eval use detectRallyWindowsFromFrames + decodeFrame.node.ts.
@@ -42,7 +54,10 @@ export async function detectRallyWindows(opts: DetectRallyWindowsOptions): Promi
     return [];
   }
 
-  const totalFrames = Math.max(Math.round(videoDurationSec * scanFps), 2);
+  const totalFrames = Math.min(
+    Math.max(Math.round(videoDurationSec * scanFps), 2),
+    MAX_SCAN_FRAMES
+  );
   const sampledFrames = await sampleFrames(videoUri, 0, videoDurationSec, totalFrames);
   onProgress?.(0.3);
 
