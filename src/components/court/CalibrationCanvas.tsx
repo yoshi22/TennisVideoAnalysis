@@ -13,6 +13,8 @@ interface CalibrationCanvasProps {
   onCornersChange: (corners: CalibrationCorners) => void;
   width: number;
   height: number;
+  /** Fires while a handle is held, so the parent can freeze its ScrollView. */
+  onDragStateChange?: (isDragging: boolean) => void;
 }
 
 interface CornerHandleProps {
@@ -22,6 +24,7 @@ interface CornerHandleProps {
   width: number;
   height: number;
   onChange: (index: number, point: ImagePoint) => void;
+  onDragStateChange?: (isDragging: boolean) => void;
 }
 
 const CORNER_LABELS = ['手前左', '手前右', '奥右', '奥左'] as const;
@@ -32,7 +35,15 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function CornerDragTarget({ index, label, point, width, height, onChange }: CornerHandleProps) {
+function CornerDragTarget({
+  index,
+  label,
+  point,
+  width,
+  height,
+  onChange,
+  onDragStateChange,
+}: CornerHandleProps) {
   const pointRef = useRef(point);
   const startRef = useRef(point);
 
@@ -45,8 +56,13 @@ function CornerDragTarget({ index, label, point, width, height, onChange }: Corn
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        // The canvas sits inside a ScrollView. Without this the ScrollView asks
+        // for the responder as soon as the finger moves vertically and the drag
+        // turns into a page scroll.
+        onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
           startRef.current = pointRef.current;
+          onDragStateChange?.(true);
         },
         onPanResponderMove: (_event, gesture) => {
           onChange(index, {
@@ -54,8 +70,10 @@ function CornerDragTarget({ index, label, point, width, height, onChange }: Corn
             y: clamp01(startRef.current.y + gesture.dy / height),
           });
         },
+        onPanResponderRelease: () => onDragStateChange?.(false),
+        onPanResponderTerminate: () => onDragStateChange?.(false),
       }),
-    [height, index, onChange, width]
+    [height, index, onChange, onDragStateChange, width]
   );
 
   return (
@@ -80,6 +98,7 @@ export function CalibrationCanvas({
   onCornersChange,
   width,
   height,
+  onDragStateChange,
 }: CalibrationCanvasProps) {
   const { colors } = useTheme();
 
@@ -155,6 +174,7 @@ export function CalibrationCanvas({
           key={`drag-${CORNER_LABELS[index]}`}
           label={CORNER_LABELS[index]}
           onChange={updateCorner}
+          onDragStateChange={onDragStateChange}
           point={corner}
           width={width}
         />

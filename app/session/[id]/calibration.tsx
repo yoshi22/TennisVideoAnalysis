@@ -51,6 +51,9 @@ export default function CourtCalibrationScreen() {
   const [referenceFrame, setReferenceFrame] = useState<StillFrame | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  // Freezes the ScrollView while a corner handle is held, so the drag does not
+  // turn into a page scroll.
+  const [isDraggingCorner, setIsDraggingCorner] = useState(false);
   const videoDuration = getVideoDurationSec(session);
 
   const loadReferenceFrame = useCallback(async () => {
@@ -136,7 +139,11 @@ export default function CourtCalibrationScreen() {
         </View>
       ) : (
         <>
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            scrollEnabled={!isDraggingCorner}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.heroPad}>
               <ScreenHero eyebrow="CALIBRATION" title="コート較正" topInset={false}>
                 <Text style={[styles.heroSub, { color: withAlpha(colors.onHero, 0.68) }]}>
@@ -169,6 +176,7 @@ export default function CourtCalibrationScreen() {
                     height={CANVAS_HEIGHT}
                     imageUri={referenceFrame.uri}
                     onCornersChange={setCorners}
+                    onDragStateChange={setIsDraggingCorner}
                     width={CANVAS_WIDTH}
                   />
                 ) : (
