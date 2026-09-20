@@ -7,6 +7,7 @@ import { Chip, EmptyState, SessionCard } from '@/components/common';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme';
 import { type SessionType, type TennisSession } from '@/types';
+import { pushRoute } from '@/utils/navigation';
 import { countLost, countWon } from '@/utils/reportStats';
 
 type HistoryFilter = 'all' | 'win' | 'loss' | 'practice';
@@ -172,7 +173,7 @@ export default function HistoryScreen() {
       return;
     }
 
-    router.push(`../session/${session.id}/log`);
+    pushRoute(router, `/session/${session.id}/log`);
   };
 
   const emptyTitle = sessions.length === 0 ? '履歴がありません' : '該当する履歴がありません';

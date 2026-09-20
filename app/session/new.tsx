@@ -68,7 +68,7 @@ export default function NewSessionScreen() {
         : { ...baseSession, sport: 'tennis' };
 
     addSession(session);
-    router.replace(`../${id}/log`);
+    replaceRoute(router, `/session/${id}/log`);
   };
 
   return (
