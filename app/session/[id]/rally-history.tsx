@@ -22,7 +22,10 @@ function strokeLabel(stroke: StrokeKind): string {
     case 'serve':
       return 'サーブ';
     default:
-      return 'ショット';
+      // Not "ショット": the stroke arrives as 'unknown' when pose estimation
+      // could not tell the side, which is common in wide fixed-camera footage.
+      // Labelling it neutrally hid the fact that nothing was determined.
+      return '不明';
   }
 }
 

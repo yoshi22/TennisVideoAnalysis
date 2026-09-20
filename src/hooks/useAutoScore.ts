@@ -14,6 +14,17 @@ import { useSessionStore } from '@/stores';
 import { type AutoPointCandidate, type PointRecord, type TennisSession } from '@/types';
 import { generateId } from '@/utils/id';
 
+/**
+ * Our own failures (upload timeout, signed-URL timeout) already carry Japanese
+ * text written for the user. Everything else is an internal string such as
+ * "Cloud submit failed: HTTP 500", which is worse than useless in an alert.
+ */
+function cloudFailureDetail(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  const writtenForUser = /[\u3040-\u30ff\u4e00-\u9faf]/.test(message);
+  return writtenForUser ? message : '通信環境を確認して、もう一度お試しください。';
+}
+
 export type PlayerSideValue = 'near' | 'far';
 export type ServeMode = 'yes' | 'no';
 export type ServeAttemptValue = '1' | '2';
@@ -281,10 +292,7 @@ export function useAutoScore(
       }
     } catch (error) {
       Sentry.captureException(error);
-      Alert.alert(
-        'クラウド解析に失敗しました',
-        '解析に失敗しました。通信環境を確認して、もう一度お試しください。'
-      );
+      Alert.alert('クラウド解析に失敗しました', cloudFailureDetail(error));
     } finally {
       setIsCloudAnalyzing(false);
       setCloudStatus('');
