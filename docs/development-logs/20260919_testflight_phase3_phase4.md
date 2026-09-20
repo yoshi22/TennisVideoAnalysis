@@ -68,15 +68,58 @@ New Architecture 専用であり、peer の `react-native-nitro-modules@0.35.6` 
 「実装済」と書いていたが、`23e58c6` で dead code として削除済み。実際は
 `cloudResultToRallyAnalysis` → `rally-history.tsx` の経路。
 
-## Phase 3 の残り（ユーザー作業待ち）
+## Phase 3 完了（2026-09-20）
 
-| # | 内容 | 状態 |
+| # | 内容 | 結果 |
 |---|---|---|
-| U1 | Supabase プロジェクト + プライベートバケット `beta-submissions` + anon の INSERT/UPDATE/SELECT ポリシー（`analysis/%` 限定推奨） | 待ち |
-| U2 | Sentry の org/project/DSN/auth token | 待ち |
-| U3 | App Store Connect API Key（非対話提出用） | 待ち |
-| U4 | iOS 配布証明書 / Provisioning Profile の生成（`eas credentials`、Apple ログインが対話的） | 待ち |
-| U5 | プライバシーポリシーの公開 URL | 待ち |
+| U1 | Supabase — バケット `beta-submissions`(private, 50MB, video/mp4) + anon の INSERT/UPDATE/SELECT | 完了。**実測検証済**（下記） |
+| U2 | Sentry — org `yosuke-muroi` / project `courtlens`(US リージョン) | 完了。token scope `org:ci` |
+| U3 | App Store Connect API Key `476ZM6PG45`(ADMIN) | 既存のものが使えた |
+| U4 | Distribution Certificate + Provisioning Profile `NQT953UG9P` | 完了（2027-09-20 まで有効） |
+| U5 | プライバシーポリシーの公開 URL | **未確認**（Internal Testing では不要なので保留） |
+
+### 途中で詰まった点
+
+- **Apple Developer Program のメンバーシップが失効**していた（2025-06 登録、2026-06 頃に期限切れ）。
+  `eas credentials` が `You have no team associated with your Apple account` で失敗。
+  更新時に決済も一度拒否されたが、最終的に解決。EAS 側に残っていた team `7H57MX827T` は古いキャッシュだった。
+- **Supabase の API キーが新方式に変わっていた**。`anon`(JWT) ではなく `sb_publishable_...` が発行される。
+  JWT ではないため `Authorization: Bearer` に載せる現行コードで動くか不明だったが、
+  **実測で PUT/sign/GET すべて 200** だったので `videoUpload.ts` は無変更で済んだ。
+- `.env.local` にキーが重複記載されていた（テンプレートの空行 + 追記）。整理済み。
+
+### Supabase 疎通の実測（ビルド前に検証）
+
+`videoUpload.ts` と同じヘッダ・同じパスで実際に叩いた結果:
+
+| ステップ | 結果 |
+|---|---|
+| PUT `/object/beta-submissions/analysis/<id>/video.mp4`（insert+update ポリシー） | **200** |
+| POST `/object/sign/...`（select ポリシー） | **200**、signedURL 取得 |
+| 署名URLを**無認証で GET**（Modal と同じ動き） | **200**、バイト数一致 |
+
+### ビルド結果
+
+| | |
+|---|---|
+| Build ID | `33eb4105-5fd9-480e-a700-a8966f708924` |
+| Version | **1.2.0 (4)**、commit `59c5153` |
+| 所要 | 5 分 21 秒（16:07:15 → 16:12:36） |
+| Fingerprint | `a902130655779def98a4742a83bdd0839e055c09` |
+
+**Sentry の sourcemap アップロードは成功**。ただし確認方法に注意:
+現在の Sentry SDK は **Debug ID 方式**で、リリースを作らずに artifact bundle を上げる。
+`sentry-cli releases list` は 0 件のままなので、これを失敗と誤認しないこと。正しい確認先:
+
+- `/api/0/projects/<org>/<project>/files/artifact-bundles/` → 1 件（JS sourcemap）
+- `/api/0/projects/<org>/<project>/files/dsyms/` → 4 件（ネイティブ）
+
+### Phase 4 の Sentry 検証について
+
+E-16（未ハンドルのクラッシュ）は意図的なクラッシュ導線が必要だが、
+**E-17（ハンドル済みエラー）は追加ビルドなしで検証できる**。
+機内モードでクラウド解析を実行すると `useAutoScore` の `captureException` が発火するため、
+**C-10 と E-17 を同時に確認できる**。
 
 手順の詳細（Supabase のバケット/RLS、Sentry の slug と token、`eas credentials` のプロンプト、
 `eas env:create` の visibility の使い分け）は **`docs/testflight-release-runbook.md`** に分離した。
