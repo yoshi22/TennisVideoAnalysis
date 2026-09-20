@@ -73,7 +73,7 @@ const config: ExpoConfig = {
       NSPhotoLibraryUsageDescription: '撮影済みの動画をライブラリから選択するために使用します',
       ITSAppUsesNonExemptEncryption: false,
     },
-    buildNumber: '4',
+    buildNumber: '5',
   },
   android: {
     adaptiveIcon: {
