@@ -35,6 +35,27 @@ import { fontFamily, useTheme } from '@/theme';
 
 const CLOUD_ANALYSIS_AVAILABLE = isCloudAnalysisEnabled() && isVideoUploadConfigured();
 
+/**
+ * A disabled button with no explanation reads as a broken button, so each one
+ * says what is missing. Returns null when the action is ready to run.
+ */
+function blockedReason(opts: {
+  hasCalibration: boolean;
+  hasDuration: boolean;
+  needsCalibration: boolean;
+  needsRange?: boolean;
+  hasValidRange?: boolean;
+}): string | null {
+  if (!opts.hasDuration) return '動画の長さを読み込んでいます。少し待ってから実行してください。';
+  if (opts.needsCalibration && !opts.hasCalibration) {
+    return 'コート較正を設定すると使えます。';
+  }
+  if (opts.needsRange && !opts.hasValidRange) {
+    return '終了を開始より後に設定してください。';
+  }
+  return null;
+}
+
 const NUM = fontFamily.numeric;
 
 const PLAYER_SIDE_OPTIONS: { label: string; value: PlayerSideValue }[] = [
@@ -91,6 +112,26 @@ export default function AutoScoreScreen() {
     removeCandidate,
   } = useAutoScore(session ?? null, sessionId, router);
 
+  const hasCalibration = Boolean(session?.courtCalibration);
+  const hasDuration = videoDurationSec > 0;
+  const autoDetectBlocked = blockedReason({
+    hasCalibration,
+    hasDuration,
+    needsCalibration: false,
+  });
+  const rangeAnalyzeBlocked = blockedReason({
+    hasCalibration,
+    hasDuration,
+    needsCalibration: true,
+    needsRange: true,
+    hasValidRange: endSec > startSec,
+  });
+  const cloudAnalyzeBlocked = blockedReason({
+    hasCalibration,
+    hasDuration,
+    needsCalibration: true,
+  });
+
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.bg }]}>
       <Stack.Screen
@@ -102,6 +143,16 @@ export default function AutoScoreScreen() {
           headerTitleStyle: { color: colors.onHero, fontWeight: '700' },
           contentStyle: { backgroundColor: colors.bg },
           headerBackVisible: false,
+          headerRight: () => (
+            <TouchableOpacity
+              accessibilityLabel="使い方ガイドを開く"
+              accessibilityRole="button"
+              onPress={() => router.push('/help' as Parameters<typeof router.push>[0])}
+              style={styles.backButton}
+            >
+              <Ionicons color={colors.onHero} name="help-circle-outline" size={24} />
+            </TouchableOpacity>
+          ),
           headerLeft: () => (
             <TouchableOpacity
               accessibilityLabel="戻る"
@@ -158,6 +209,29 @@ export default function AutoScoreScreen() {
             </Text>
           </View>
 
+          <View
+            style={[
+              styles.card,
+              styles.guideCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.guideTitle, { color: colors.text }]}>3つの解析方法</Text>
+            <Text style={[styles.guideText, { color: colors.textMuted }]}>
+              <Text style={{ color: colors.text }}>自動ラリー検出</Text>
+              {'\n'}動画全体からラリー区間を探して下書きを作ります。較正なしで使えます。
+            </Text>
+            <Text style={[styles.guideText, { color: colors.textMuted }]}>
+              <Text style={{ color: colors.text }}>範囲を指定して採点候補を生成</Text>
+              {'\n'}下の「解析範囲」で指定した区間だけを端末内で解析します。較正が必要です。
+            </Text>
+            <Text style={[styles.guideText, { color: colors.textMuted }]}>
+              <Text style={{ color: colors.text }}>クラウドでショット解析</Text>
+              {'\n'}動画全体を対象に、ショット毎の速度・コース・FH/BH
+              を出します。較正が必要で、数分かかります。
+            </Text>
+          </View>
+
           {!session.courtCalibration ? (
             <View
               style={[
@@ -167,14 +241,16 @@ export default function AutoScoreScreen() {
               ]}
             >
               <Text style={[styles.calibrationTitle, { color: colors.text }]}>
-                コート較正でさらに精度が上がります
+                コート較正が未設定です
               </Text>
               <Text style={[styles.calibrationText, { color: colors.textMuted }]}>
-                較正なしでもラリー区間の下書き生成ができます。較正を設定するとバウンド位置・採点候補も生成されます。
+                いま使えるのは「自動ラリー検出」だけです。コートの四隅を指定すると、
+                バウンド位置・採点候補に加えて「範囲を指定して採点候補を生成」と
+                「クラウドでショット解析」が使えるようになります。
               </Text>
               <Button
                 accessibilityLabel="コート較正を開く"
-                label="コート較正を設定する（任意）"
+                label="コート較正を設定する"
                 onPress={() => {
                   router.push(
                     `/session/${session.id}/calibration` as Parameters<typeof router.push>[0]
@@ -187,6 +263,10 @@ export default function AutoScoreScreen() {
 
           <View>
             <SectionHeader title="解析範囲" />
+            <Text style={[styles.sectionNote, { color: colors.textMuted }]}>
+              この範囲を使うのは「範囲を指定して採点候補を生成」だけです。自動ラリー検出と
+              クラウド解析は動画全体を対象にします。
+            </Text>
             <View
               style={[
                 styles.card,
@@ -274,6 +354,11 @@ export default function AutoScoreScreen() {
                 size="l"
                 variant="secondary"
               />
+              {autoDetectBlocked ? (
+                <Text style={[styles.blockedNote, { color: colors.textMuted }]}>
+                  {autoDetectBlocked}
+                </Text>
+              ) : null}
 
               <Button
                 testID="autoscore-analyze-range"
@@ -285,28 +370,40 @@ export default function AutoScoreScreen() {
                   !session.courtCalibration ||
                   endSec <= startSec
                 }
-                label="範囲を指定して採点候補を生成（較正必須）"
+                label="範囲を指定して採点候補を生成"
                 loading={isAnalyzing}
                 onPress={() => void handleAnalyze()}
                 size="l"
               />
+              {rangeAnalyzeBlocked ? (
+                <Text style={[styles.blockedNote, { color: colors.textMuted }]}>
+                  {rangeAnalyzeBlocked}
+                </Text>
+              ) : null}
 
               {CLOUD_ANALYSIS_AVAILABLE ? (
-                <Button
-                  testID="autoscore-cloud-analyze"
-                  accessibilityLabel="クラウドでショット解析（較正必須）"
-                  disabled={
-                    isAnalyzing ||
-                    isAutoDetecting ||
-                    isCloudAnalyzing ||
-                    !session.courtCalibration ||
-                    videoDurationSec <= 0
-                  }
-                  label="クラウドでショット解析（速度・コース・FH/BH）"
-                  loading={isCloudAnalyzing}
-                  onPress={() => void handleCloudAnalyze()}
-                  size="l"
-                />
+                <>
+                  <Button
+                    testID="autoscore-cloud-analyze"
+                    accessibilityLabel="クラウドでショット解析"
+                    disabled={
+                      isAnalyzing ||
+                      isAutoDetecting ||
+                      isCloudAnalyzing ||
+                      !session.courtCalibration ||
+                      videoDurationSec <= 0
+                    }
+                    label="クラウドでショット解析（速度・コース・FH/BH）"
+                    loading={isCloudAnalyzing}
+                    onPress={() => void handleCloudAnalyze()}
+                    size="l"
+                  />
+                  {cloudAnalyzeBlocked ? (
+                    <Text style={[styles.blockedNote, { color: colors.textMuted }]}>
+                      {cloudAnalyzeBlocked}
+                    </Text>
+                  ) : null}
+                </>
               ) : null}
             </View>
           </View>
@@ -469,6 +566,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 20,
+  },
+  guideCard: {
+    gap: 10,
+  },
+  guideTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  guideText: {
+    fontSize: 12.5,
+    lineHeight: 19,
+  },
+  sectionNote: {
+    fontSize: 12,
+    lineHeight: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  blockedNote: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: -2,
   },
   calibrationCard: {
     gap: 10,
