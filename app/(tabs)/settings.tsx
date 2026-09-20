@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
@@ -19,8 +20,12 @@ import { usePlayerStore } from '@/stores/playerStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { fontFamily, spacing, typography, useTheme, type ColorTokens } from '@/theme';
 import { type PlayerProfile, type PlayStyle, type SportType } from '@/types';
+
 import { generateId } from '@/utils/id';
 import { pushRoute } from '@/utils/navigation';
+
+// Shown in Settings; keeping it in sync by hand had already left it at 1.0.0.
+const appVersion = Constants.expoConfig?.version ?? '—';
 
 const SPORT_OPTIONS: { label: string; value: SportType }[] = [
   { label: '硬式テニス', value: 'tennis' },
@@ -358,7 +363,8 @@ export default function SettingsScreen() {
             <SettingsRow
               colors={colors}
               label="テーマ"
-              value={mode === 'dark' ? 'ダーク' : 'ライト'}
+              showChevron={false}
+              value={`端末の設定に従う（現在: ${mode === 'dark' ? 'ダーク' : 'ライト'}）`}
             />
             <SettingsRow
               colors={colors}
@@ -373,7 +379,7 @@ export default function SettingsScreen() {
               isLast
               label="バージョン"
               showChevron={false}
-              value="1.0.0"
+              value={appVersion}
             />
           </View>
         </View>

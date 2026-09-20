@@ -145,7 +145,10 @@ export function PointLogSheet({
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: colors.bg }]}>
+        {/* Claims the touch so taps that land on the sheet's own background —
+            the padding around the 280px-wide court, most of all — do not reach
+            the backdrop and dismiss the sheet. */}
+        <Pressable onPress={() => {}} style={[styles.sheet, { backgroundColor: colors.bg }]}>
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
           {/* Header */}
