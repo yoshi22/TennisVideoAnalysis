@@ -1,10 +1,37 @@
+import { Image } from 'react-native';
+
 import { analyzeForm } from '@/services/analysis/PoseFormAnalyzer';
-import { type FormAnalysis, type FormAnalysisResult, type ShotType } from '@/types';
+import {
+  type FormAnalysis,
+  type FormAnalysisResult,
+  type ImpactFrameImage,
+  type ShotType,
+} from '@/types';
 import { generateId } from '@/utils/id';
 
 import { sampleFrames } from './frameSampler';
 import { inferFrames } from './poseModel';
-import { persistVideo } from '../video/videoStore';
+import { persistFrameImage, persistVideo } from '../video/videoStore';
+
+/**
+ * Persists the still the overlay is drawn on, together with its pixel size —
+ * the overlay maps normalized keypoints onto that exact aspect ratio.
+ * Returns undefined rather than throwing: the pose picture is a nicety, and
+ * losing it must not fail an otherwise complete analysis.
+ */
+async function buildImpactFrame(uri: string): Promise<ImpactFrameImage | undefined> {
+  try {
+    const persisted = await persistFrameImage(uri);
+    const { width, height } = await new Promise<{ width: number; height: number }>(
+      (resolve, reject) => {
+        Image.getSize(persisted, (w, h) => resolve({ width: w, height: h }), reject);
+      }
+    );
+    return { uri: persisted, widthPx: width, heightPx: height };
+  } catch {
+    return undefined;
+  }
+}
 
 export interface AnalyzeClipOptions {
   videoUri: string;
@@ -42,6 +69,13 @@ export async function analyzeClip(opts: AnalyzeClipOptions): Promise<FormAnalysi
 
   // 4. Swing metrics
   const result: FormAnalysisResult = analyzeForm(poseFrames, shotType);
+  onProgress?.(0.92);
+
+  // 5. Keep the impact frame so the result screen can show the pose.
+  // inferFrames emits one PoseFrame per sampled frame, so the indices line up.
+  const impactFrame = frames[result.impactFrameIndex]
+    ? await buildImpactFrame(frames[result.impactFrameIndex].uri)
+    : undefined;
   onProgress?.(0.98);
 
   const now = new Date().toISOString();
@@ -51,7 +85,11 @@ export async function analyzeClip(opts: AnalyzeClipOptions): Promise<FormAnalysi
     sourceVideoUri: persistedUri,
     thumbnailUri,
     createdAt: now,
-    result,
+    result: {
+      ...result,
+      impactKeypoints: poseFrames[result.impactFrameIndex]?.keypoints,
+    },
+    impactFrame,
     frameCount: poseFrames.length,
     durationSec: endSec - startSec,
   };

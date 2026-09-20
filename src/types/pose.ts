@@ -48,8 +48,21 @@ export interface FormAnalysisResult {
   shotType: ShotType;
   overallScore: number; // 0–100
   summary: string;
+  /** Empty when the player could not be detected clearly enough to measure. */
   metrics: SwingMetric[];
   impactFrameIndex: number; // index into poseFrames[]
+  /**
+   * Pose at the impact frame. Only this one frame is kept — it is what the
+   * result screen draws, and 17 keypoints cost far less than every frame.
+   */
+  impactKeypoints?: Keypoint[];
+}
+
+/** Persisted still of the impact frame, with the size the overlay maps onto. */
+export interface ImpactFrameImage {
+  uri: string;
+  widthPx: number;
+  heightPx: number;
 }
 
 export interface FormAnalysis {
@@ -59,6 +72,8 @@ export interface FormAnalysis {
   thumbnailUri?: string;
   createdAt: string;
   result: FormAnalysisResult;
+  /** Still of the impact frame, so the saved result can show the pose. */
+  impactFrame?: ImpactFrameImage;
   // Stored as summary only — full frame data is too large to persist
   frameCount: number;
   durationSec: number;

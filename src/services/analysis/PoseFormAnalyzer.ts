@@ -324,8 +324,9 @@ function volleyMetrics(frames: PoseFrame[], impactIdx: number): SwingMetric[] {
 // Scoring
 // ---------------------------------------------------------------------------
 
+/** 0 signals "not measured" — callers must check metrics.length, not the score. */
 function computeScore(metrics: SwingMetric[]): number {
-  if (metrics.length === 0) return 50;
+  if (metrics.length === 0) return 0;
   const weights: Record<SwingRating, number> = { good: 100, fair: 60, poor: 20 };
   const total = metrics.reduce((sum, m) => sum + weights[m.rating], 0);
   return Math.round(total / metrics.length);
@@ -373,6 +374,21 @@ export function analyzeForm(frames: PoseFrame[], shotType: ShotType): FormAnalys
   } else {
     // forehand, backhand, lob, drop
     metrics.push(...groundstrokeMetrics(frames, impactIdx));
+  }
+
+  // Every metric bails out when the keypoints it needs are below the confidence
+  // floor, so an empty list means the player was never located well enough to
+  // measure — typically a wide shot where the player is only a few pixels tall.
+  // Reporting a score here would be inventing one.
+  if (metrics.length === 0) {
+    return {
+      shotType,
+      overallScore: 0,
+      summary:
+        '選手の姿勢を十分に検出できませんでした。選手が大きく写るように、近づいて撮影した動画でお試しください。',
+      metrics,
+      impactFrameIndex: impactIdx,
+    };
   }
 
   const overallScore = computeScore(metrics);
